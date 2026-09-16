@@ -178,11 +178,31 @@ svg text{font-family:"IBM Plex Sans",sans-serif}
 }
 #hint.gone{opacity:0}
 
+/* volver al mazo del módulo 1, justo a la diapositiva desde la que se salta */
+#backM1{
+  position:fixed;top:10px;left:clamp(16px,2.4vw,32px);z-index:40;
+  display:inline-flex;align-items:center;gap:8px;
+  padding:7px 15px 7px 11px;border-radius:99px;text-decoration:none;
+  font-size:12px;font-weight:600;letter-spacing:.015em;line-height:1;
+  color:var(--ink);background:#fff;border:1px solid var(--hair);
+  box-shadow:0 2px 10px rgba(20,23,28,.08);
+  transition:border-color .22s var(--ease),box-shadow .22s var(--ease),transform .22s var(--ease);
+}
+#backM1:hover{border-color:var(--ink-soft);box-shadow:0 5px 18px rgba(20,23,28,.14);transform:translateY(-1px)}
+#backM1 .arr{font-size:15px;color:var(--ink-soft);transition:transform .22s var(--ease)}
+#backM1:hover .arr{transform:translateX(-3px)}
+#backM1 em{font-style:normal;color:var(--ink-soft);font-weight:400}
+/* sitio para el botón: las fichas de caso arrancan con el número y la
+   etiqueta pegados al borde superior; la portada centra y no lo necesita */
+.slide:not(.solo) .col{padding-top:34px}
+
 @media (max-width:900px){
   .slide{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;padding:20px 20px 30px}
   .stage{order:1}
   .col{order:2}
   .col h1{font-size:24px;max-width:none;margin:.3em 0 0}
+  .slide:not(.solo) .col{padding-top:0}
+  #backM1 em{display:none}
   .col .problem,.col .src{display:none}
   .result{margin-top:12px;padding-top:12px}
   .fig .l{max-width:14ch}
@@ -372,6 +392,7 @@ svg text{font-family:"IBM Plex Sans",sans-serif}
 </main>
 
 <div id="prog"></div>
+<a id="backM1" href="modulo1.html#t=Breve%20historia"><span class="arr">←</span>Volver al módulo 1 <em>· Breve historia</em></a>
 <div class="pageno"><b id="pn">1</b> / <span id="pt">7</span></div>
 <div id="hint">clic o → para avanzar</div>
 

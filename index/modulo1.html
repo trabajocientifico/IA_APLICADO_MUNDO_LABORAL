@@ -122,6 +122,20 @@ h2{ font-size:clamp(28px,4vw,52px); font-weight:700; line-height:1.08; letter-sp
 .slide-head .lead{ margin:10px auto 0; color:var(--muted); font-size:15px; max-width:680px; line-height:1.5; }
 .slide-head .lead b{ color:var(--text); font-weight:600; }
 
+/* salto a otro mazo: llamada a la acción visible dentro de una diapositiva */
+.go-module{ display:inline-flex; align-items:center; gap:12px; margin:0 auto;
+  padding:15px 28px; border-radius:99px; text-decoration:none; cursor:pointer;
+  font-family:var(--font-body); font-size:15px; font-weight:800; letter-spacing:.06em;
+  color:#041210; background:linear-gradient(100deg,var(--accent),var(--gold));
+  border:1px solid rgba(0,245,212,.55); box-shadow:0 10px 34px rgba(0,245,212,.28);
+  transition:transform .25s ease, box-shadow .25s ease, filter .25s ease; }
+.go-module:hover{ transform:translateY(-3px); filter:brightness(1.08);
+  box-shadow:0 16px 42px rgba(0,245,212,.42); }
+.go-module i{ font-size:17px; }
+.go-module .gm-arr{ font-size:18px; transition:transform .25s ease; }
+.go-module:hover .gm-arr{ transform:translateX(5px); }
+.go-module-wrap{ display:flex; justify-content:center; margin-top:22px; }
+
 /* ==========================================================================
    PORTADA
    ========================================================================== */
@@ -946,17 +960,30 @@ h2{ font-size:clamp(28px,4vw,52px); font-weight:700; line-height:1.08; letter-sp
 .anim{ --navy:#0A1420; --cream:#F2EBDD; --amber:#F5A524; --leaf:#5FC594;
   --leaf-dim:#4A7461; --slate:#63788F; --water:#7FC9D9;
   --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
-  /* la escena es 1000x562 (ratio 1.78). El tope en vh manda: con el relleno
-     reducido de .anim-slide quedan ~87vh útiles, y 148vh de ancho es lo máximo
-     que cabe en esa altura sin desbordar. */
-  width:100%; max-width:min(1700px,148vh); margin:0 auto; font-family:var(--mono); }
-/* estas diapositivas ceden casi toda la pantalla a la escena; el relleno
-   superior respeta la franja del contador y la etiqueta de bloque (top:56px) */
-.slide.anim-slide{ padding:9vh 3vw 4vh; }
-.anim svg{ width:100%; height:auto; display:block; border-radius:14px;
-  background:var(--navy); border:1px solid rgba(255,255,255,.07); }
-.anim-hint{ margin-top:10px; text-align:center; font-family:var(--mono);
+  /* la escena ya no es un recuadro dentro de la diapositiva: ocupa la
+     diapositiva entera. El svg estira a 100% x 100% y su viewBox (1000x562)
+     se centra dentro; el fondo navy del propio svg cubre todo lo demás. */
+  width:100%; height:100%; margin:0; font-family:var(--mono); }
+/* estas diapositivas van a sangre: la escena ES la diapositiva */
+.slide.anim-slide{ padding:0; align-items:stretch; justify-content:stretch; }
+.slide.anim-slide .slide-scroll{ height:100%; max-height:100%; overflow:hidden; }
+.anim svg{ width:100%; height:100%; display:block; border-radius:0;
+  background:var(--navy); border:0; }
+.anim-hint{ position:absolute; left:50%; bottom:8px; transform:translateX(-50%);
+  margin:0; z-index:6; text-align:center; font-family:var(--mono);
   font-size:.66rem; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
+/* Al ir a sangre, el cromo de la página cae encima de las esquinas donde la
+   escena escribe su título, su contador y sus marcas. Se oculta lo que la
+   escena ya duplica (contador, etiqueta de bloque y pie de ayuda) y las
+   flechas se mueven al centro de los bordes, que en las escenas va vacío.
+   La barra de progreso de arriba se queda: no estorba y ubica el mazo. */
+body:has(.slide.anim-slide.active) .progress-num,
+body:has(.slide.anim-slide.active) .block-tag,
+body:has(.slide.anim-slide.active) #navHint{ opacity:0; pointer-events:none; }
+body:has(.slide.anim-slide.active) #prev,
+body:has(.slide.anim-slide.active) #next{ bottom:auto; top:50%; transform:translateY(-50%); }
+body:has(.slide.anim-slide.active) #prev:hover,
+body:has(.slide.anim-slide.active) #next:hover{ transform:translateY(-50%) scale(1.06); }
 .anim .term{font-size:42px;font-weight:600;letter-spacing:.15em;fill:var(--cream);text-transform:uppercase}
 .anim .sup{font-size:11px;letter-spacing:.34em;fill:var(--slate);text-transform:uppercase}
 .anim .term-rule{stroke:var(--amber);stroke-width:2.5}
@@ -1247,6 +1274,13 @@ h2{ font-size:clamp(28px,4vw,52px); font-weight:700; line-height:1.08; letter-sp
       <div class="tl now"><div class="dot"></div><div class="yr">Hoy</div><div class="ev">Cualquier persona puede programar conversando con una IA — y con <b>agentes</b> que además ejecutan. <b>Aquí empiezas tú.</b></div></div>
     </div>
     <p class="note-foot">Lo que antes tomaba una carrera universitaria, hoy es accesible en una tarde — si sabes <b>qué preguntar</b>.</p>
+    <div class="go-module-wrap">
+      <a class="go-module" href="modulo11.html">
+        <i class="fa-solid fa-flask"></i>
+        Aplicaciones de IA reales
+        <span class="gm-arr">→</span>
+      </a>
+    </div>
   </div>
 </section>
 
@@ -1326,110 +1360,6 @@ h2{ font-size:clamp(28px,4vw,52px); font-weight:700; line-height:1.08; letter-sp
   <div class="slide-scroll">
     <div class="anim" id="anim5"></div>
     <p class="anim-hint">Clic o <b>→</b> para avanzar la animación</p>
-  </div>
-</section>
-
-<!-- EXPLORAR EN VIVO · tres herramientas para ver los conceptos por fuera del mazo -->
-<section class="slide" data-block="Conceptos de IA" data-title="Explora en vivo" data-sub="Tres sitios para ver los conceptos por tu cuenta">
-  <div class="slide-scroll xplr">
-    <div class="slide-head">
-      <span class="eyebrow">Manos a la obra</span>
-      <h2>Ahora <span class="hl">míralo tú mismo</span></h2>
-      <p class="lead">Token, vector, predicción, modelo y contexto no son teoría: se pueden <b>tocar</b>. Abre estas tres páginas en otra pestaña y trae de vuelta lo que encuentres.</p>
-    </div>
-    <div class="xplr-grid">
-      <a class="xcard" href="https://platform.openai.com/tokenizer" target="_blank" rel="noopener noreferrer" style="--brand:var(--accent)">
-        <span class="xn">01</span>
-        <div class="xic"><i class="fa-solid fa-scissors"></i></div>
-        <h3>Tokenizer</h3>
-        <div class="xurl">platform.openai.com/tokenizer</div>
-        <p>Escribe cualquier frase y mira <b>cómo se parte en tokens</b>. Verás que una palabra no siempre es un token — y que el español cuesta más tokens que el inglés.</p>
-        <div class="xtask"><b>Reto en clase</b>Escribe tu nombre completo y cuenta los tokens. ¿Quién tiene el nombre más «caro»?</div>
-        <span class="xgo">Abrir el sitio <i class="fa-solid fa-arrow-right"></i></span>
-      </a>
-      <a class="xcard" href="https://artificialanalysis.ai/" target="_blank" rel="noopener noreferrer" style="--brand:#4285f4">
-        <span class="xn">02</span>
-        <div class="xic"><i class="fa-solid fa-gauge-high"></i></div>
-        <h3>Artificial Analysis</h3>
-        <div class="xurl">artificialanalysis.ai</div>
-        <p>Compara <b>todos los modelos</b> en calidad, velocidad (tokens por segundo) y precio por millón de tokens. Es el tablero para decidir cuál usar.</p>
-        <div class="xtask"><b>Reto en clase</b>Busca el modelo más rápido y el más barato. ¿Son el mismo? ¿Cuál usarías para tus datos?</div>
-        <span class="xgo">Abrir el sitio <i class="fa-solid fa-arrow-right"></i></span>
-      </a>
-      <a class="xcard" href="https://llm-stats.com/" target="_blank" rel="noopener noreferrer" style="--brand:var(--gold)">
-        <span class="xn">03</span>
-        <div class="xic"><i class="fa-solid fa-table-list"></i></div>
-        <h3>LLM Stats</h3>
-        <div class="xurl">llm-stats.com</div>
-        <p>La ficha técnica de cada modelo: <b>ventana de contexto</b>, parámetros, licencia y resultados en pruebas estándar, todo en una tabla ordenable.</p>
-        <div class="xtask"><b>Reto en clase</b>Encuentra el modelo con la ventana de contexto más grande. ¿Cuántas páginas de texto caben ahí?</div>
-        <span class="xgo">Abrir el sitio <i class="fa-solid fa-arrow-right"></i></span>
-      </a>
-    </div>
-    <p class="xplr-foot">Los tres se abren en una <b>pestaña nueva</b>: la presentación se queda donde está. Tomen 5 minutos, exploren y comentamos.</p>
-  </div>
-</section>
-
-<!-- JUEGO · arrastrar cada término a su definición -->
-<section class="slide" data-block="Conceptos de IA" data-title="Juego: término y definición" data-sub="Repaso interactivo de lo visto hasta aquí">
-  <div class="slide-scroll dgame" id="dgame">
-    <div class="slide-head">
-      <span class="eyebrow">Repaso participativo</span>
-      <h2>Arrastra cada término a <span class="hl">su definición</span></h2>
-      <p class="lead">Seis definiciones, nueve términos: <b>tres sobran</b>. Arrastra con el mouse o toca el término y luego la casilla.</p>
-    </div>
-
-    <div class="dg-bank" id="dgBank">
-      <span class="bank-ph">Banco de términos</span>
-    </div>
-
-    <div class="dg-grid" id="dgGrid">
-      <div class="dg-card" data-k="token">
-        <span class="dgm">✓</span>
-        <span class="dgn">01</span>
-        <p class="dgq">Es la <b>pieza mínima</b> en la que se parte el texto para que el modelo pueda procesarlo. Una palabra larga puede valer varias.</p>
-        <div class="dg-slot" data-k="token"><span class="slot-ph">Suelta aquí</span></div>
-      </div>
-      <div class="dg-card" data-k="vector">
-        <span class="dgm">✓</span>
-        <span class="dgn">02</span>
-        <p class="dgq">Una <b>lista de números</b> que ubica cada palabra como un punto en el espacio: las de significado parecido quedan cerca.</p>
-        <div class="dg-slot" data-k="vector"><span class="slot-ph">Suelta aquí</span></div>
-      </div>
-      <div class="dg-card" data-k="prediccion">
-        <span class="dgm">✓</span>
-        <span class="dgn">03</span>
-        <p class="dgq">En cada paso el modelo calcula <b>qué tan probable</b> es cada candidato y elige uno para continuar el texto.</p>
-        <div class="dg-slot" data-k="prediccion"><span class="slot-ph">Suelta aquí</span></div>
-      </div>
-      <div class="dg-card" data-k="modelo">
-        <span class="dgm">✓</span>
-        <span class="dgn">04</span>
-        <p class="dgq">El <b>archivo entrenado</b> donde vive todo lo que aprendió. No guarda los textos originales: guarda los pesos.</p>
-        <div class="dg-slot" data-k="modelo"><span class="slot-ph">Suelta aquí</span></div>
-      </div>
-      <div class="dg-card" data-k="contexto">
-        <span class="dgm">✓</span>
-        <span class="dgn">05</span>
-        <p class="dgq">Todo lo que el modelo puede <b>tener a la vista</b> en una conversación. Cuando se llena, lo más viejo se pierde.</p>
-        <div class="dg-slot" data-k="contexto"><span class="slot-ph">Suelta aquí</span></div>
-      </div>
-      <div class="dg-card" data-k="generativa">
-        <span class="dgm">✓</span>
-        <span class="dgn">06</span>
-        <p class="dgq">La rama de la IA que <b>crea contenido nuevo</b> —texto, imágenes, código— en lugar de solo clasificar o predecir un número.</p>
-        <div class="dg-slot" data-k="generativa"><span class="slot-ph">Suelta aquí</span></div>
-      </div>
-    </div>
-
-    <div class="dg-controls">
-      <span class="dg-score" id="dgScore">Colocados <b>0</b> / 6</span>
-      <button class="mini-btn on" id="dgCheck" type="button">✓ Comprobar</button>
-      <button class="mini-btn" id="dgReset" type="button">↺ Reiniciar</button>
-    </div>
-
-    <div class="dg-result" id="dgResult"></div>
-    <div class="dg-extra" id="dgExtra"></div>
   </div>
 </section>
 
@@ -1576,6 +1506,47 @@ h2{ font-size:clamp(28px,4vw,52px); font-weight:700; line-height:1.08; letter-sp
     </div>
 
     <p class="plab-foot"><b>Cómo leer esta tabla:</b> las versiones cambian cada pocos meses — lo que vale la pena recordar es <b>la familia y quién está detrás</b>. <i class="op">abierto</i> significa que puedes descargar el modelo y ejecutarlo en tu propia máquina; el resto solo se usa a través de su servicio.</p>
+  </div>
+</section>
+
+<!-- EXPLORAR EN VIVO · tres herramientas para ver los conceptos por fuera del mazo -->
+<section class="slide" data-block="Conceptos de IA" data-title="Explora en vivo" data-sub="Tres sitios para ver los conceptos por tu cuenta">
+  <div class="slide-scroll xplr">
+    <div class="slide-head">
+      <span class="eyebrow">Manos a la obra</span>
+      <h2>Ahora <span class="hl">míralo tú mismo</span></h2>
+      <p class="lead">Token, vector, predicción, modelo y contexto no son teoría: se pueden <b>tocar</b>. Abre estas tres páginas en otra pestaña y trae de vuelta lo que encuentres.</p>
+    </div>
+    <div class="xplr-grid">
+      <a class="xcard" href="https://platform.openai.com/tokenizer" target="_blank" rel="noopener noreferrer" style="--brand:var(--accent)">
+        <span class="xn">01</span>
+        <div class="xic"><i class="fa-solid fa-scissors"></i></div>
+        <h3>Tokenizer</h3>
+        <div class="xurl">platform.openai.com/tokenizer</div>
+        <p>Escribe cualquier frase y mira <b>cómo se parte en tokens</b>. Verás que una palabra no siempre es un token — y que el español cuesta más tokens que el inglés.</p>
+        <div class="xtask"><b>Reto en clase</b>Escribe tu nombre completo y cuenta los tokens. ¿Quién tiene el nombre más «caro»?</div>
+        <span class="xgo">Abrir el sitio <i class="fa-solid fa-arrow-right"></i></span>
+      </a>
+      <a class="xcard" href="https://artificialanalysis.ai/" target="_blank" rel="noopener noreferrer" style="--brand:#4285f4">
+        <span class="xn">02</span>
+        <div class="xic"><i class="fa-solid fa-gauge-high"></i></div>
+        <h3>Artificial Analysis</h3>
+        <div class="xurl">artificialanalysis.ai</div>
+        <p>Compara <b>todos los modelos</b> en calidad, velocidad (tokens por segundo) y precio por millón de tokens. Es el tablero para decidir cuál usar.</p>
+        <div class="xtask"><b>Reto en clase</b>Busca el modelo más rápido y el más barato. ¿Son el mismo? ¿Cuál usarías para tus datos?</div>
+        <span class="xgo">Abrir el sitio <i class="fa-solid fa-arrow-right"></i></span>
+      </a>
+      <a class="xcard" href="https://llm-stats.com/" target="_blank" rel="noopener noreferrer" style="--brand:var(--gold)">
+        <span class="xn">03</span>
+        <div class="xic"><i class="fa-solid fa-table-list"></i></div>
+        <h3>LLM Stats</h3>
+        <div class="xurl">llm-stats.com</div>
+        <p>La ficha técnica de cada modelo: <b>ventana de contexto</b>, parámetros, licencia y resultados en pruebas estándar, todo en una tabla ordenable.</p>
+        <div class="xtask"><b>Reto en clase</b>Encuentra el modelo con la ventana de contexto más grande. ¿Cuántas páginas de texto caben ahí?</div>
+        <span class="xgo">Abrir el sitio <i class="fa-solid fa-arrow-right"></i></span>
+      </a>
+    </div>
+    <p class="xplr-foot">Los tres se abren en una <b>pestaña nueva</b>: la presentación se queda donde está. Tomen 5 minutos, exploren y comentamos.</p>
   </div>
 </section>
 
@@ -3132,6 +3103,27 @@ function slideContexto(svg,idx,total){
     e.render(0);
   });
 
+})();
+
+/* ================================================================
+   LLEGADA DESDE OTRO MAZO
+   modulo1.html#t=<título exacto de la diapositiva>  →  salta a esa
+   modulo1.html#s=<número de diapositiva, 1..n>     →  salta a esa
+   Se usa el título y no el número para que insertar o quitar
+   diapositivas no rompa el enlace de vuelta desde modulo11.html.
+   Va al final: en este punto ya existen go, goTitle y window.__anim.
+   ================================================================ */
+(function(){
+  function saltar(){
+    const h = decodeURIComponent((location.hash || '').replace(/^#/, ''));
+    if(!h) return;
+    const mt = h.match(/^t=([\s\S]+)$/);
+    if(mt){ goTitle(mt[1]); return; }
+    const ms = h.match(/^s=(\d+)$/);
+    if(ms) go(+ms[1] - 1);
+  }
+  saltar();
+  window.addEventListener('hashchange', saltar);
 })();
 </script>
 </body>
