@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clase 2 | Normativa y gobernanza de la IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF; --ink:#0B2545; --sci:#1668E3; --gold:#E3A41A;
+  --mist:#EEF3FA; --line:#D5DEEA; --muted:#5B6B82;
+  --red:#D9483B; --green:#1F9D6B;
+  --display:'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --body:'Figtree', 'Segoe UI', system-ui, sans-serif;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--paper);overflow:hidden;font-family:var(--body);color:var(--ink)}
+button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:none}
+button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:6px}
+
+/* ---------- escenario 16:9 ---------- */
+#viewport{position:fixed;inset:0;display:grid;place-items:center;background:var(--paper)}
+#stage{width:1600px;height:900px;position:relative;transform-origin:center center;overflow:hidden;background:var(--paper)}
+
+.slide{position:absolute;inset:0;padding:96px 110px 120px;display:none}
+.slide.active{display:block}
+.slide.enter-next{animation:enterNext .9s var(--ease) both}
+.slide.enter-prev{animation:enterPrev .9s var(--ease) both}
+.slide.leave-next{display:block;animation:leaveNext .55s var(--ease) both}
+.slide.leave-prev{display:block;animation:leavePrev .55s var(--ease) both}
+@keyframes enterNext{from{opacity:0;transform:translateX(160px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes enterPrev{from{opacity:0;transform:translateX(-160px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes leaveNext{to{opacity:0;transform:translateX(-120px) scale(.98)}}
+@keyframes leavePrev{to{opacity:0;transform:translateX(120px) scale(.98)}}
+
+/* barrido de transición: banda azul con filo dorado */
+#wipe{position:absolute;inset:0;pointer-events:none;z-index:40;display:flex}
+#wipe i{flex:1;background:var(--sci);transform:scaleY(0);transform-origin:bottom}
+#wipe i:nth-child(2n){background:var(--ink)}
+#wipe.go i{animation:bar .8s var(--ease) both}
+#wipe.go i:nth-child(1){animation-delay:0s}
+#wipe.go i:nth-child(2){animation-delay:.04s}
+#wipe.go i:nth-child(3){animation-delay:.08s}
+#wipe.go i:nth-child(4){animation-delay:.12s}
+#wipe.go i:nth-child(5){animation-delay:.16s}
+#wipe.back i{transform-origin:top}
+@keyframes bar{0%{transform:scaleY(0)}45%{transform:scaleY(1)}55%{transform:scaleY(1)}100%{transform:scaleY(0);transform-origin:top}}
+
+/* entradas escalonadas dentro de la diapositiva */
+.slide.active .in{animation:rise .9s var(--ease) both;animation-delay:calc(.25s + var(--d,0) * .12s)}
+@keyframes rise{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
+.slide.active .grow{animation:grow 1s var(--ease) both;animation-delay:calc(.3s + var(--d,0) * .12s)}
+@keyframes grow{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+
+/* pasos (fragmentos) */
+[data-step]{transition:opacity .6s var(--ease),transform .6s var(--ease),filter .6s}
+[data-step]:not(.shown){opacity:0;transform:translateY(24px) scale(.98);filter:blur(4px);pointer-events:none}
+
+/* ---------- cromo ---------- */
+#tag{position:absolute;left:110px;top:40px;font-size:18px;color:var(--muted);z-index:30;display:flex;gap:14px;align-items:center}
+#tag b{color:var(--ink);font-weight:700}
+#tag .chip{width:10px;height:10px;border-radius:50%;background:var(--gold)}
+#count{position:absolute;right:110px;top:40px;font-size:18px;color:var(--muted);font-variant-numeric:tabular-nums;z-index:30}
+#progress{position:absolute;left:110px;right:110px;bottom:52px;height:2px;background:var(--line);z-index:30;cursor:pointer}
+#progress .fill{position:absolute;left:0;top:0;bottom:0;background:var(--sci);transition:width .9s var(--ease)}
+#progress .dot{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 6px rgba(227,164,26,.18);transition:left .9s var(--ease)}
+#progress .tick{position:absolute;top:-5px;width:2px;height:12px;background:transparent}
+#progress:hover{height:6px}
+#help{position:absolute;right:110px;bottom:18px;font-size:14px;color:var(--muted);z-index:30;opacity:.8}
+#navbtns{position:absolute;left:110px;bottom:12px;display:flex;gap:8px;z-index:30}
+#navbtns button{width:34px;height:30px;border-radius:8px;color:var(--muted);font-size:18px}
+#navbtns button:hover{background:var(--mist);color:var(--ink)}
+
+/* ---------- tipografía ---------- */
+.kicker{font-size:22px;color:var(--sci);font-weight:600;margin-bottom:18px}
+.term{font-family:var(--display);font-weight:800;font-size:112px;line-height:.95;letter-spacing:-.035em;color:var(--ink)}
+.term.md{font-size:84px}
+.term.sm{font-size:64px}
+.sub{font-size:30px;line-height:1.35;color:var(--muted);max-width:760px;margin-top:26px}
+.note{font-size:19px;color:var(--muted);line-height:1.45}
+.big-quote{font-family:var(--display);font-size:58px;font-weight:700;line-height:1.08;letter-spacing:-.02em;max-width:1200px}
+.u-gold{box-shadow:inset 0 -.28em 0 rgba(227,164,26,.35)}
+
+/* layouts */
+.split{display:grid;grid-template-columns:1fr 1.05fr;gap:70px;height:100%;align-items:center}
+.split.wide-right{grid-template-columns:.8fr 1.2fr}
+.center{height:100%;display:flex;flex-direction:column;justify-content:center}
+.stack{display:flex;flex-direction:column;gap:16px}
+
+/* botones */
+.btn{white-space:nowrap;padding:14px 24px;border-radius:40px;font-size:20px;font-weight:600;border:2px solid var(--ink);transition:transform .25s var(--ease),background .25s,color .25s}
+.btn:hover{transform:translateY(-2px)}
+.btn.solid{background:var(--ink);color:#fff}
+.btn.blue{background:var(--sci);border-color:var(--sci);color:#fff}
+.btn.ghost{border-color:var(--line);color:var(--muted)}
+.btn:active{transform:scale(.96)}
+
+/* temporizador */
+.timer{display:flex;align-items:center;gap:22px}
+.timer svg{width:150px;height:150px;transform:rotate(-90deg)}
+.timer .track{fill:none;stroke:var(--mist);stroke-width:10}
+.timer .arc{fill:none;stroke:var(--sci);stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset 1s linear,stroke .4s}
+.timer.low .arc{stroke:var(--red)}
+.timer .t-read{font-family:var(--display);font-size:56px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.timer .t-ctrl{display:flex;gap:8px;margin-top:8px}
+.timer .t-ctrl button{font-size:16px;padding:6px 14px;border-radius:20px;border:1.5px solid var(--line);color:var(--muted)}
+.timer .t-ctrl button:hover{border-color:var(--ink);color:var(--ink)}
+
+/* pasos de taller */
+.steps{list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:18px;margin-top:34px}
+.steps li{counter-increment:s;display:grid;grid-template-columns:52px 1fr;align-items:center;font-size:27px;line-height:1.3}
+.steps li::before{content:counter(s);width:40px;height:40px;border-radius:50%;border:2px solid var(--sci);color:var(--sci);display:grid;place-items:center;font-weight:700;font-size:19px}
+
+/* panel de detalle */
+.detail{min-height:120px;border-left:4px solid var(--gold);padding:10px 0 10px 24px;font-size:26px;line-height:1.4}
+.detail h4{font-family:var(--display);font-size:34px;letter-spacing:-.01em;margin-bottom:6px}
+.detail.swap{animation:swap .5s var(--ease)}
+@keyframes swap{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+
+.hint{font-size:17px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.hint::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--gold);animation:pulse 1.8s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(227,164,26,.5)}50%{box-shadow:0 0 0 8px rgba(227,164,26,0)}}
+
+/* bucles lentos para esquemas SVG */
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes spinSlow{to{transform:rotate(360deg)}}
+@keyframes dash{to{stroke-dashoffset:0}}
+@keyframes flow{to{stroke-dashoffset:-40}}
+.floaty{animation:floaty 5s ease-in-out infinite}
+.flowline{stroke-dasharray:8 12;animation:flow 1.6s linear infinite}
+
+@media (prefers-reduced-motion:reduce){
+  .slide.enter-next,.slide.enter-prev,.slide.active .in,.slide.active .grow{animation-duration:.01s}
+  #wipe{display:none}
+  .floaty,.flowline{animation:none}
+}
+
+
+/* compartidos con clase 1 */
+.road{display:flex;gap:8px;height:150px;margin-top:70px}
+.road>div{border-radius:14px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;color:#fff;cursor:pointer;transform-origin:left;transition:transform .3s var(--ease)}
+.slide.active .road>div{animation:roadIn .8s var(--ease) both}
+.road>div:hover,.road>div.on{transform:translateY(-8px)}
+.road>div b{font-size:22px;line-height:1.1}
+.road>div small{font-size:17px;opacity:.85}
+.road .r-a{background:var(--ink)} .road .r-t{background:var(--sci)} .road .r-p{background:var(--mist);color:var(--muted)} .road .r-g{background:var(--gold);color:var(--ink)}
+@keyframes roadIn{from{opacity:0;transform:scaleX(0)}to{opacity:1;transform:none}}
+.src{list-style:none;display:flex;flex-direction:column;gap:12px;margin-top:36px;font-size:22px;line-height:1.35;max-width:1300px}
+.src li{padding-left:28px;position:relative}
+.src li::before{content:"";position:absolute;left:0;top:12px;width:12px;height:2px;background:var(--gold)}
+.trio{display:flex;gap:60px;margin-top:60px}
+.trio div{display:flex;flex-direction:column;gap:14px;align-items:flex-start}
+.trio svg{width:110px;height:110px}
+.trio b{font-family:var(--display);font-size:40px;letter-spacing:-.02em}
+
+/* portada: capas que se apilan */
+.cover-svg{width:640px;height:600px}
+.slab{transform-box:fill-box;transform-origin:center;animation:slabDrop 9s var(--ease) infinite}
+@keyframes slabDrop{0%{opacity:0;transform:translateY(-120px)}10%,85%{opacity:1;transform:none}95%,100%{opacity:0;transform:translateY(20px)}}
+.cover-check{stroke-dasharray:160;stroke-dashoffset:160;animation:checkDraw 9s ease infinite}
+@keyframes checkDraw{0%,42%{stroke-dashoffset:160}55%,85%{stroke-dashoffset:0}95%,100%{stroke-dashoffset:160}}
+
+/* opciones */
+.opts{display:flex;flex-direction:column;gap:18px;margin-top:40px;width:640px}
+.opt{text-align:left;font-size:30px;font-weight:600;padding:22px 30px;border:2px solid var(--line);border-radius:18px;transition:all .4s var(--ease)}
+.opt:hover{border-color:var(--ink)}
+.opt.no{border-color:var(--line);color:var(--muted);animation:shake .45s}
+.opt.yes{border-color:var(--sci);background:var(--sci);color:#fff;transform:scale(1.03)}
+@keyframes shake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+.ans{font-size:30px;line-height:1.4;max-width:700px;margin-top:34px;opacity:0;transform:translateY(20px);transition:all .6s var(--ease)}
+.ans.show{opacity:1;transform:none}
+
+/* capas normativas */
+.layers{display:flex;flex-direction:column;align-items:center;gap:12px;width:760px;position:relative}
+.layer{height:96px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:30px;cursor:pointer;transition:transform .35s var(--ease),box-shadow .35s}
+.layer:hover,.layer.on{transform:scale(1.04)}
+.layer.on{box-shadow:0 0 0 4px var(--gold)}
+.layer:nth-child(1){width:46%;background:var(--ink);color:#fff}
+.layer:nth-child(2){width:62%;background:var(--sci);color:#fff}
+.layer:nth-child(3){width:80%;background:#9DC0F5;color:var(--ink)}
+.layer:nth-child(4){width:98%;background:var(--mist);color:var(--ink)}
+.slide.active .layer{animation:layIn .8s var(--ease) both}
+.slide.active .layer:nth-child(4){animation-delay:.3s}.slide.active .layer:nth-child(3){animation-delay:.5s}.slide.active .layer:nth-child(2){animation-delay:.7s}.slide.active .layer:nth-child(1){animation-delay:.9s}
+@keyframes layIn{from{opacity:0;transform:translateY(-60px)}to{opacity:1;transform:none}}
+.axis-up{position:absolute;left:-40px;top:0;bottom:0;width:30px}
+
+/* pirámide AI Act */
+.pyr{width:760px;height:620px;overflow:visible}
+.pyr .tier{cursor:pointer;transition:transform .35s var(--ease);transform-box:fill-box;transform-origin:center}
+.pyr .tier:hover,.pyr .tier.on{transform:scale(1.04)}
+.pyr .tier.on path{stroke:var(--ink);stroke-width:4}
+.pyr text{font-family:var(--display);font-weight:700;text-anchor:middle;pointer-events:none}
+.slide.active .pyr .tier{animation:tierIn .8s var(--ease) both}
+.slide.active .pyr .tier:nth-of-type(4){animation-delay:.3s}.slide.active .pyr .tier:nth-of-type(3){animation-delay:.5s}.slide.active .pyr .tier:nth-of-type(2){animation-delay:.7s}.slide.active .pyr .tier:nth-of-type(1){animation-delay:.9s}
+@keyframes tierIn{from{opacity:0;transform:translateY(80px)}to{opacity:1;transform:none}}
+.pulse-top{animation:topPulse 2.6s ease-in-out infinite}
+@keyframes topPulse{0%,100%{opacity:1}50%{opacity:.75}}
+
+/* línea de tiempo UE */
+.tl{position:relative;width:1380px;height:470px;margin-top:90px}
+.tl .axis{position:absolute;left:0;right:0;top:230px;height:3px;background:var(--line)}
+.tl .yr{position:absolute;top:246px;font-size:18px;color:var(--muted);transform:translateX(-50%)}
+.tl .yr::before{content:"";position:absolute;left:50%;top:-22px;width:2px;height:12px;background:var(--line)}
+.mk{position:absolute;top:230px;transition:left 1.6s var(--ease)}
+.mk .pt{position:absolute;left:-10px;top:-9px;width:20px;height:20px;border-radius:50%;background:#fff;border:4px solid var(--ink)}
+.mk .lb{position:absolute;left:-2px;width:210px;font-size:19px;line-height:1.25;border-left:2px solid var(--line);padding-left:12px}
+.mk.up .lb{bottom:26px}
+.mk.down .lb{top:26px}
+.mk .lb b{display:block;font-family:var(--display);font-size:22px}
+.mk.hr .pt{border-color:var(--red)}
+.mk.hr .lb{border-color:var(--red)}
+.mk.end .lb{left:auto;right:-2px;border-left:none;border-right:2px solid var(--red);padding-left:0;padding-right:12px;text-align:right}
+.mk.omni{opacity:0;transform:translateY(-20px);transition:opacity .6s .9s,transform .6s .9s var(--ease)}
+.mk.omni .pt{border-color:var(--gold);background:var(--gold);border-radius:4px;transform:rotate(45deg)}
+.mk.omni .lb{border-color:var(--gold);bottom:120px}
+.tl.moved .mk.omni{opacity:1;transform:none}
+.ghost{position:absolute;top:221px;width:20px;height:20px;border-radius:50%;border:3px dashed var(--red);opacity:0;transition:opacity .6s;transform:translateX(-10px)}
+.tl.moved .ghost{opacity:.6}
+.tl-ctrl{display:flex;gap:16px;align-items:center;margin-top:10px}
+
+/* camino Colombia */
+.co{width:1380px;height:520px;overflow:visible}
+.co .road-path{fill:none;stroke:var(--line);stroke-width:4}
+.co .road-draw{fill:none;stroke:var(--sci);stroke-width:4;stroke-dasharray:2000;stroke-dashoffset:2000}
+.slide.active .co .road-draw{animation:dash 3.2s .4s var(--ease) forwards}
+.co .n{cursor:pointer}
+.co .n circle{fill:#fff;stroke:var(--ink);stroke-width:4;transition:all .3s}
+.co .n:hover circle,.co .n.on circle{fill:var(--gold);stroke:var(--gold)}
+.co .n text{font-size:20px;fill:var(--ink)}
+.co .n .y{font-family:var(--display);font-weight:700;font-size:24px}
+.slide.active .co .n{animation:nodeIn .6s var(--ease) both}
+@keyframes nodeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.co .pending circle{stroke-dasharray:6 6;stroke:var(--gold);animation:spinSlow 12s linear infinite;transform-box:fill-box;transform-origin:center}
+
+/* hexágono CONPES */
+.hex{width:680px;height:680px;overflow:visible}
+.hex .w{cursor:pointer}
+.hex .w path{stroke:#fff;stroke-width:6;transition:fill .4s,transform .35s var(--ease);transform-box:fill-box;transform-origin:center}
+.hex .w text{font-family:var(--display);font-weight:700;font-size:21px;text-anchor:middle;pointer-events:none;fill:var(--ink)}
+.hex .w:hover path,.hex .w.on path{transform:scale(1.05)}
+.hex .w.lit path{fill:var(--sci)}
+.hex .w.lit text{fill:#fff}
+
+/* comparación */
+.toggle{display:inline-flex;border:2px solid var(--ink);border-radius:40px;padding:5px;gap:4px;margin-top:30px}
+.toggle button{padding:12px 26px;border-radius:30px;font-size:21px;font-weight:600;transition:all .35s var(--ease)}
+.toggle button.on{background:var(--ink);color:#fff}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px}
+.levels{display:flex;flex-direction:column;gap:12px}
+.lv{height:80px;border-radius:14px;display:flex;align-items:center;padding:0 26px;font-family:var(--display);font-weight:700;font-size:32px;perspective:600px}
+.lv span{display:inline-block;transition:transform .5s var(--ease),opacity .5s}
+.lv.flip span{transform:rotateX(90deg);opacity:0}
+.facts{display:flex;flex-direction:column;gap:26px}
+.fact small{font-size:18px;color:var(--muted);display:block;margin-bottom:6px}
+.fact div{font-size:28px;line-height:1.3;font-weight:600;transition:opacity .4s,transform .4s var(--ease)}
+.fact div.flip{opacity:0;transform:translateY(10px)}
+
+/* NIST */
+.nist{width:640px;height:640px;overflow:visible}
+.nist .spin{transform-origin:320px 320px;animation:spinSlow 30s linear infinite}
+.nist .fn{cursor:pointer}
+.nist .fn circle{transition:all .3s var(--ease)}
+.nist .fn:hover circle,.nist .fn.on circle{stroke:var(--gold);stroke-width:6}
+.nist text{font-family:var(--display);font-weight:700;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.refchips{display:flex;gap:12px;flex-wrap:wrap;margin:30px 0 20px}
+.chip-b{padding:12px 22px;border-radius:30px;border:2px solid var(--sci);color:var(--sci);font-size:21px;font-weight:700;cursor:pointer;transition:all .3s}
+.chip-b:hover,.chip-b.on{background:var(--sci);color:#fff}
+
+/* taller clasificar */
+.pool{display:flex;flex-wrap:wrap;gap:12px;min-height:130px;margin-top:22px;padding:14px;border:2px dashed var(--line);border-radius:18px}
+.card{padding:12px 16px;border-radius:12px;background:#fff;border:2px solid var(--ink);font-size:18px;font-weight:600;cursor:grab;max-width:250px;line-height:1.25;transition:transform .25s var(--ease),box-shadow .25s,border-color .3s;user-select:none}
+.card:hover{transform:translateY(-3px)}
+.card.sel{box-shadow:0 0 0 4px var(--gold)}
+.card.ok{border-color:var(--green)}
+.card.bad{border-color:var(--red)}
+.card .why{display:none;font-size:15px;font-weight:500;color:var(--muted);margin-top:6px}
+.checked .card .why{display:block}
+.bins{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.bin{min-height:255px;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:background .3s,transform .3s var(--ease)}
+.bin h5{font-family:var(--display);font-size:26px;margin-bottom:4px}
+.bin.over{transform:scale(1.02)}
+.bin.b0{background:#FBECEA}.bin.b0 h5{color:var(--red)}
+.bin.b1{background:#FDF5E4}.bin.b1 h5{color:#B07A00}
+.bin.b2{background:#E8F0FD}.bin.b2 h5{color:var(--sci)}
+.bin.b3{background:#EAF6F0}.bin.b3 h5{color:var(--green)}
+.bin .card{max-width:none}
+.top-row{display:flex;justify-content:space-between;align-items:flex-end}
+.timer.small svg{width:90px;height:90px}
+.timer.small .t-read{font-size:38px}
+
+/* roles */
+.roles{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;margin-top:40px}
+.role{height:330px;perspective:1000px;cursor:pointer}
+.role .in2{position:relative;width:100%;height:100%;transition:transform .8s var(--ease);transform-style:preserve-3d}
+.role.flip .in2{transform:rotateY(180deg)}
+.role .fc,.role .bk{position:absolute;inset:0;border-radius:22px;padding:28px;backface-visibility:hidden;display:flex;flex-direction:column;justify-content:space-between}
+.role .fc{border:2px solid var(--line);background:#fff}
+.role .bk{background:var(--ink);color:#fff;transform:rotateY(180deg);font-size:25px;line-height:1.35}
+.role .fc b{font-family:var(--display);font-size:36px;letter-spacing:-.01em;line-height:1.05}
+.role .fc svg{width:90px;height:90px}
+.role .bk small{color:var(--gold);font-size:18px;font-weight:700}
+
+/* principios T-323 */
+.prin{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.pr{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;border:2px solid var(--line);font-size:20px;font-weight:600;line-height:1.2;cursor:pointer;user-select:none;min-height:74px;transition:all .35s var(--ease)}
+.pr i{flex:none;width:28px;height:28px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-style:normal;color:#fff;font-size:16px;transition:all .35s var(--ease)}
+.pr.yes{border-color:var(--green)} .pr.yes i{background:var(--green);border-color:var(--green)}
+.pr.no{border-color:var(--red)} .pr.no i{background:var(--red);border-color:var(--red)}
+.slide.active .pr{animation:rise .7s var(--ease) both}
+
+/* constructor de política */
+.docm{width:720px;min-height:640px;border:2px solid var(--ink);border-radius:8px;padding:40px 46px;position:relative;background:#fff}
+.docm::after{content:"";position:absolute;right:-12px;bottom:-12px;left:12px;top:12px;border:2px solid var(--line);border-radius:8px;z-index:-1}
+.docm h3{font-family:var(--display);font-size:36px;letter-spacing:-.01em;margin-bottom:6px}
+.docm .meta{font-size:17px;color:var(--muted);margin-bottom:18px}
+.sec{overflow:hidden;max-height:0;opacity:0;transition:max-height .8s var(--ease),opacity .6s,margin .6s;border-left:4px solid var(--sci);padding-left:18px}
+.sec.on{max-height:160px;opacity:1;margin-top:16px}
+.sec b{font-size:22px;display:block}
+.sec span{font-size:19px;color:var(--muted);line-height:1.35}
+.addbtns{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;max-width:600px}
+.addbtns button{font-size:20px;font-weight:600;padding:10px 20px;border-radius:30px;border:2px solid var(--sci);color:var(--sci);transition:all .3s}
+.addbtns button.on{background:var(--sci);color:#fff}
+
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage">
+  <div id="tag"><span class="chip"></span><b>Clase 2 de 2</b><span>Normativa y gobernanza de la IA</span></div>
+  <div id="count"></div>
+
+
+<!-- 1 PORTADA -->
+<section class="slide">
+  <div class="split">
+    <div>
+      <div class="kicker in">Curso de inteligencia artificial</div>
+      <h1 class="term in" style="--d:1;font-size:96px">Normativa y gobernanza de la IA</h1>
+      <p class="sub in" style="--d:2">Qué exige la ley, qué orienta la política y qué recomiendan los estándares.</p>
+    </div>
+    <svg class="cover-svg grow" style="--d:2" viewBox="0 0 640 600" aria-hidden="true">
+      <ellipse cx="320" cy="540" rx="230" ry="16" fill="var(--mist)"/>
+      <rect class="slab" style="animation-delay:0s" x="90" y="440" width="460" height="80" rx="16" fill="var(--mist)"/>
+      <rect class="slab" style="animation-delay:.35s" x="130" y="350" width="380" height="80" rx="16" fill="#9DC0F5"/>
+      <rect class="slab" style="animation-delay:.7s" x="170" y="260" width="300" height="80" rx="16" fill="var(--sci)"/>
+      <rect class="slab" style="animation-delay:1.05s" x="215" y="170" width="210" height="80" rx="16" fill="var(--ink)"/>
+      <path class="cover-check" d="M270 110 L310 145 L380 60" fill="none" stroke="var(--gold)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+</section>
+
+<!-- 2 PREGUNTA -->
+<section class="slide" data-init="quiz">
+  <div class="split">
+    <div>
+      <div class="kicker in">Para empezar</div>
+      <h2 class="term md in" style="--d:1">¿Quién regula la IA en Colombia hoy?</h2>
+      <p class="ans" id="quizAns">No hay una ley de IA aprobada. Hay política pública, lineamientos de autoridades y decisiones de las cortes.</p>
+    </div>
+    <div>
+      <div class="hint in" style="--d:2">Elige una respuesta</div>
+      <div class="opts in" style="--d:3" id="quiz">
+        <button class="opt" data-ok="0">Una ley de inteligencia artificial</button>
+        <button class="opt" data-ok="0">Nadie, no hay reglas</button>
+        <button class="opt" data-ok="1">Varias piezas a la vez</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 RUTA -->
+<section class="slide">
+  <div class="center">
+    <div class="kicker in">180 minutos</div>
+    <h2 class="term md in" style="--d:1">Ruta de la clase</h2>
+    <div class="road" data-picker="#roadD2">
+      <div class="r-a" style="flex:15;animation-delay:.3s" data-title="Apertura" data-text="Pregunta detonante sobre quién regula la IA."><b>Apertura</b><small>15 min</small></div>
+      <div class="r-a" style="flex:35;animation-delay:.42s" data-title="Mapa normativo" data-text="Capas normativas, Ley de IA de la UE, piezas colombianas y estándares voluntarios."><b>Mapa normativo</b><small>35 min</small></div>
+      <div class="r-t" style="flex:40;animation-delay:.54s" data-title="Taller 4: Clasifica el riesgo" data-text="Ubicar diez casos en los niveles de riesgo."><b>Taller 4</b><small>40 min</small></div>
+      <div class="r-p" style="flex:10;animation-delay:.66s" data-title="Pausa" data-text="10 minutos."><b>Pausa</b><small>10</small></div>
+      <div class="r-t" style="flex:35;animation-delay:.78s" data-title="Taller 5: Audiencia simulada" data-text="Debatir el caso del juez y ChatGPT con roles."><b>Taller 5</b><small>35 min</small></div>
+      <div class="r-t" style="flex:40;animation-delay:.9s" data-title="Producto final" data-text="Política de uso responsable de IA en una página."><b>Producto</b><small>40 min</small></div>
+      <div class="r-g" style="flex:6;animation-delay:1.02s" data-title="Cierre" data-text="Síntesis de las dos clases."><b>&#10003;</b><small>5</small></div>
+    </div>
+    <div class="detail in" style="--d:6;margin-top:50px;max-width:1000px" id="roadD2"><h4>Toca un bloque</h4><div class="note">Cada bloque muestra su propósito.</div></div>
+  </div>
+</section>
+
+<!-- 4 CAPAS -->
+<section class="slide">
+  <div class="split">
+    <div>
+      <div class="kicker in">Cómo leer el mapa</div>
+      <h2 class="term md in" style="--d:1">Cuatro capas</h2>
+      <p class="sub in" style="--d:2">De lo voluntario a lo obligatorio.</p>
+      <div class="detail in" style="--d:3;margin-top:40px" id="layD"><h4>Toca una capa</h4><div class="note">Arriba, más exigible.</div></div>
+    </div>
+    <div class="layers" data-picker="#layD">
+      <div class="layer" data-title="Leyes" data-text="Obligatorias y sancionables. Ley 1581 de 2012 en Colombia. Ley de IA en la Unión Europea.">Leyes</div>
+      <div class="layer" data-title="Jurisprudencia" data-text="Las cortes fijan criterios. Sentencia T-323 de 2024 y Auto AC739 de 2026.">Jurisprudencia</div>
+      <div class="layer" data-title="Política y lineamientos" data-text="Orientan a entidades y vigilados. CONPES 4144 y Circular SIC 002 de 2024.">Política y lineamientos</div>
+      <div class="layer" data-title="Estándares voluntarios" data-text="Guías y certificaciones. Principios OCDE y UNESCO, NIST AI RMF, ISO/IEC 42001.">Estándares voluntarios</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 PIRÁMIDE -->
+<section class="slide">
+  <div class="split">
+    <div>
+      <div class="kicker in">Unión Europea, Reglamento 2024/1689</div>
+      <h2 class="term md in" style="--d:1">Regular según el riesgo</h2>
+      <div class="detail in" style="--d:3;margin-top:44px" id="pyrD"><h4>Toca un nivel</h4><div class="note">A mayor riesgo, más obligaciones.</div></div>
+    </div>
+    <svg class="pyr" viewBox="0 0 760 620" data-picker="#pyrD">
+      <g class="tier" data-title="Riesgo inaceptable: prohibido" data-text="Puntuación social, manipulación dañina, reconocimiento de emociones en trabajo y educación, y apps que crean desnudos sin consentimiento."><path class="pulse-top" d="M380 20 L470 160 L290 160 Z" fill="var(--red)"/><text x="380" y="140" font-size="20" fill="#fff">Prohibido</text></g>
+      <g class="tier" data-title="Alto riesgo: requisitos estrictos" data-text="Selección de personal, educación, crédito, servicios esenciales, justicia. Exige gestión de riesgos, datos de calidad, documentación y supervisión humana."><path d="M284 170 L476 170 L566 310 L194 310 Z" fill="var(--gold)"/><text x="380" y="252" font-size="32" fill="var(--ink)">Alto</text></g>
+      <g class="tier" data-title="Riesgo limitado: transparencia" data-text="Un chatbot debe avisar que es IA. Deepfakes y contenido generado deben identificarse."><path d="M188 320 L572 320 L662 460 L98 460 Z" fill="var(--sci)"/><text x="380" y="402" font-size="32" fill="#fff">Limitado</text></g>
+      <g class="tier" data-title="Riesgo mínimo: uso libre" data-text="Filtros de spam, videojuegos, recomendaciones simples. Se sugieren códigos de conducta."><path d="M92 470 L668 470 L740 600 L20 600 Z" fill="var(--green)"/><text x="380" y="548" font-size="32" fill="#fff">Mínimo</text></g>
+    </svg>
+  </div>
+</section>
+
+<!-- 6 LÍNEA DE TIEMPO UE -->
+<section class="slide" data-init="tl">
+  <div class="kicker in">La norma se mueve</div>
+  <div class="top-row">
+    <h2 class="term sm in" style="--d:1">Calendario de la Ley de IA europea</h2>
+    <div class="tl-ctrl in" style="--d:2"><button class="btn blue" id="omniBtn">Aplicar Digital Omnibus</button></div>
+  </div>
+  <div class="tl in" style="--d:3" id="tl"><div class="axis"></div></div>
+</section>
+
+<!-- 7 COLOMBIA -->
+<section class="slide" data-init="co">
+  <div class="top-row">
+    <div>
+      <div class="kicker in">Colombia</div>
+      <h2 class="term sm in" style="--d:1">Piezas que ya existen</h2>
+    </div>
+    <div class="detail in" style="--d:3;width:640px;min-height:130px" id="coD"><h4>Toca un punto</h4><div class="note">La ley de IA sigue pendiente.</div></div>
+  </div>
+  <svg class="co" viewBox="0 0 1380 520" id="coSvg">
+    <path class="road-path" id="coPath" d="M60 360 C220 360 220 160 380 160 S540 360 700 360 S860 160 1020 160 S1180 360 1320 360"/>
+    <path class="road-draw" d="M60 360 C220 360 220 160 380 160 S540 360 700 360 S860 160 1020 160 S1180 360 1320 360"/>
+    <circle r="10" fill="var(--gold)"><animateMotion dur="12s" repeatCount="indefinite" path="M60 360 C220 360 220 160 380 160 S540 360 700 360 S860 160 1020 160 S1180 360 1320 360"/></circle>
+  </svg>
+</section>
+
+<!-- 8 CONPES 4144 -->
+<section class="slide" data-init="hex">
+  <div class="split">
+    <div>
+      <div class="kicker in">DNP, febrero de 2025</div>
+      <h2 class="term md in" style="--d:1">CONPES 4144</h2>
+      <p class="sub in" style="--d:2">Política Nacional de Inteligencia Artificial en seis ejes.</p>
+      <div class="detail in" style="--d:3;margin-top:40px" id="hexD"><h4>Toca un eje</h4><div class="note">Horizonte 2025 a 2030.</div></div>
+    </div>
+    <svg class="hex grow" style="--d:2" viewBox="0 0 680 680" id="hexSvg" data-picker="#hexD">
+      <circle cx="340" cy="340" r="100" fill="#fff"/>
+    </svg>
+  </div>
+</section>
+
+<!-- 9 COMPARACIÓN -->
+<section class="slide" data-init="cmp">
+  <div class="kicker in">Mismo enfoque, distinto momento</div>
+  <h2 class="term sm in" style="--d:1">Unión Europea y proyecto colombiano</h2>
+  <div class="toggle in" style="--d:2" id="tg"><button class="on" data-k="ue">Unión Europea</button><button data-k="co">Colombia (proyecto)</button></div>
+  <div class="cmp">
+    <div class="levels in" style="--d:3">
+      <div class="lv" style="background:var(--red);color:#fff"><span></span></div>
+      <div class="lv" style="background:var(--gold)"><span></span></div>
+      <div class="lv" style="background:var(--sci);color:#fff"><span></span></div>
+      <div class="lv" style="background:var(--green);color:#fff"><span></span></div>
+    </div>
+    <div class="facts in" style="--d:4">
+      <div class="fact"><small>Autoridad</small><div id="fA"></div></div>
+      <div class="fact"><small>Estado</small><div id="fE"></div></div>
+      <div class="fact"><small>Agrega</small><div id="fX"></div></div>
+      <p class="note">Estado revisado en septiembre de 2026. Verifícalo antes de la clase.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 10 REFERENTES VOLUNTARIOS -->
+<section class="slide">
+  <div class="split">
+    <div>
+      <div class="kicker in">Sin ser ley, orientan</div>
+      <h2 class="term md in" style="--d:1">Estándares y marcos</h2>
+      <div class="refchips in" style="--d:2" data-picker="#refD">
+        <span class="chip-b" data-title="Principios de la OCDE" data-text="Adoptados en 2019 y actualizados en 2024. Base de muchas leyes nacionales.">OCDE</span>
+        <span class="chip-b" data-title="UNESCO" data-text="Recomendación sobre la ética de la IA de 2021, adoptada por sus Estados miembros.">UNESCO</span>
+        <span class="chip-b" data-title="ISO/IEC 42001" data-text="Norma certificable para un sistema de gestión de IA dentro de una organización.">ISO/IEC 42001</span>
+      </div>
+      <div class="detail in" style="--d:3" id="refD"><h4>NIST AI RMF</h4><div class="note">Toca las funciones del ciclo o un marco.</div></div>
+    </div>
+    <svg class="nist grow" style="--d:2" viewBox="0 0 640 640" data-picker="#refD">
+      <g class="spin"><circle cx="320" cy="320" r="220" fill="none" stroke="var(--line)" stroke-width="3" stroke-dasharray="10 14"/><path d="M320 100 l14 -10 l0 20 z" fill="var(--gold)"/><path d="M510 430 l17 3 l-10 14 z" fill="var(--gold)"/><path d="M130 430 l-4 -17 l17 2 z" fill="var(--gold)"/></g>
+      <g class="fn" data-title="Gobernar" data-text="Función transversal: roles, políticas y cultura de gestión del riesgo."><circle cx="320" cy="320" r="100" fill="var(--ink)" stroke="#fff" stroke-width="0"/><text x="320" y="320" font-size="32" fill="#fff">Gobernar</text></g>
+      <g class="fn" data-title="Mapear" data-text="Entender el contexto: para qué se usa, a quién afecta, qué puede fallar."><circle cx="320" cy="100" r="80" fill="var(--sci)" stroke="#fff"/><text x="320" y="100" font-size="26" fill="#fff">Mapear</text></g>
+      <g class="fn" data-title="Medir" data-text="Evaluar con métricas: precisión, sesgo, robustez, seguridad."><circle cx="510" cy="430" r="80" fill="var(--sci)" stroke="#fff"/><text x="510" y="430" font-size="26" fill="#fff">Medir</text></g>
+      <g class="fn" data-title="Gestionar" data-text="Priorizar y tratar los riesgos, responder a incidentes, mejorar."><circle cx="130" cy="430" r="80" fill="var(--sci)" stroke="#fff"/><text x="130" y="430" font-size="26" fill="#fff">Gestionar</text></g>
+    </svg>
+  </div>
+</section>
+
+<!-- 11 TALLER 4 -->
+<section class="slide" data-init="dnd" style="padding-top:84px">
+  <div class="top-row">
+    <div>
+      <div class="kicker in">Taller 4</div>
+      <h2 class="term sm in" style="--d:1">Clasifica el riesgo</h2>
+      <p class="note in" style="--d:2;font-size:21px;margin-top:8px">Arrastra cada caso a su nivel, o tócalo y luego toca la columna. Referencia: Ley de IA europea.</p>
+    </div>
+    <div style="display:flex;gap:26px;align-items:center" class="in">
+      <button class="btn solid" id="dndCheck">Revisar</button>
+      <button class="btn ghost" id="dndReset">Reiniciar</button>
+      <div class="timer small" data-min="40"></div>
+    </div>
+  </div>
+  <div id="dndWrap">
+    <div class="pool" id="pool"></div>
+    <div class="bins">
+      <div class="bin b0" data-lv="0"><h5>Prohibido</h5></div>
+      <div class="bin b1" data-lv="1"><h5>Alto</h5></div>
+      <div class="bin b2" data-lv="2"><h5>Limitado</h5></div>
+      <div class="bin b3" data-lv="3"><h5>Mínimo</h5></div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 PAUSA -->
+<section class="slide">
+  <div class="center" style="align-items:flex-start">
+    <h2 class="term in" style="font-size:220px">Pausa</h2>
+    <div class="timer in" style="--d:2;margin-top:40px" data-min="10"></div>
+  </div>
+</section>
+
+<!-- 13 AUDIENCIA -->
+<section class="slide" data-init="roles">
+  <div class="top-row">
+    <div>
+      <div class="kicker in">Taller 5</div>
+      <h2 class="term sm in" style="--d:1">Audiencia simulada</h2>
+      <p class="sub in" style="--d:2;font-size:26px;margin-top:10px">Un juez usó ChatGPT en un fallo de tutela. ¿Se afectó el debido proceso?</p>
+    </div>
+    <div class="timer in" style="--d:3" data-min="35"></div>
+  </div>
+  <div class="roles">
+    <div class="role in" style="--d:3"><div class="in2"><div class="fc"><svg viewBox="0 0 90 90"><rect x="18" y="58" width="54" height="12" rx="4" fill="var(--ink)"/><rect x="30" y="20" width="36" height="16" rx="4" fill="var(--gold)" transform="rotate(-30 48 28)"/><line x1="44" y1="36" x2="30" y2="58" stroke="var(--ink)" stroke-width="6" stroke-linecap="round"/></svg><b>Juez</b></div><div class="bk"><small>Tu misión</small>Explica por qué usaste ChatGPT y qué parte de la decisión tomaste tú.</div></div></div>
+    <div class="role in" style="--d:4"><div class="in2"><div class="fc"><svg viewBox="0 0 90 90"><circle cx="45" cy="30" r="16" fill="var(--sci)"/><path d="M15 86 Q15 52 45 52 Q75 52 75 86Z" fill="var(--sci)"/><text x="70" y="30" font-size="30" font-weight="800" fill="var(--red)">!</text></svg><b>Parte que cuestiona</b></div><div class="bk"><small>Tu misión</small>Argumenta por qué usar IA pudo afectar la motivación y la imparcialidad del fallo.</div></div></div>
+    <div class="role in" style="--d:5"><div class="in2"><div class="fc"><svg viewBox="0 0 90 90"><rect x="14" y="18" width="62" height="44" rx="8" fill="none" stroke="var(--sci)" stroke-width="6"/><circle cx="34" cy="40" r="5" fill="var(--gold)"/><circle cx="56" cy="40" r="5" fill="var(--gold)"/><rect x="36" y="66" width="18" height="12" fill="var(--sci)"/></svg><b>Perito en IA</b></div><div class="bk"><small>Tu misión</small>Explica qué hace y qué no hace un modelo de lenguaje. Muestra sus límites.</div></div></div>
+    <div class="role in" style="--d:6"><div class="in2"><div class="fc"><svg viewBox="0 0 90 90"><path d="M10 34 L45 12 L80 34Z" fill="var(--ink)"/><rect x="18" y="38" width="8" height="34" fill="var(--ink)"/><rect x="41" y="38" width="8" height="34" fill="var(--ink)"/><rect x="64" y="38" width="8" height="34" fill="var(--ink)"/><rect x="10" y="74" width="70" height="8" fill="var(--gold)"/></svg><b>Sala de la Corte</b></div><div class="bk"><small>Tu misión</small>Escucha a las partes y decide con base en la Constitución y el debido proceso.</div></div></div>
+  </div>
+  <p class="hint in" style="--d:7;margin-top:24px">Toca cada tarjeta para ver la misión del rol</p>
+</section>
+
+<!-- 14 DECISIÓN T-323 -->
+<section class="slide" data-init="prin">
+  <div class="split" style="grid-template-columns:.8fr 1.2fr;gap:50px">
+    <div>
+      <div class="kicker in">Corte Constitucional, Sentencia T-323 de 2024</div>
+      <h2 class="term sm in" style="--d:1">Lo que decidió la Corte</h2>
+      <ol class="steps" style="margin-top:28px">
+        <li data-step="1" style="font-size:24px">La decisión la tomó el juez, no la IA.</li>
+        <li data-step="2" style="font-size:24px">No prohibió la IA. Fijó principios.</li>
+        <li data-step="3" style="font-size:24px">Pidió lineamientos para toda la Rama Judicial.</li>
+      </ol>
+      <p class="note" data-step="4" style="margin-top:26px;font-size:22px;color:var(--sci)">¿Coincide con lo que votó el grupo en la clase 1?</p>
+    </div>
+    <div>
+      <div class="hint in" style="--d:2;margin-bottom:14px">Evalúa al juez: un clic cumple, dos no cumple</div>
+      <div class="prin" id="prin"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 15 PRODUCTO FINAL -->
+<section class="slide" data-init="policy">
+  <div class="split" style="grid-template-columns:.85fr 1.15fr">
+    <div>
+      <div class="kicker in">Producto final</div>
+      <h2 class="term sm in" style="--d:1;font-size:56px">Política de uso responsable de IA</h2>
+      <p class="sub in" style="--d:2;font-size:24px">Una página. La IA redacta el borrador; el grupo lo critica con los principios.</p>
+      <div class="addbtns in" style="--d:3" id="addb"></div>
+      <div class="timer small in" style="--d:4;margin-top:26px" data-min="40"></div>
+    </div>
+    <div class="docm in" style="--d:2">
+      <h3>Política de uso de IA</h3>
+      <div class="meta">Equipo o curso, fecha, versión 1</div>
+      <div id="secs"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 16 CIERRE -->
+<section class="slide">
+  <div class="center">
+    <div class="kicker in">Para llevar</div>
+    <h2 class="big-quote in" style="--d:1;font-size:82px">Las normas cambian. El criterio se queda.</h2>
+    <div class="trio">
+      <div class="in" style="--d:3"><svg viewBox="0 0 110 110"><path d="M55 12 L96 90 L14 90Z" fill="none" stroke="var(--sci)" stroke-width="7" stroke-linejoin="round"/><line x1="30" y1="62" x2="80" y2="62" stroke="var(--gold)" stroke-width="7"/></svg><b>Clasifica el riesgo</b></div>
+      <div class="in" style="--d:4"><svg viewBox="0 0 110 110"><rect x="16" y="70" width="78" height="18" rx="5" fill="var(--mist)"/><rect x="24" y="48" width="62" height="18" rx="5" fill="#9DC0F5"/><rect x="32" y="26" width="46" height="18" rx="5" fill="var(--sci)"/><rect x="42" y="6" width="26" height="16" rx="5" fill="var(--gold)"/></svg><b>Conoce tu marco</b></div>
+      <div class="in" style="--d:5"><svg viewBox="0 0 110 110"><rect x="20" y="12" width="70" height="88" rx="8" fill="none" stroke="var(--sci)" stroke-width="7"/><path d="M36 56 L50 70 L76 40" fill="none" stroke="var(--gold)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="60" stroke-dashoffset="60" style="animation:dash 1s 1.6s forwards"/></svg><b>Documenta el uso</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- 17 FUENTES -->
+<section class="slide">
+  <div class="center">
+    <h2 class="term sm in">Fuentes</h2>
+    <ul class="src">
+      <li class="in" style="--d:1">Unión Europea (2024). Reglamento (UE) 2024/1689, Ley de Inteligencia Artificial.</li>
+      <li class="in" style="--d:2">Unión Europea (2026). Reglamento (UE) 2026/1744, Digital Omnibus sobre IA.</li>
+      <li class="in" style="--d:3">DNP (2025). CONPES 4144, Política Nacional de Inteligencia Artificial.</li>
+      <li class="in" style="--d:4">Superintendencia de Industria y Comercio (2024). Circular Externa 002.</li>
+      <li class="in" style="--d:5">Corte Constitucional (2024). Sentencia T-323.</li>
+      <li class="in" style="--d:6">Corte Suprema de Justicia (2026). Auto AC739-2026.</li>
+      <li class="in" style="--d:7">Congreso de la República. Proyecto de Ley 043 de 2025 Senado, 324 de 2025 Cámara.</li>
+      <li class="in" style="--d:8">NIST (2023). AI Risk Management Framework. ISO/IEC 42001:2023. OCDE (2024). Principios de IA.</li>
+    </ul>
+  </div>
+</section>
+
+
+
+  <div id="progress"><div class="fill"></div><div class="dot"></div></div>
+  <div id="navbtns"><button id="bPrev" aria-label="Anterior">&#8592;</button><button id="bNext" aria-label="Siguiente">&#8594;</button></div>
+  <div id="help">Flechas o espacio para avanzar, F para pantalla completa</div>
+  <div id="wipe"><i></i><i></i><i></i><i></i><i></i></div>
+</div></div>
+<script>
+window.SLIDE_INIT = {};
+
+function bindPick(items, D){
+  items.forEach(g=>{ g.setAttribute('tabindex','0'); const pick=()=>{ items.forEach(x=>x.classList.remove('on')); g.classList.add('on'); D.innerHTML=`<h4>${g.dataset.title}</h4><div>${g.dataset.text}</div>`; D.classList.remove('swap'); void D.offsetWidth; D.classList.add('swap'); };
+    g.addEventListener('click',pick); g.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.stopPropagation();pick();} }); });
+}
+SLIDE_INIT.co = (s, first)=>{
+  if(!first) return;
+  const svg=document.getElementById('coSvg'), path=document.getElementById('coPath'), L=path.getTotalLength(), ns='http://www.w3.org/2000/svg';
+  const nodes=[
+    ['2012','Ley 1581','Ley Estatutaria 1581 de 2012','Protección de datos personales. Aplica también cuando los datos pasan por IA.'],
+    ['2019','CONPES 3975','CONPES 3975 de 2019','Política de transformación digital. Primera definición oficial de IA en Colombia.'],
+    ['2024','T-323','Sentencia T-323 de 2024','La Corte Constitucional fija principios para el uso de IA por jueces. No prohíbe, pone condiciones.'],
+    ['2024','Circular SIC 002','Circular Externa SIC 002 de 2024','Lineamientos para tratar datos personales en sistemas de IA: idoneidad, necesidad, razonabilidad y proporcionalidad.'],
+    ['2025','CONPES 4144','CONPES 4144 de 2025','Política Nacional de IA con seis ejes. El primero es ética y gobernanza.'],
+    ['2026','Auto AC739','Auto AC739 de 2026','La Corte Suprema multa a un abogado por citas inexistentes generadas con IA.'],
+    ['¿?','Ley de IA','Ley de IA: en trámite','Proyecto 043 de 2025 Senado y 324 de 2025 Cámara, con enfoque por riesgos. Su futuro depende del nuevo Congreso.']];
+  const fr=[0,.2,.36,.5,.66,.82,1], items=[];
+  nodes.forEach((n,i)=>{
+    const p=path.getPointAtLength(fr[i]*L), up=p.y<300, last=i===nodes.length-1;
+    const g=document.createElementNS(ns,'g'); g.setAttribute('class','n'+(last?' pending':'')); g.style.animationDelay=(.5+i*.4)+'s';
+    g.dataset.title=n[2]; g.dataset.text=n[3];
+    const ax = i===0?'start':(last?'end':'middle'), tx = i===0?p.x-20:(last?p.x+26:p.x);
+    const y1 = up? p.y-66 : p.y+56, y2 = up? p.y-38 : p.y+84;
+    g.innerHTML=`<circle cx="${p.x}" cy="${p.y}" r="${last?26:20}"/><text class="y" x="${tx}" y="${y1}" text-anchor="${ax}">${n[0]}</text><text x="${tx}" y="${y2}" text-anchor="${ax}">${n[1]}</text>`;
+    svg.appendChild(g); items.push(g);
+  });
+  bindPick(items, document.getElementById('coD'));
+};
+
+/* pregunta */
+SLIDE_INIT.quiz = (s, first)=>{
+  if(!first) return;
+  const opts=[...document.querySelectorAll('#quiz .opt')], ans=document.getElementById('quizAns');
+  opts.forEach(o=>o.onclick=()=>{
+    if(o.dataset.ok==='1'){ opts.forEach(x=>x.classList.remove('no')); o.classList.add('yes'); ans.classList.add('show'); }
+    else { o.classList.remove('no'); void o.offsetWidth; o.classList.add('no'); }
+  });
+};
+
+/* línea de tiempo */
+SLIDE_INIT.tl = (s, first)=>{
+  if(!first) return;
+  const tl=document.getElementById('tl'), W=1380;
+  const t0=new Date(2024,5,1).getTime(), t1=new Date(2029,0,1).getTime();
+  const X=d=>((new Date(d).getTime()-t0)/(t1-t0))*W;
+  [2025,2026,2027,2028].forEach(y=>tl.insertAdjacentHTML('beforeend',`<div class="yr" style="left:${X(y+'-01-01T00:00')}px">${y}</div>`));
+  const mk=(d,cls,title,txt,extra='')=>{ tl.insertAdjacentHTML('beforeend',`<div class="mk ${cls}" style="left:${X(d)}px" ${extra}><div class="pt"></div><div class="lb"><b>${title}</b>${txt}</div></div>`); };
+  mk('2024-08-01T00:00','up','ago 2024','Entra en vigor');
+  mk('2025-02-02T00:00','down','feb 2025','Prohibiciones y alfabetización en IA');
+  mk('2025-08-02T00:00','up','ago 2025','Modelos de propósito general');
+  mk('2026-08-02T00:00','up','ago 2026','Transparencia: avisar y etiquetar');
+  tl.insertAdjacentHTML('beforeend',`<div class="ghost" style="left:${X('2026-08-02T00:00')}px"></div><div class="ghost" style="left:${X('2027-08-02T00:00')}px"></div>`);
+  mk('2026-08-02T00:00','down hr','ago 2026','Alto riesgo, Anexo III','id="mkA"');
+  mk('2027-08-02T00:00','down hr','ago 2027','Alto riesgo, productos regulados','id="mkB"');
+  mk('2026-07-27T00:00','up omni','27 jul 2026','Omnibus en vigor, Reglamento 2026/1744');
+  const A=document.getElementById('mkA'), B=document.getElementById('mkB'), btn=document.getElementById('omniBtn');
+  B.querySelector('.lb').style.top='104px';
+  let moved=false;
+  btn.onclick=()=>{
+    moved=!moved; tl.classList.toggle('moved',moved);
+    A.style.left=X(moved?'2027-12-02T00:00':'2026-08-02T00:00')+'px';
+    B.style.left=X(moved?'2028-08-02T00:00':'2027-08-02T00:00')+'px';
+    A.querySelector('b').textContent = moved?'dic 2027':'ago 2026';
+    B.querySelector('b').textContent = moved?'ago 2028':'ago 2027';
+    B.classList.toggle('end',moved);
+    btn.textContent = moved?'Ver calendario original':'Aplicar Digital Omnibus';
+  };
+};
+
+/* hexágono */
+SLIDE_INIT.hex = (s, first)=>{
+  if(!first) return;
+  const svg=document.getElementById('hexSvg'), ns='http://www.w3.org/2000/svg';
+  const ax=[
+    ['Ética y gobernanza','Fortalecer la gobernanza y aplicar principios éticos para un desarrollo y uso responsable.'],
+    ['Datos e infraestructura','Mejorar la infraestructura y la disponibilidad, intercambio y representatividad de los datos.'],
+    ['I+D+i','Impulsar la investigación, el desarrollo y la innovación en sistemas de IA.'],
+    ['Capacidades y talento','Formar talento digital y promover la apropiación social de la IA.'],
+    ['Mitigación de riesgos','Identificar, prevenir y mitigar los riesgos para derechos y seguridad.'],
+    ['Uso y adopción','Impulsar el uso de IA en entidades públicas, empresas y territorios.']];
+  const cx=340, cy=340, R=300, r=100;
+  const pt=(rad,a)=>[cx+rad*Math.cos(a), cy+rad*Math.sin(a)];
+  const groups=[];
+  ax.forEach((d,i)=>{
+    const a0=(-120+i*60)*Math.PI/180, a1=(-60+i*60)*Math.PI/180, am=(a0+a1)/2;
+    const [x0,y0]=pt(R,a0),[x1,y1]=pt(R,a1),[x2,y2]=pt(r,a1),[x3,y3]=pt(r,a0);
+    const [tx,ty]=pt(205,am);
+    const g=document.createElementNS(ns,'g'); g.setAttribute('class','w'); g.dataset.title=d[0]; g.dataset.text=d[1];
+    const words=d[0].split(' '); const l1=words.slice(0,Math.ceil(words.length/2)).join(' '), l2=words.slice(Math.ceil(words.length/2)).join(' ');
+    g.innerHTML=`<path d="M${x0} ${y0} L${x1} ${y1} L${x2} ${y2} L${x3} ${y3} Z" fill="${i%2?'#9DC0F5':'var(--mist)'}"/><text x="${tx}" y="${ty-(l2?8:-8)}">${l1}</text>${l2?`<text x="${tx}" y="${ty+18}">${l2}</text>`:''}`;
+    svg.insertBefore(g, svg.firstChild); groups.push(g);
+  });
+  svg.insertAdjacentHTML('beforeend',`<text x="340" y="328" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="30" fill="var(--ink)">CONPES</text><text x="340" y="362" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="30" fill="var(--gold)">4144</text>`);
+  // el picker del motor ya se ejecutó: se enlaza aquí
+  const D=document.getElementById('hexD');
+  groups.forEach(g=>g.addEventListener('click',()=>{ groups.forEach(x=>x.classList.remove('on')); g.classList.add('on'); D.innerHTML=`<h4>${g.dataset.title}</h4><div>${g.dataset.text}</div>`; D.classList.remove('swap'); void D.offsetWidth; D.classList.add('swap'); }));
+  let k=0; setInterval(()=>{ if(!s.classList.contains('active')) return; groups.forEach(g=>g.classList.remove('lit')); groups[k%6].classList.add('lit'); k++; },1600);
+};
+
+/* comparación */
+SLIDE_INIT.cmp = (s, first)=>{
+  if(!first) return;
+  const data={
+    ue:{lv:['Inaceptable','Alto','Limitado','Mínimo'],A:'Oficina Europea de IA y autoridades de cada país',E:'Vigente, con obligaciones escalonadas hasta 2028',X:'Reglas para modelos de propósito general'},
+    co:{lv:['Prohibido','Alto','Limitado','Bajo'],A:'MinCiencias como Autoridad Nacional de IA',E:'En trámite: depende del nuevo Congreso',X:'Enfoque territorial, talento y transición laboral'}};
+  const lvs=[...s.querySelectorAll('.lv span')], fA=document.getElementById('fA'), fE=document.getElementById('fE'), fX=document.getElementById('fX');
+  const set=(k,anim)=>{
+    const d=data[k];
+    lvs.forEach((sp,i)=>{ if(anim){ sp.parentElement.classList.add('flip'); setTimeout(()=>{ sp.textContent=d.lv[i]; sp.parentElement.classList.remove('flip'); },300+i*90);} else sp.textContent=d.lv[i]; });
+    [[fA,d.A],[fE,d.E],[fX,d.X]].forEach(([el,t],i)=>{ if(anim){ el.classList.add('flip'); setTimeout(()=>{el.textContent=t; el.classList.remove('flip');},350+i*120);} else el.textContent=t; });
+  };
+  s.querySelectorAll('#tg button').forEach(b=>b.onclick=()=>{ s.querySelectorAll('#tg button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); set(b.dataset.k,true); });
+  set('ue',false);
+};
+
+/* arrastrar y clasificar */
+SLIDE_INIT.dnd = (s, first)=>{
+  if(!first) return;
+  const cases=[
+    ['Filtro automático de hojas de vida',1,'Empleo: alto riesgo.'],
+    ['Detector de emociones de estudiantes en clase',0,'Prohibido en educación.'],
+    ['Chatbot de atención al cliente',2,'Debe avisar que es IA.'],
+    ['Puntaje de crédito para préstamos',1,'Acceso a servicios esenciales.'],
+    ['Filtro de spam del correo',3,'Sin impacto relevante en derechos.'],
+    ['Puntuación social de ciudadanos',0,'Práctica prohibida.'],
+    ['Video publicitario con deepfake de una persona',2,'Debe identificarse como generado.'],
+    ['Sistema que decide admisiones universitarias',1,'Educación: alto riesgo.'],
+    ['Predicción de rendimiento de cultivos',3,'Sube a alto si decide créditos o subsidios.'],
+    ['App que crea desnudos sin consentimiento',0,'Prohibición añadida por el Omnibus.']];
+  const pool=document.getElementById('pool'), bins=[...s.querySelectorAll('.bin')], wrap=document.getElementById('dndWrap');
+  let sel=null;
+  const make=()=>{
+    pool.innerHTML=''; bins.forEach(b=>b.querySelectorAll('.card').forEach(c=>c.remove())); wrap.classList.remove('checked');
+    cases.forEach((c,i)=>{
+      const el=document.createElement('div'); el.className='card'; el.draggable=true; el.dataset.ans=c[1]; el.tabIndex=0;
+      el.innerHTML=`${c[0]}<div class="why">${c[2]}</div>`;
+      el.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text',i); sel=el; });
+      el.addEventListener('click',e=>{ e.stopPropagation(); if(sel) sel.classList.remove('sel'); sel = sel===el?null:el; if(sel) sel.classList.add('sel'); });
+      pool.appendChild(el);
+    });
+  };
+  const drop=(target)=>{ if(!sel) return; sel.classList.remove('sel','ok','bad'); target.appendChild(sel); sel.animate([{transform:'scale(.8)',opacity:.3},{transform:'scale(1)',opacity:1}],{duration:400,easing:'cubic-bezier(.22,1,.36,1)'}); sel=null; };
+  [...bins, pool].forEach(b=>{
+    b.addEventListener('dragover',e=>{e.preventDefault(); b.classList.add('over');});
+    b.addEventListener('dragleave',()=>b.classList.remove('over'));
+    b.addEventListener('drop',e=>{e.preventDefault(); b.classList.remove('over'); drop(b);});
+    b.addEventListener('click',()=>drop(b));
+  });
+  document.getElementById('dndCheck').onclick=()=>{
+    wrap.classList.add('checked');
+    bins.forEach(b=>b.querySelectorAll('.card').forEach(c=>{ c.classList.toggle('ok',c.dataset.ans===b.dataset.lv); c.classList.toggle('bad',c.dataset.ans!==b.dataset.lv); }));
+  };
+  document.getElementById('dndReset').onclick=make;
+  make();
+};
+
+/* roles */
+SLIDE_INIT.roles = (s, first)=>{
+  if(!first) return;
+  s.querySelectorAll('.role').forEach(r=>{ r.tabIndex=0; r.onclick=()=>r.classList.toggle('flip'); r.onkeydown=e=>{ if(e.key==='Enter'){e.stopPropagation(); r.classList.toggle('flip');} }; });
+};
+
+/* principios */
+SLIDE_INIT.prin = (s, first)=>{
+  if(!first) return;
+  const names=['Transparencia','Responsabilidad','Privacidad','No sustitución de la racionalidad humana','Seriedad y verificación','Prevención de riesgos','Igualdad y equidad','Control humano','Regulación ética','Buenas prácticas y estándares','Seguimiento y adaptación','Idoneidad'];
+  const box=document.getElementById('prin');
+  names.forEach((n,i)=>{
+    const d=document.createElement('div'); d.className='pr'; d.style.animationDelay=(.3+i*.06)+'s'; d.dataset.s=0; d.tabIndex=0;
+    d.innerHTML=`<i></i><span>${n}</span>`;
+    const cyc=()=>{ const k=(+d.dataset.s+1)%3; d.dataset.s=k; d.className='pr'+(k===1?' yes':k===2?' no':''); d.querySelector('i').textContent=k===1?'✓':k===2?'✕':''; d.style.animation='none'; };
+    d.onclick=cyc; d.onkeydown=e=>{ if(e.key==='Enter'){e.stopPropagation();cyc();} };
+    box.appendChild(d);
+  });
+};
+
+/* política */
+SLIDE_INIT.policy = (s, first)=>{
+  if(!first) return;
+  const secs=[
+    ['Usos permitidos','Lluvia de ideas, borradores, depurar código, resumir fuentes que ya leí.'],
+    ['Usos no permitidos','Presentar texto generado como propio, inventar datos, evaluar personas.'],
+    ['Datos que no se suben','Personales, sensibles, confidenciales y credenciales.'],
+    ['Verificación','Toda cita, cifra y norma se contrasta con la fuente original.'],
+    ['Declaración de uso','Herramienta, fecha, para qué se usó y qué revisé yo.']];
+  const ab=document.getElementById('addb'), sc=document.getElementById('secs');
+  secs.forEach((d,i)=>{
+    sc.insertAdjacentHTML('beforeend',`<div class="sec" id="sec${i}"><b>${d[0]}</b><span>${d[1]}</span></div>`);
+    const b=document.createElement('button'); b.textContent=d[0];
+    b.onclick=()=>{ b.classList.toggle('on'); document.getElementById('sec'+i).classList.toggle('on'); };
+    ab.appendChild(b);
+  });
+};
+
+</script>
+<script>
+(function(){
+  const stage = document.getElementById('stage');
+  const slides = [...document.querySelectorAll('.slide')];
+  const wipe = document.getElementById('wipe');
+  const fill = document.querySelector('#progress .fill');
+  const dot = document.querySelector('#progress .dot');
+  const count = document.getElementById('count');
+  let idx = 0, busy = false;
+  window.SLIDE_INIT = window.SLIDE_INIT || {};
+  const started = new Set();
+
+  function fit(){
+    const s = Math.min(innerWidth/1600, innerHeight/900);
+    stage.style.transform = `scale(${s})`;
+  }
+  addEventListener('resize', fit); fit();
+
+  const stepsOf = s => [...s.querySelectorAll('[data-step]')].sort((a,b)=>a.dataset.step-b.dataset.step);
+  const shownCount = s => s.querySelectorAll('[data-step].shown').length;
+
+  function chrome(){
+    const pct = slides.length>1 ? idx/(slides.length-1) : 0;
+    fill.style.width = (pct*100)+'%';
+    dot.style.left = (pct*100)+'%';
+    count.textContent = String(idx+1).padStart(2,'0')+' / '+String(slides.length).padStart(2,'0');
+    history.replaceState(null,'','#'+(idx+1));
+  }
+
+  function activate(n, dir, showAll){
+    const cur = slides[idx], nxt = slides[n];
+    cur.classList.remove('active','enter-next','enter-prev');
+    cur.classList.add(dir>0?'leave-next':'leave-prev');
+    setTimeout(()=>cur.classList.remove('leave-next','leave-prev'),560);
+    stepsOf(nxt).forEach(e=>e.classList.toggle('shown', !!showAll));
+    nxt.classList.remove('enter-next','enter-prev');
+    void nxt.offsetWidth;
+    nxt.classList.add('active', dir>0?'enter-next':'enter-prev');
+    idx = n; chrome();
+    const key = nxt.dataset.init;
+    if(key && SLIDE_INIT[key]){ SLIDE_INIT[key](nxt, !started.has(key)); started.add(key); }
+  }
+
+  function go(n, dir, showAll){
+    if(busy || n<0 || n>=slides.length || n===idx) return;
+    busy = true;
+    dir = dir || (n>idx?1:-1);
+    wipe.classList.remove('go','back'); void wipe.offsetWidth;
+    wipe.classList.add('go'); if(dir<0) wipe.classList.add('back');
+    setTimeout(()=>activate(n, dir, showAll), 330);
+    setTimeout(()=>{ busy=false; wipe.classList.remove('go','back'); }, 820);
+  }
+
+  function next(){
+    const s = slides[idx], st = stepsOf(s), k = shownCount(s);
+    if(k < st.length){ st[k].classList.add('shown'); const f=st[k].dataset.onshow; if(f&&SLIDE_INIT[f]) SLIDE_INIT[f](s); return; }
+    go(idx+1, 1, false);
+  }
+  function prev(){
+    const s = slides[idx], st = stepsOf(s), k = shownCount(s);
+    if(k > 0){ st[k-1].classList.remove('shown'); return; }
+    go(idx-1, -1, true);
+  }
+  window.PRES = {next, prev, go};
+
+  addEventListener('keydown', e=>{
+    const t = e.target.tagName;
+    if(t==='INPUT' || t==='TEXTAREA') return;
+    if(['ArrowRight','PageDown'].includes(e.key) || (e.key===' ' && t!=='BUTTON')){ e.preventDefault(); next(); }
+    else if(['ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); prev(); }
+    else if(e.key==='Home'){ go(0,-1,true); }
+    else if(e.key==='End'){ go(slides.length-1,1,true); }
+    else if(e.key.toLowerCase()==='f'){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
+  });
+  document.getElementById('bPrev').onclick = prev;
+  document.getElementById('bNext').onclick = next;
+  document.getElementById('progress').addEventListener('click', e=>{
+    const r = e.currentTarget.getBoundingClientRect();
+    const n = Math.round((e.clientX-r.left)/r.width*(slides.length-1));
+    go(n, n>idx?1:-1, true);
+  });
+
+  /* ---------- temporizadores ---------- */
+  document.querySelectorAll('.timer[data-min]').forEach(el=>{
+    const total = +el.dataset.min*60; let left = total, iv = null;
+    const R = 62, C = 2*Math.PI*R;
+    el.innerHTML = `<svg viewBox="0 0 150 150"><circle class="track" cx="75" cy="75" r="${R}"/><circle class="arc" cx="75" cy="75" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg>
+      <div><div class="t-read"></div><div class="t-ctrl"><button data-a="p">Iniciar</button><button data-a="r">Reiniciar</button></div></div>`;
+    const arc = el.querySelector('.arc'), read = el.querySelector('.t-read'), bp = el.querySelector('[data-a=p]');
+    const draw = ()=>{ const m=Math.floor(left/60), s=left%60; read.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; arc.style.strokeDashoffset = C*(1-left/total); el.classList.toggle('low', left<=120); };
+    bp.onclick = ()=>{ if(iv){clearInterval(iv);iv=null;bp.textContent='Continuar';} else {iv=setInterval(()=>{ if(left>0){left--;draw();} else {clearInterval(iv);iv=null;bp.textContent='Terminado';} },1000); bp.textContent='Pausar';} };
+    el.querySelector('[data-a=r]').onclick = ()=>{ clearInterval(iv); iv=null; left=total; bp.textContent='Iniciar'; draw(); };
+    draw();
+  });
+
+  /* ---------- selectores de detalle ---------- */
+  document.querySelectorAll('[data-picker]').forEach(group=>{
+    const target = document.querySelector(group.dataset.picker);
+    group.querySelectorAll('[data-title]').forEach(item=>{
+      item.setAttribute('tabindex','0'); item.setAttribute('role','button');
+      const pick = ()=>{
+        group.querySelectorAll('[data-title]').forEach(i=>i.classList.remove('on'));
+        item.classList.add('on');
+        target.innerHTML = `<h4>${item.dataset.title}</h4><div>${item.dataset.text||''}</div>`;
+        target.classList.remove('swap'); void target.offsetWidth; target.classList.add('swap');
+      };
+      item.addEventListener('click', pick);
+      item.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.stopPropagation(); pick(); }});
+    });
+  });
+
+  /* inicio */
+  const h = parseInt(location.hash.slice(1));
+  if(h>1 && h<=slides.length){ idx = h-1; }
+  slides[idx].classList.add('active');
+  stepsOf(slides[idx]).forEach(e=>e.classList.add('shown'));
+  if(idx===0) stepsOf(slides[0]).forEach(e=>e.classList.remove('shown'));
+  const k0 = slides[idx].dataset.init; if(k0 && SLIDE_INIT[k0]){ SLIDE_INIT[k0](slides[idx], true); started.add(k0); }
+  chrome();
+})();
+
+</script>
+</body>
+</html>

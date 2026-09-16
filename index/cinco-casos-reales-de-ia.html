@@ -1,0 +1,1078 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cinco casos reales de inteligencia artificial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#14171c;
+  --ink-soft:#5d6470;
+  --hair:#e3e6ea;
+  --bg:#ffffff;
+  --accent:#c2410c;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+/* recorta el translateX de las diapositivas inactivas: si no, el documento
+   mide 52 px de más y algunos navegadores ofrecen scroll horizontal */
+#deck{position:relative;height:100vh;height:100dvh;width:100vw;overflow:hidden}
+
+.slide{
+  /* se declaran aquí, no en :root, para que se resuelvan con el acento de cada caso */
+  --tint:color-mix(in srgb, var(--accent) 4%, #fff);
+  --edge:color-mix(in srgb, var(--accent) 16%, var(--hair));
+  position:absolute;inset:0;
+  display:grid;
+  grid-template-columns:minmax(290px,32%) 1fr;
+  gap:clamp(20px,3.2vw,56px);
+  padding:clamp(30px,4.2vh,54px) clamp(28px,4vw,72px) clamp(22px,3vh,38px);
+  opacity:0;visibility:hidden;
+  transform:translateX(52px);
+  transition:opacity .42s ease,transform .6s var(--ease),visibility 0s .6s;
+}
+.slide.is-active{opacity:1;visibility:visible;transform:none;transition:opacity .4s ease .06s,transform .6s var(--ease) .06s,visibility 0s}
+.slide.is-past{transform:translateX(-52px)}
+
+/* ---------- columna de texto ---------- */
+.col{display:flex;flex-direction:column;min-width:0}
+.tag{
+  display:flex;align-items:baseline;gap:13px;
+  font-size:clamp(11px,.92vw,13px);letter-spacing:.055em;color:var(--ink-soft);
+}
+.tag b{
+  font-family:Fraunces,Georgia,serif;font-size:clamp(26px,3vw,40px);font-weight:600;
+  color:var(--accent);line-height:.85;letter-spacing:0;
+}
+h1{
+  font-family:Fraunces,Georgia,serif;
+  font-weight:600;font-size:clamp(30px,3.6vw,52px);line-height:1.03;
+  margin:.44em 0 .5em;max-width:15ch;letter-spacing:-.012em;
+}
+.problem{
+  font-size:clamp(15px,1.35vw,19px);line-height:1.45;color:var(--ink-soft);
+  max-width:30ch;border-left:2px solid var(--accent);padding-left:14px;
+}
+
+.result{margin-top:auto;padding-top:20px}
+.figs{display:flex;gap:clamp(16px,2vw,30px);flex-wrap:wrap}
+.fig{opacity:0;transform:translateY(12px);transition:opacity .5s ease,transform .5s var(--ease)}
+.fig.on{opacity:1;transform:none}
+/* 2,7vw es lo máximo que deja caber las tres cifras en una sola línea
+   dentro de la columna del 32 % */
+.fig .n{font-family:Fraunces,Georgia,serif;font-size:clamp(26px,2.7vw,38px);font-weight:600;line-height:.95;color:var(--accent);white-space:nowrap}
+.fig .l{font-size:clamp(12px,1.05vw,14px);color:var(--ink-soft);line-height:1.3;margin-top:8px;max-width:17ch}
+.src{
+  margin-top:20px;padding-top:11px;border-top:1px solid var(--hair);
+  font-size:clamp(11px,.95vw,12.5px);color:var(--ink-soft);letter-spacing:.01em;
+}
+.src a{color:var(--accent);text-decoration:none;border-bottom:1px solid transparent}
+.src a:hover,.src a:focus-visible{border-bottom-color:var(--accent)}
+
+/* ---------- escenario ---------- */
+.stage{display:flex;flex-direction:column;min-width:0;min-height:0}
+.panel{
+  flex:1;min-height:0;display:flex;
+  background:var(--tint);border:1px solid var(--edge);border-radius:18px;
+  padding:clamp(8px,1.2vw,18px);
+}
+.panel svg{width:100%;height:100%;display:block}
+.cap{
+  margin-top:14px;position:relative;
+  min-height:calc(2 * 1.4 * clamp(15px,1.35vw,20px));
+}
+.cap p{
+  position:absolute;inset:0;margin:0;
+  font-size:clamp(15px,1.35vw,20px);line-height:1.4;color:var(--ink);max-width:60ch;
+  opacity:0;transform:translateY(8px);
+  transition:opacity .36s ease,transform .42s var(--ease);
+  pointer-events:none;
+}
+.cap p.on{opacity:1;transform:none}
+.cap b{font-weight:600;color:var(--accent)}
+
+/* ---------- portada y cierre ---------- */
+.slide.solo{grid-template-columns:1fr;align-content:center;padding-left:clamp(30px,7vw,120px);padding-right:clamp(30px,7vw,120px)}
+.solo .eyebrow{font-size:clamp(11px,1vw,13px);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+.solo h1{font-size:clamp(36px,5.6vw,80px);max-width:17ch;margin:.3em 0 .34em}
+.solo .lead{font-size:clamp(16px,1.5vw,21px);color:var(--ink-soft);max-width:46ch;line-height:1.45}
+
+.idx{list-style:none;margin-top:clamp(24px,4vh,48px);border-top:1px solid var(--hair)}
+.idx li{
+  display:grid;grid-template-columns:2.6em minmax(8em,15em) 1fr;gap:clamp(10px,2vw,28px);align-items:baseline;
+  padding:clamp(9px,1.5vh,15px) 0;border-bottom:1px solid var(--hair);
+  opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .5s var(--ease);
+}
+.idx li.on{opacity:1;transform:none}
+.idx b{font-family:Fraunces,Georgia,serif;font-size:clamp(17px,1.5vw,21px);color:var(--accent);font-weight:600}
+.idx span{font-size:clamp(14px,1.25vw,18px);font-weight:500}
+.idx em{font-style:normal;font-size:clamp(12.5px,1.1vw,15px);color:var(--ink-soft)}
+
+.pattern{margin-top:clamp(18px,3.4vh,40px);display:flex;flex-direction:column;gap:clamp(12px,2.2vh,26px)}
+.prow{
+  display:grid;grid-template-columns:2.4em 1fr auto;gap:clamp(12px,2vw,30px);align-items:center;
+  padding-bottom:clamp(12px,2vh,22px);border-bottom:1px solid var(--hair);
+  opacity:0;transform:translateY(12px);transition:opacity .5s ease,transform .5s var(--ease);
+}
+.prow.on{opacity:1;transform:none}
+.prow b{font-family:Fraunces,Georgia,serif;font-size:clamp(20px,2vw,30px);color:var(--ink-soft);font-weight:600}
+.prow h3{font-family:Fraunces,Georgia,serif;font-size:clamp(19px,2.1vw,30px);font-weight:600;letter-spacing:-.01em}
+.prow p{font-size:clamp(12.5px,1.1vw,15px);color:var(--ink-soft);margin-top:5px;max-width:52ch}
+.dots{display:flex;gap:7px}
+.dots i{width:11px;height:11px;border-radius:50%;display:block}
+.closing{margin-top:clamp(16px,3vh,32px);font-size:clamp(16px,1.6vw,23px);line-height:1.4;max-width:44ch;
+  opacity:0;transform:translateY(12px);transition:opacity .5s ease .1s,transform .5s var(--ease) .1s}
+.closing.on{opacity:1;transform:none}
+.closing b{font-weight:600;color:var(--ink)}
+
+/* ---------- utilidades svg ---------- */
+svg text{font-family:"IBM Plex Sans",sans-serif}
+.lbl{font-size:13px;fill:var(--ink-soft)}
+.lbl-s{font-size:11px;fill:var(--ink-soft);letter-spacing:.02em}
+.lbl-b{font-size:13.5px;font-weight:600;fill:var(--ink)}
+.lbl-a{font-size:12px;font-weight:600;fill:var(--accent)}
+.num{font-family:Fraunces,Georgia,serif;font-size:25px;font-weight:600;fill:var(--accent)}
+.num-d{font-family:Fraunces,Georgia,serif;font-size:25px;font-weight:600;fill:var(--ink)}
+.fade{opacity:0;transition:opacity .55s ease}
+.fade.on{opacity:1}
+.pop{opacity:0;transform:scale(.72);transform-box:fill-box;transform-origin:center;
+  transition:opacity .35s ease,transform .5s cubic-bezier(.3,1.5,.5,1)}
+.pop.on{opacity:1;transform:scale(1)}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.014)}}
+/* con transform, no con r: animar la geometría SVG fuerza layout en cada fotograma */
+@keyframes pulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:.75;transform:scale(1.55)}}
+@keyframes jitter{0%,100%{transform:translate(0,0)}25%{transform:translate(1.4px,-1.1px)}50%{transform:translate(-1.2px,1.3px)}75%{transform:translate(1px,1.2px)}}
+@keyframes wave{from{transform:translateX(0)}to{transform:translateX(-48px)}}
+/* nada se anima fuera de la diapositiva activa: los bucles infinitos de las
+   escenas ocultas mantenían al compositor trabajando todo el rato */
+.slide:not(.is-active) *{animation-play-state:paused!important}
+.breathe{transform-box:fill-box;transform-origin:center;animation:breathe 5.5s ease-in-out infinite}
+.jitter{animation:jitter .34s linear infinite}
+.waveanim{animation:wave 2.6s linear infinite}
+
+/* ---------- cromo ---------- */
+#prog{position:fixed;top:0;left:0;right:0;height:2px;display:flex;gap:2px;z-index:30}
+#prog i{flex:1;background:#eef0f3;position:relative;overflow:hidden}
+#prog i b{position:absolute;top:0;bottom:0;left:0;width:0;transition:width .42s var(--ease)}
+.pageno{
+  position:fixed;right:clamp(16px,2.4vw,32px);bottom:clamp(11px,1.8vh,22px);
+  font-family:Fraunces,Georgia,serif;font-size:13px;color:#b7bdc6;
+  letter-spacing:.04em;user-select:none;z-index:20;
+}
+.pageno b{color:var(--ink-soft);font-weight:600}
+#hint{
+  position:fixed;left:clamp(16px,2.4vw,32px);bottom:clamp(11px,1.8vh,22px);
+  font-size:12px;color:#b7bdc6;letter-spacing:.03em;user-select:none;z-index:20;
+  transition:opacity .6s ease;
+}
+#hint.gone{opacity:0}
+
+@media (max-width:900px){
+  .slide{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;padding:20px 20px 30px}
+  .stage{order:1}
+  .col{order:2}
+  .col h1{font-size:24px;max-width:none;margin:.3em 0 0}
+  .col .problem,.col .src{display:none}
+  .result{margin-top:12px;padding-top:12px}
+  .fig .l{max-width:14ch}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms!important;animation-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<main id="deck">
+
+<!-- ============ 0. PORTADA ============ -->
+<section class="slide solo" data-steps="2" style="--accent:#14171c">
+  <p class="eyebrow">IA aplicada al mundo laboral</p>
+  <h1>Cinco casos reales de inteligencia artificial</h1>
+  <p class="lead">No son demos ni promesas. Son cosas que ya funcionan fuera del laboratorio, con resultados publicados.</p>
+  <ol class="idx">
+    <li data-from="1" style="--accent:#b4531c"><b>01</b><span>Papiros de Herculano</span><em>22 columnas leídas sin abrir el rollo</em></li>
+    <li data-from="1" style="--accent:#1d4ed8"><b>02</b><span>Tamizaje de mama</span><em>+29 % de cánceres detectados, con menos lecturas</em></li>
+    <li data-from="1" style="--accent:#0e7490"><b>03</b><span>Alerta de inundaciones</span><em>2.000 millones de personas cubiertas, gratis</em></li>
+    <li data-from="1" style="--accent:#6d28d9"><b>04</b><span>AlphaFold</span><em>200 millones de estructuras en lugar de años por proteína</em></li>
+    <li data-from="1" style="--accent:#15803d"><b>05</b><span>Antibióticos nuevos</span><em>Dos moléculas que nunca habían existido</em></li>
+  </ol>
+</section>
+
+<!-- ============ 1. HERCULANO ============ -->
+<section class="slide" data-steps="6" style="--accent:#b4531c">
+  <div class="col">
+    <div class="tag"><b>1</b><span>Patrimonio · Vesuvius Challenge · 2026</span></div>
+    <h1>Leer un rollo que no se puede abrir</h1>
+    <p class="problem">Carbonizado por el Vesubio en el año 79. Desenrollarlo lo destruye.</p>
+    <div class="result">
+      <div class="figs">
+        <div class="fig" data-from="5"><div class="n">22</div><div class="l">columnas de griego leídas sin tocar el rollo</div></div>
+        <div class="fig" data-from="5"><div class="n">1.º</div><div class="l">rollo completo descifrado en casi 2.000 años</div></div>
+        <div class="fig" data-from="5"><div class="n">+1.800</div><div class="l">rollos sellados esperando lo mismo</div></div>
+      </div>
+      <p class="src">Vesuvius Challenge · <a href="https://scrollprize.org/" target="_blank" rel="noopener">scrollprize.org</a> · <a href="https://www.cnn.com/2026/06/26/science/papyrus-scroll-vesuvius-ai-scli-intl" target="_blank" rel="noopener">cnn.com</a></p>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="panel"><svg id="sv1" viewBox="0 0 600 400" role="img" aria-label="Un rollo carbonizado se escanea con rayos X, se aísla una vuelta, se estira hasta quedar plana y aparece el texto griego"></svg></div>
+    <div class="cap">
+      <p data-at="0">Un bloque carbonizado. El texto está dentro, pero <b>abrirlo lo destruye</b>.</p>
+      <p data-at="1">Se escanea entero con rayos X: no salen páginas, sale <b>un volumen</b>.</p>
+      <p data-at="2">El modelo sigue <b>una sola vuelta</b> del rollo y la separa de las demás.</p>
+      <p data-at="3">Esa vuelta se <b>estira virtualmente</b> hasta quedar plana.</p>
+      <p data-at="4">La tinta es carbón sobre carbón. El modelo la <b>hace visible</b>.</p>
+      <p data-at="5">Los papirólogos verifican cada lectura: <b>la IA no traduce</b>, da acceso.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. MAMOGRAFÍA ============ -->
+<section class="slide" data-steps="5" style="--accent:#1d4ed8">
+  <div class="col">
+    <div class="tag"><b>2</b><span>Salud pública · Ensayo MASAI, Suecia · 2026</span></div>
+    <h1>Una segunda mirada que no alcanza para todas</h1>
+    <p class="problem">Cada mamografía la leen dos radiólogos. No hay radiólogos para tanta gente.</p>
+    <div class="result">
+      <div class="figs">
+        <div class="fig" data-from="4"><div class="n">+29 %</div><div class="l">cánceres detectados, sin más falsos positivos</div></div>
+        <div class="fig" data-from="4"><div class="n">−44 %</div><div class="l">carga de lectura para los radiólogos</div></div>
+        <div class="fig" data-from="4"><div class="n">105.934</div><div class="l">mujeres asignadas al azar</div></div>
+      </div>
+      <p class="src">The Lancet · Universidad de Lund · <a href="https://www.eurekalert.org/news-releases/1114399" target="_blank" rel="noopener">eurekalert.org</a></p>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="panel"><svg id="sv2" viewBox="0 0 600 400" role="img" aria-label="Cien mil mujeres se sortean en dos grupos: en uno todas las imágenes se leen dos veces, en el otro solo las que la IA marca como dudosas"></svg></div>
+    <div class="cap">
+      <p data-at="0">Cada punto es <b>una mujer</b> que fue a hacerse la mamografía.</p>
+      <p data-at="1">Se <b>sortean</b> en dos grupos. Solo así se puede comparar de verdad.</p>
+      <p data-at="2">Grupo de control: <b>todas</b> las imágenes se leen dos veces.</p>
+      <p data-at="3">Grupo con IA: solo el <b>10 % más dudoso</b> pasa a dos lectores.</p>
+      <p data-at="4">Con menos lecturas se encontraron <b>más cánceres</b>, y más pequeños.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. INUNDACIONES ============ -->
+<section class="slide" data-steps="5" style="--accent:#0e7490">
+  <div class="col">
+    <div class="tag"><b>3</b><span>Riesgo climático · Google Flood Hub · 2018–2026</span></div>
+    <h1>Avisar de una creciente donde no hay estaciones</h1>
+    <p class="problem">Pronosticar inundaciones exige aforos en el río. En medio mundo no los hay.</p>
+    <div class="result">
+      <div class="figs">
+        <div class="fig" data-from="4"><div class="n">150+</div><div class="l">países con pronóstico, Colombia incluida</div></div>
+        <div class="fig" data-from="4"><div class="n">2.000 M</div><div class="l">de personas cubiertas, con acceso gratuito</div></div>
+        <div class="fig" data-from="4"><div class="n">7 días</div><div class="l">de anticipación para evacuar</div></div>
+      </div>
+      <p class="src">Google Research · <a href="https://sites.research.google/gr/floodforecasting/" target="_blank" rel="noopener">sites.research.google</a></p>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="panel"><svg id="sv3" viewBox="0 0 600 400" role="img" aria-label="Sin estación de aforo, el modelo usa lluvia, satélite y terreno para prever el caudal, dibujar la zona inundada y enviar la alerta al caserío"></svg></div>
+    <div class="cap">
+      <p data-at="0">Un río, un caserío y <b>ninguna estación</b> que mida el nivel del agua.</p>
+      <p data-at="1">El modelo usa lo que <b>sí existe en todas partes</b>: lluvia, satélite, terreno.</p>
+      <p data-at="2">Calcula el caudal y <b>cuándo</b> cruzará el nivel de alerta.</p>
+      <p data-at="3">Otro modelo traduce ese caudal en un mapa: <b>qué queda bajo el agua</b>.</p>
+      <p data-at="4">El aviso llega <b>días antes</b>, gratis y por los canales que ya se usan.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. ALPHAFOLD ============ -->
+<section class="slide" data-steps="5" style="--accent:#6d28d9">
+  <div class="col">
+    <div class="tag"><b>4</b><span>Biología · AlphaFold · Nobel de Química 2024</span></div>
+    <h1>La forma de una proteína decide lo que hace</h1>
+    <p class="problem">Su figura define su función. Averiguarla en el laboratorio podía tomar años.</p>
+    <div class="result">
+      <div class="figs">
+        <div class="fig" data-from="4"><div class="n">200 M</div><div class="l">estructuras predichas: casi todas las conocidas</div></div>
+        <div class="fig" data-from="4"><div class="n">3 M</div><div class="l">de investigadores en más de 190 países</div></div>
+        <div class="fig" data-from="4"><div class="n">minutos</div><div class="l">en lugar de años, y la base es gratuita</div></div>
+      </div>
+      <p class="src">Google DeepMind · <a href="https://deepmind.google/blog/alphafold-five-years-of-impact/" target="_blank" rel="noopener">deepmind.google</a></p>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="panel"><svg id="sv4" viewBox="0 0 600 400" role="img" aria-label="Una cadena de aminoácidos que el laboratorio tarda años en resolver; el modelo predice qué residuos quedan cerca, la pliega en minutos y colorea cada parte por su confianza"></svg></div>
+    <div class="cap">
+      <p data-at="0">Una proteína empieza como <b>una cadena</b> de aminoácidos.</p>
+      <p data-at="1">Averiguar su forma en el laboratorio podía llevar <b>años</b>.</p>
+      <p data-at="2">El modelo predice qué piezas <b>quedan cerca</b> de cuáles.</p>
+      <p data-at="3">Y la pliega en minutos, <b>con su grado de confianza</b> parte por parte.</p>
+      <p data-at="4">Se hizo con <b>200 millones</b> de proteínas y se publicó gratis.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. ANTIBIÓTICOS ============ -->
+<section class="slide" data-steps="5" style="--accent:#15803d">
+  <div class="col">
+    <div class="tag"><b>5</b><span>Medicamentos · MIT · revista Cell, 2025</span></div>
+    <h1>Moléculas que nunca habían existido</h1>
+    <p class="problem">Las bacterias resistentes matan a cinco millones al año. Casi no salen antibióticos nuevos.</p>
+    <div class="result">
+      <div class="figs">
+        <div class="fig" data-from="4"><div class="n">36 M</div><div class="l">de compuestos diseñados por computador</div></div>
+        <div class="fig" data-from="4"><div class="n">NG1 · DN1</div><div class="l">eliminaron gonorrea resistente y SARM</div></div>
+        <div class="fig" data-from="4"><div class="n">años</div><div class="l">de ensayos clínicos por delante</div></div>
+      </div>
+      <p class="src">MIT News · <a href="https://news.mit.edu/2025/using-generative-ai-researchers-design-compounds-kill-drug-resistant-bacteria-0814" target="_blank" rel="noopener">news.mit.edu</a></p>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="panel"><svg id="sv5" viewBox="0 0 600 400" role="img" aria-label="Una molécula crece átomo a átomo descartando candidatos, se generan 36 millones, se filtran hasta dos y esas dos revientan bacterias resistentes"></svg></div>
+    <div class="cap">
+      <p data-at="0">El punto de partida es mínimo: <b>un átomo</b>.</p>
+      <p data-at="1">El modelo <b>añade átomos</b> y en cada paso descarta lo que no sirve.</p>
+      <p data-at="2">Así arma <b>36 millones</b> de moléculas que no están en ningún catálogo.</p>
+      <p data-at="3">Se filtran por computador y <b>24</b> se fabrican de verdad.</p>
+      <p data-at="4">Dos mataron bacterias que <b>ya no responden a nada</b>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. CIERRE ============ -->
+<section class="slide solo" data-steps="3" style="--accent:#14171c">
+  <p class="eyebrow">Lo que comparten los cinco</p>
+  <h1>El mismo patrón, cinco veces</h1>
+  <div class="pattern">
+    <div class="prow" data-from="0">
+      <b>01</b>
+      <div><h3>Datos que ya existían</h3><p>tomografías, mamografías, pronóstico de lluvia, secuencias, química conocida</p></div>
+      <div class="dots"><i style="background:#b4531c"></i><i style="background:#1d4ed8"></i><i style="background:#0e7490"></i><i style="background:#6d28d9"></i><i style="background:#15803d"></i></div>
+    </div>
+    <div class="prow" data-from="1">
+      <b>02</b>
+      <div><h3>El modelo ve lo que nosotros no</h3><p>tinta invisible, tumores diminutos, crecidas sin aforo, plegamientos, moléculas inéditas</p></div>
+      <div class="dots"><i style="background:#b4531c"></i><i style="background:#1d4ed8"></i><i style="background:#0e7490"></i><i style="background:#6d28d9"></i><i style="background:#15803d"></i></div>
+    </div>
+    <div class="prow" data-from="2">
+      <b>03</b>
+      <div><h3>La decisión sigue siendo humana</h3><p>papirólogos, radiólogos, hidrólogos, revisión experimental, ensayos clínicos</p></div>
+      <div class="dots"><i style="background:#b4531c"></i><i style="background:#1d4ed8"></i><i style="background:#0e7490"></i><i style="background:#6d28d9"></i><i style="background:#15803d"></i></div>
+    </div>
+  </div>
+  <p class="closing" data-from="2">En ninguno de los cinco la IA sustituye a nadie: <b>amplía el alcance de quien ya sabía qué mirar</b>.</p>
+</section>
+
+</main>
+
+<div id="prog"></div>
+<div class="pageno"><b id="pn">1</b> / <span id="pt">7</span></div>
+<div id="hint">clic o → para avanzar</div>
+
+<script>
+(function(){
+"use strict";
+const NS='http://www.w3.org/2000/svg';
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ============ utilidades ============ */
+function el(tag,attrs,parent){
+  const n=document.createElementNS(NS,tag);
+  for(const k in attrs) n.setAttribute(k,attrs[k]);
+  if(parent) parent.appendChild(n);
+  return n;
+}
+function txt(s,attrs,parent){const n=el('text',attrs,parent);n.textContent=s;return n;}
+function on(n,v){if(n) n.classList.toggle('on',!!v);}
+function seeded(s){let x=s*9301+49297;return function(){x=(x*9301+49297)%233280;return x/233280;};}
+const eio=k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+const eout=k=>1-Math.pow(1-k,3);
+const lin=k=>k;
+const fmt=n=>Math.round(n).toLocaleString('es-CO');
+const path=p=>p.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' ');
+
+/* Animadores con guarda de estado: si el estado no cambió, no se relanzan.
+   Eso es lo que permite volver atrás con ← sin que nada se rehaga en desorden. */
+const TW={};
+function animate(key,state,target,dur,apply,ease){
+  const r=TW[key]||(TW[key]={state:' ',val:target,raf:0});
+  if(r.state===state) return;
+  if(r.raf){cancelAnimationFrame(r.raf);r.raf=0;}
+  const from=r.val; r.state=state;
+  if(RM||!dur){r.val=target;apply(target,1);return;}
+  const e=ease||eio,t0=performance.now();
+  (function f(){
+    // el tiempo se mide siempre con performance.now(), nunca con la marca que
+    // pasa rAF: si van por líneas temporales distintas, k se queda clavado
+    // en 0 (el tween no avanza) o se vuelve negativo (se dispara al infinito)
+    const k=Math.max(0,Math.min(1,(performance.now()-t0)/dur)),p=e(k);
+    r.val=from+(target-from)*p; apply(r.val,k);
+    r.raf=k<1?requestAnimationFrame(f):0;
+  })();
+}
+function animatePts(key,state,target,dur,apply,ease){
+  const cp=a=>a.map(q=>[q[0],q[1]]);
+  const r=TW[key]||(TW[key]={state:' ',val:cp(target),raf:0});
+  if(r.state===state) return;
+  if(r.raf){cancelAnimationFrame(r.raf);r.raf=0;}
+  const from=cp(r.val); r.state=state;
+  if(RM||!dur){r.val=cp(target);apply(r.val,1);return;}
+  const e=ease||eio,t0=performance.now();
+  (function f(){
+    const k=Math.max(0,Math.min(1,(performance.now()-t0)/dur)),p=e(k);
+    r.val=from.map((q,i)=>[q[0]+(target[i][0]-q[0])*p,q[1]+(target[i][1]-q[1])*p]);
+    apply(r.val,k);
+    r.raf=k<1?requestAnimationFrame(f):0;
+  })();
+}
+/* ============ 1 · HERCULANO ============ */
+function buildS1(svg){
+  const cx=150,cy=140,R=t=>18+2.6*t,T0=25.13,T1=31.4;
+  const arc=(t0,t1,n,dr)=>{const o=[];for(let i=0;i<n;i++){const t=t0+(t1-t0)*i/(n-1),r=R(t)+(dr||0);
+    o.push([cx+r*Math.cos(t),cy+r*Math.sin(t)]);}return o;};
+
+  const coil=el('path',{d:path(arc(0,T1,360)),fill:'none',stroke:'#23262c','stroke-width':12,
+    'stroke-linecap':'round',class:'breathe'},svg);
+  coil.style.transition='stroke .8s ease, opacity .8s ease';
+
+  // tomografía
+  const ct=el('g',{class:'fade'},svg);
+  el('circle',{cx:cx,cy:cy,r:114,fill:'none',stroke:'var(--edge)','stroke-width':1.4,'stroke-dasharray':'5 7'},ct);
+  const beamG=el('g',{class:'fade'},svg);
+  const beam=el('line',{x1:44,y1:cy-114,x2:44,y2:cy+114,stroke:'var(--accent)','stroke-width':1.6,opacity:.8},beamG);
+
+  // rótulos que se relevan
+  const lab0=txt('PHerc. 1667',{class:'lbl-s',x:cx,y:272,'text-anchor':'middle'},svg); lab0.classList.add('fade');
+  const lab1=txt('tomografía de rayos X',{class:'lbl-s',x:cx,y:272,'text-anchor':'middle'},svg); lab1.classList.add('fade');
+
+  // «un volumen, no páginas»
+  const vol=el('g',{class:'fade'},svg);
+  for(let i=0;i<6;i++)
+    el('rect',{x:392+i*4,y:74+i*11,width:150,height:9,rx:3,fill:'#fff',stroke:'#c9ccd2','stroke-width':1.2},vol);
+  txt('un volumen de cortes,',{class:'lbl-s',x:467,y:172,'text-anchor':'middle'},vol);
+  txt('no páginas',{class:'lbl-s',x:467,y:188,'text-anchor':'middle'},vol);
+
+  // la vuelta aislada
+  const base=arc(T0,T1,80,0),lift=arc(T0,T1,80,9);
+  const flat=[];for(let i=0;i<80;i++) flat.push([54+(566-54)*i/79,330]);
+  const turnG=el('g',{class:'fade'},svg);
+  const turn=el('path',{d:path(base),fill:'none',stroke:'var(--accent)','stroke-width':12,
+    'stroke-linecap':'round'},turnG);
+
+  // la tira aplanada
+  const strip=el('g',{class:'fade'},svg);
+  el('rect',{x:44,y:300,width:532,height:60,rx:3,fill:'#faf8f6',stroke:'var(--edge)'},strip);
+  const L1='ΑΡΙΣΤΟΚΡΕΩΝ ΗΘΙΚΗ ΛΟΓΟΣ',L2='ΦΥΣΙΣ ΟΡΜΗ ΠΡΟΚΟΠΗ ΣΤΟΑ';
+  const glyphs=[];
+  [[L1,324],[L2,348]].forEach(function(row){
+    for(let i=0;i<row[0].length;i++){
+      const ch=row[0][i]; if(ch===' ') continue;
+      const gx=62+i*20;
+      const t=txt(ch,{x:gx,y:row[1],fill:'#3a3d44',
+        style:'font-family:Fraunces,Georgia,serif;font-size:19px;font-weight:600'},strip);
+      t.style.opacity=0; glyphs.push({n:t,x:gx});
+    }
+  });
+  const scan=el('line',{x1:44,y1:298,x2:44,y2:362,stroke:'var(--accent)','stroke-width':2,class:'fade'},svg);
+
+  // verificación humana
+  const chk=el('g',{class:'fade'},svg);
+  [128,300,420].forEach(function(x){
+    el('path',{d:'M'+x+' 294 l4 5 l8 -11',fill:'none',stroke:'#15803d','stroke-width':2.2,
+      'stroke-linecap':'round','stroke-linejoin':'round'},chk);
+  });
+  txt('cada lectura verificada por papirólogos',{class:'lbl-s',x:566,y:382,'text-anchor':'end'},chk);
+
+  return function(s){
+    coil.setAttribute('stroke',s>=1?'#c9ccd2':'#23262c');
+    // cuando el foco pasa a la tira, el rollo se retira sin desaparecer
+    coil.style.opacity=s>=3?.34:1;
+    on(ct,s>=1&&s<3); on(beamG,s===1); on(lab0,s===0); on(lab1,s>=1&&s<3); on(vol,s===1);
+    animate('s1beam',s>=1?'in':'out',s>=1?296:44,1700,x=>{beam.setAttribute('x1',x);beam.setAttribute('x2',x);},eio);
+
+    on(turnG,s>=2);
+    animatePts('s1turn',s>=3?'flat':(s>=2?'lift':'base'),s>=3?flat:(s>=2?lift:base),1500,
+      p=>{turn.setAttribute('d',path(p));},eio);
+    on(strip,s>=3);
+    animate('s1strip',s>=3?'up':'down',s>=3?1:.02,1100,v=>{
+      strip.setAttribute('transform','translate(0,'+(330*(1-v)).toFixed(2)+') scale(1,'+v.toFixed(3)+')');
+      turn.style.opacity=Math.max(0,Math.min(1,1-(v-.02)*1.4));
+    },eout);
+
+    on(scan,s===4);
+    animate('s1scan',s>=4?'on':'off',s>=4?580:44,2000,x=>{
+      scan.setAttribute('x1',x);scan.setAttribute('x2',x);
+      for(let i=0;i<glyphs.length;i++){
+        const p=Math.max(0,Math.min(1,(x-glyphs[i].x)/36));
+        glyphs[i].n.style.opacity=p;
+        glyphs[i].n.style.filter=p<.98?'blur('+((1-p)*2.6).toFixed(2)+'px)':'none';
+      }
+    },eio);
+    on(chk,s>=5);
+  };
+}
+
+/* ============ 2 · MASAI ============ */
+function buildS2(svg){
+  const N=120,rnd=seeded(11);
+  const cloud=[];
+  for(let i=0;i<N;i++){const a=rnd()*Math.PI*2,r=Math.sqrt(rnd())*120;
+    cloud.push([300+r*1.02*Math.cos(a),190+r*.70*Math.sin(a)]);}
+  const ix=[];for(let i=0;i<N;i++) ix.push(i);
+  for(let i=N-1;i>0;i--){const j=Math.floor(rnd()*(i+1));const t=ix[i];ix[i]=ix[j];ix[j]=t;}
+  const grp=new Array(N),slot=new Array(N);let a=0,b=0;
+  ix.forEach(function(id,k){if(k<60){grp[id]=0;slot[id]=a++;}else{grp[id]=1;slot[id]=b++;}});
+  const cell=(g,o)=>[(g?384:120)+(o%6)*19,92+Math.floor(o/6)*18];
+  const split=[];for(let i=0;i<N;i++) split.push(cell(grp[i],slot[i]));
+  // riesgo 10 en el grupo de IA: 6 de 60
+  const hi=new Array(N).fill(false);
+  ix.slice(60).forEach(function(id,k){if(k%10===0) hi[id]=true;});
+
+  const grids=el('g',{},svg); grids.style.transition='opacity .7s ease';
+  const dots=[],rings=[];
+  for(let i=0;i<N;i++){
+    const ring=el('circle',{cx:cloud[i][0],cy:cloud[i][1],r:7.6,fill:'none',
+      stroke:'var(--accent)','stroke-width':1.5,opacity:0},grids);
+    ring.style.transition='opacity .4s ease';
+    const c=el('circle',{cx:cloud[i][0],cy:cloud[i][1],r:4.3,fill:'#c8ccd4'},grids);
+    c.style.transition='fill .5s ease';
+    dots.push(c);rings.push(ring);
+  }
+  const tL=txt('Lectura doble habitual',{class:'lbl-b',x:167,y:66,'text-anchor':'middle'},svg);
+  const tR=txt('Con apoyo de IA',{class:'lbl-b',x:431,y:66,'text-anchor':'middle'},svg);
+  tL.classList.add('fade');tR.classList.add('fade');
+  tR.style.fill='var(--accent)';
+
+  function eyes(x,g){
+    el('circle',{cx:x-13,cy:286,r:9,fill:'none',stroke:'currentColor','stroke-width':1.6},g);
+    el('circle',{cx:x-13,cy:286,r:3,fill:'currentColor'},g);
+    el('circle',{cx:x+13,cy:286,r:9,fill:'none',stroke:'currentColor','stroke-width':1.6},g);
+    el('circle',{cx:x+13,cy:286,r:3,fill:'currentColor'},g);
+  }
+  const gA=el('g',{class:'fade',color:'#3c424c'},svg); eyes(167,gA);
+  txt('todas se leen dos veces',{class:'lbl-s',x:167,y:312,'text-anchor':'middle'},gA);
+  const gB=el('g',{class:'fade'},svg); gB.style.color='var(--accent)'; eyes(431,gB);
+  txt('solo el 10 % más dudoso',{class:'lbl-s',x:431,y:312,'text-anchor':'middle'},gB);
+
+  // carga de lectura
+  const load=el('g',{class:'fade'},svg);
+  el('rect',{x:120,y:332,width:150,height:9,rx:4.5,fill:'#c8ccd4'},load);
+  const nA=txt('0',{class:'lbl-s',x:120,y:360},load);
+  const loadB=el('g',{class:'fade'},svg);   // la carga con IA solo entra en su beat
+  const bR=el('rect',{x:384,y:332,width:150,height:9,rx:4.5,fill:'var(--accent)'},loadB);
+  const nB=txt('0',{class:'lbl-s',x:384,y:360},loadB);
+  const cut=txt('−44 % de carga',{class:'lbl-a',x:534,y:324,'text-anchor':'end'},loadB);
+  cut.style.transition='opacity .5s ease .7s'; cut.style.opacity=0;
+
+  // resultado
+  const res=el('g',{class:'fade'},svg);
+  txt('cánceres detectados por cada 1.000 mujeres',{class:'lbl-s',x:300,y:74,'text-anchor':'middle'},res);
+  const r1=el('rect',{x:238,y:352,width:56,height:0,fill:'#c8ccd4'},res);
+  const r2=el('rect',{x:318,y:352,width:56,height:0,fill:'var(--accent)'},res);
+  txt('5,1',{class:'num-d',x:266,y:246,'text-anchor':'middle'},res);
+  txt('6,1',{class:'num',x:346,y:227,'text-anchor':'middle'},res);
+  txt('lectura doble',{class:'lbl-s',x:266,y:372,'text-anchor':'middle'},res);
+  txt('con IA',{class:'lbl-s',x:346,y:372,'text-anchor':'middle'},res);
+
+  return function(s){
+    animatePts('s2dots',s>=1?'split':'cloud',s>=1?split:cloud,1400,function(p){
+      for(let i=0;i<N;i++){
+        dots[i].setAttribute('cx',p[i][0].toFixed(1));dots[i].setAttribute('cy',p[i][1].toFixed(1));
+        rings[i].setAttribute('cx',p[i][0].toFixed(1));rings[i].setAttribute('cy',p[i][1].toFixed(1));
+      }
+    },eio);
+
+    on(tL,s>=1&&s<4);on(tR,s>=1&&s<4);
+    on(gA,s>=2&&s<4);on(gB,s>=3&&s<4);
+    for(let i=0;i<N;i++){
+      const g=grp[i];
+      dots[i].setAttribute('fill', s<2?'#c8ccd4'
+        : g===0 ? (s>=2?'#6b7280':'#c8ccd4')
+        : (s>=3 ? (hi[i]?'var(--accent)':'#dfe3e8') : '#c8ccd4'));
+      let ringOn=false,delay=0;
+      if(g===0&&s>=2){ringOn=true;delay=slot[i]*9;}
+      if(g===1&&s>=3&&hi[i]){ringOn=true;delay=slot[i]*9;}
+      rings[i].style.transitionDelay=(ringOn?delay:0)+'ms';
+      rings[i].style.opacity=ringOn?1:0;
+      rings[i].setAttribute('stroke',g===0?'#3c424c':'var(--accent)');
+    }
+
+    on(load,s>=2&&s<4); on(loadB,s>=3&&s<4);
+    animate('s2nA',s>=2?'on':'off',s>=2?109692:0,1400,v=>{nA.textContent=fmt(v)+' lecturas';},eout);
+    animate('s2nB',s>=3?'on':'off',s>=3?61248:0,1400,v=>{nB.textContent=fmt(v)+' lecturas';},eout);
+    animate('s2bar',s>=3?'cut':'full',s>=3?84:150,1100,v=>{bR.setAttribute('width',v.toFixed(1));},eio);
+    cut.style.opacity=s>=3?1:0;
+
+    grids.style.opacity=s>=4?.1:1;
+    on(res,s>=4);
+    animate('s2r1',s>=4?'up':'down',s>=4?96:0,1000,v=>{r1.setAttribute('height',v.toFixed(1));r1.setAttribute('y',(352-v).toFixed(1));},eout);
+    animate('s2r2',s>=4?'up':'down',s>=4?115:0,1000,v=>{r2.setAttribute('height',v.toFixed(1));r2.setAttribute('y',(352-v).toFixed(1));},eout);
+  };
+}
+
+/* ============ 3 · FLOOD HUB ============ */
+function buildS3(svg){
+  // terreno
+  el('rect',{x:24,y:54,width:318,height:302,rx:12,fill:'#f2f7f8',stroke:'var(--edge)'},svg);
+  const clip=el('clipPath',{id:'s3clip'},svg);
+  el('rect',{x:24,y:54,width:318,height:302,rx:12},clip);
+  const land=el('g',{'clip-path':'url(#s3clip)'},svg);
+  el('path',{d:'M44 344 C104 306,132 250,176 204 C218 160,262 116,330 78',fill:'none',
+    stroke:'#86b0bc','stroke-width':9,'stroke-linecap':'round'},land);
+
+  // agua que sube
+  const wclip=el('clipPath',{id:'s3wclip'},svg);
+  const wrect=el('rect',{x:24,y:356,width:318,height:0},wclip);
+  const water=el('g',{'clip-path':'url(#s3clip)'},land);
+  const wg=el('g',{'clip-path':'url(#s3wclip)'},water);
+  el('rect',{x:24,y:54,width:318,height:302,fill:'var(--accent)',opacity:.3},wg);
+  const waveG=el('g',{opacity:0},water);
+  el('path',{d:'M-24 0 q12 -5 24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0',
+    fill:'none',stroke:'var(--accent)','stroke-width':2.4,opacity:.65,class:'waveanim'},waveG);
+
+  const vil=el('g',{},land);
+  function house(x,y,w){
+    const g=el('g',{},vil);
+    el('path',{d:'M'+x+' '+y+' l'+(w/2)+' '+(-w*.55)+' l'+(w/2)+' '+(w*.55)+' v'+(w*.72)+' h'+(-w)+' Z',
+      fill:'#fff',stroke:'var(--ink)','stroke-width':1.5,'stroke-linejoin':'round'},g);
+    return g;
+  }
+  const houses=[house(96,258,30),house(136,270,24),house(78,286,22)];
+  txt('caserío ribereño',{class:'lbl-s',x:118,y:324,'text-anchor':'middle'},vil);
+
+  const gauge=el('g',{class:'fade'},svg);
+  el('circle',{cx:206,cy:168,r:12,fill:'#fff',stroke:'#b91c1c','stroke-width':1.5},gauge);
+  el('path',{d:'M200 162 l12 12 M212 162 l-12 12',stroke:'#b91c1c','stroke-width':1.8,'stroke-linecap':'round'},gauge);
+  el('circle',{cx:206,cy:168,r:12,fill:'none',stroke:'#b91c1c','stroke-width':1.5,
+    style:'animation:pulse 2.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center'},gauge);
+  txt('sin estación de aforo',{class:'lbl-s',x:206,y:198,'text-anchor':'middle'},gauge);
+
+  // panel del modelo
+  el('rect',{x:358,y:54,width:218,height:302,rx:12,fill:'#fff',stroke:'var(--edge)'},svg);
+  const mtitle=txt('modelo hidrológico',{class:'lbl-a',x:467,y:78,'text-anchor':'middle'},svg);
+  mtitle.classList.add('fade');
+
+  // entradas que viajan
+  const from=[[92,110],[200,90],[268,222]],to=[[386,106],[386,136],[386,166]];
+  const names=['lluvia pronosticada','satélite','forma del terreno'];
+  const chips=[],labs=[];
+  for(let i=0;i<3;i++){
+    const g=el('g',{class:'fade'},svg);
+    el('circle',{cx:0,cy:0,r:13,fill:'#fff',stroke:'var(--accent)','stroke-width':1.6},g);
+    if(i===0){
+      el('path',{d:'M-7 -2 a6 6 0 0 1 12 -2 a4.5 4.5 0 0 1 1 9 h-12 a5 5 0 0 1 -1 -7 Z',fill:'none',
+        stroke:'var(--accent)','stroke-width':1.3},g);
+      el('path',{d:'M-4 7 l-1.6 4 M0 7 l-1.6 4 M4 7 l-1.6 4',stroke:'var(--accent)','stroke-width':1.5,'stroke-linecap':'round'},g);
+    }else if(i===1){
+      el('rect',{x:-5,y:-4,width:10,height:8,rx:2,fill:'none',stroke:'var(--accent)','stroke-width':1.4},g);
+      el('path',{d:'M-5 0 h-5 M5 0 h5 M0 4 v5',stroke:'var(--accent)','stroke-width':1.4},g);
+    }else{
+      el('path',{d:'M-8 4 q4 -6 8 -1 q4 5 8 -4',fill:'none',stroke:'var(--accent)','stroke-width':1.4},g);
+      el('path',{d:'M-8 -2 q4 -6 8 -1 q4 5 8 -4',fill:'none',stroke:'var(--accent)','stroke-width':1.4,opacity:.5},g);
+    }
+    chips.push(g);
+    const l=txt(names[i],{class:'lbl-s',x:406,y:to[i][1]+4},svg);
+    l.classList.add('fade'); l.style.transitionDelay='700ms';
+    labs.push(l);
+  }
+
+  // curva de caudal
+  const chart=el('g',{class:'fade'},svg);
+  el('line',{x1:376,y1:316,x2:560,y2:316,stroke:'var(--hair)'},chart);
+  const alert=el('line',{x1:376,y1:232,x2:560,y2:232,stroke:'#b91c1c','stroke-width':1.3,'stroke-dasharray':'4 4',opacity:.6},chart);
+  txt('nivel de alerta',{class:'lbl-s',x:378,y:226},chart);
+  const curve=el('path',{d:'M376 312 C 414 308,446 296,472 262 C 492 236,504 206,528 202 C 544 199,554 208,560 218',
+    fill:'none',stroke:'var(--accent)','stroke-width':2.6,'stroke-linecap':'round'},chart);
+  const CL=curve.getTotalLength?curve.getTotalLength():400;
+  curve.style.strokeDasharray=CL; curve.style.strokeDashoffset=CL;
+  curve.style.transition='stroke-dashoffset 1.7s cubic-bezier(.4,.05,.2,1)';
+  txt('hoy',{class:'lbl-s',x:376,y:332},chart);
+  txt('+7 días',{class:'lbl-s',x:560,y:332,'text-anchor':'end'},chart);
+  const xdot=el('circle',{cx:493,cy:231,r:5,fill:'#b91c1c',class:'pop'},svg);
+  const xlab=txt('lo cruza aquí',{class:'lbl-s',x:493,y:256,'text-anchor':'middle',fill:'#b91c1c'},svg);
+  xlab.classList.add('fade');
+
+  // alerta que viaja
+  const pill=el('g',{opacity:0},svg);
+  el('rect',{x:-58,y:-15,width:116,height:30,rx:15,fill:'var(--accent)'},pill);
+  txt('Alerta de creciente',{x:0,y:5,'text-anchor':'middle',
+    style:'font-size:12px;font-weight:600;fill:#fff'},pill);
+  pill.style.transition='opacity .4s ease';
+  const phone=el('g',{class:'pop'},svg);
+  el('rect',{x:232,y:198,width:24,height:40,rx:5,fill:'#fff',stroke:'var(--ink)','stroke-width':1.5},phone);
+  el('rect',{x:236,y:204,width:16,height:24,rx:2,fill:'var(--accent)',opacity:.35},phone);
+
+  // la alerta sale del modelo y aterriza sobre el teléfono, en seco
+  const P0=[467,300],P1=[196,164];
+  return function(s){
+    on(gauge,s>=0&&s<3);
+    on(mtitle,s>=1&&s<2);
+    for(let i=0;i<3;i++){
+      on(chips[i],s>=1);
+      on(labs[i],s>=1&&s<2);
+      chips[i].style.transitionDelay=(i*140)+'ms';
+      animatePts('s3chip'+i,s>=1?'in':'out',[s>=1?to[i]:from[i]],1200,function(p){
+        chips[i].setAttribute('transform','translate('+p[0][0].toFixed(1)+','+p[0][1].toFixed(1)+')');
+      },eio);
+    }
+    on(chart,s>=2);
+    curve.style.strokeDashoffset=(s>=2?0:CL);
+    alert.style.opacity=s>=2?1:.25;
+    on(xdot,s>=2); on(xlab,s>=2&&s<3);
+
+    animate('s3water',s>=3?'up':'down',s>=3?248:356,1900,function(v){
+      wrect.setAttribute('y',v.toFixed(1));
+      wrect.setAttribute('height',Math.max(0,356-v).toFixed(1));
+      waveG.setAttribute('transform','translate(0,'+v.toFixed(1)+')');
+      waveG.setAttribute('opacity',v<354?1:0);
+    },eio);
+
+    on(phone,s>=4);
+    pill.style.opacity=s>=4?1:0;
+    animatePts('s3pill',s>=4?'sent':'held',[s>=4?P1:P0],1500,function(p){
+      pill.setAttribute('transform','translate('+p[0][0].toFixed(1)+','+p[0][1].toFixed(1)+')');
+    },eio);
+    houses.forEach(function(h,i){
+      const st=h.firstChild;
+      st.style.transition='stroke .4s ease '+(i*90)+'ms, stroke-width .4s ease '+(i*90)+'ms';
+      st.setAttribute('stroke',s>=4?'var(--accent)':'var(--ink)');
+      st.setAttribute('stroke-width',s>=4?2.6:1.5);
+    });
+  };
+}
+
+/* ============ 4 · ALPHAFOLD ============ */
+function buildS4(svg){
+  const N=16;
+  const line=[];for(let i=0;i<N;i++) line.push([72+i*31,214]);
+  /* Destino del plegado: una hélice alfa vista de lado (el paso angular de 2 rad
+     hace que las cuentas alternen de lado y el trazo se lea como un muelle) más
+     una hebra que baja por la derecha. */
+  const fold=[];
+  for(let i=0;i<9;i++) fold.push([250+26*Math.cos(i*2),300-i*17]);
+  [[268,148],[312,160],[330,192],[334,226],[326,260],[312,292],[288,314]].forEach(p=>fold.push(p));
+  let mx=0,my=0;fold.forEach(p=>{mx+=p[0];my+=p[1];});mx/=N;my/=N;
+  fold.forEach(p=>{p[0]+=300-mx;p[1]+=250-my;});
+
+  // confianza pLDDT: núcleo de la hélice alto, colas y lazos bajos
+  const PL=['#1e5fd0','#0b3b8c','#0b3b8c','#0b3b8c','#0b3b8c','#0b3b8c','#0b3b8c','#0b3b8c','#0b3b8c',
+            '#5aa9e6','#5aa9e6','#1e5fd0','#1e5fd0','#1e5fd0','#5aa9e6','#ef8a3c'];
+
+  const conn=el('g',{class:'fade'},svg);
+  const chainG=el('g',{},svg);
+  const link=el('polyline',{fill:'none',stroke:'#b3a8d8','stroke-width':3.2,'stroke-linejoin':'round'},chainG);
+  const beads=[],seq='MKVLIFAGKQLEDGRA';
+  const letters=el('g',{class:'fade'},svg);
+  for(let i=0;i<N;i++){
+    const c=el('circle',{cx:line[i][0],cy:line[i][1],r:9,fill:'#fff',stroke:'var(--accent)','stroke-width':2.2},chainG);
+    c.style.transition='fill .7s ease,stroke .7s ease';
+    beads.push(c);
+    txt(seq[i],{class:'lbl-s',x:line[i][0],y:242,'text-anchor':'middle'},letters);
+  }
+  txt('secuencia de aminoácidos',{class:'lbl-s',x:300,y:266,'text-anchor':'middle'},letters);
+
+  /* Contactos: arcos de un residuo a otro sobre la propia secuencia —la forma
+     en que se dibuja un mapa de contactos—. Son estáticos y solo viven en el beat 2. */
+  for(let i=0;i<N;i++) for(let j=i+3;j<N;j++){
+    const d=Math.hypot(fold[i][0]-fold[j][0],fold[i][1]-fold[j][1]);
+    if(d>=74) continue;
+    const x1=line[i][0],x2=line[j][0],h=Math.min(Math.abs(x2-x1)*.55,116);
+    el('path',{d:'M'+x1+' 224 Q '+((x1+x2)/2)+' '+(224+h)+' '+x2+' 224',fill:'none',
+      stroke:'var(--accent)','stroke-width':1.2,opacity:.5},conn);
+  }
+  txt('qué residuos quedan cerca de cuáles',{class:'lbl-s',x:300,y:368,'text-anchor':'middle'},conn);
+
+  // barras laboratorio vs IA
+  function box(x,label,accent){
+    const g=el('g',{class:'fade'},svg);
+    el('rect',{x:x,y:64,width:212,height:46,rx:8,fill:'none',stroke:accent?'var(--accent)':'var(--hair)'},g);
+    const bar=el('rect',{x:x,y:64,width:0,height:46,rx:8,fill:accent?'#f1eefb':'#f4f5f7'},g);
+    txt(label,{class:accent?'lbl-a':'lbl-s',x:x+14,y:92},g);
+    return {g:g,bar:bar};
+  }
+  const lab=box(64,'cristalografía: años por proteína',false);
+  const ai=box(324,'AlphaFold: minutos',true);
+
+  // leyenda de confianza
+  const leg=el('g',{class:'fade'},svg);
+  ['#0b3b8c','#1e5fd0','#5aa9e6','#f2c14e','#ef8a3c'].forEach(function(c,i){
+    el('rect',{x:196+i*22,y:344,width:22,height:8,fill:c},leg);
+  });
+  txt('confianza alta',{class:'lbl-s',x:192,y:352,'text-anchor':'end'},leg);
+  txt('baja',{class:'lbl-s',x:312,y:352},leg);
+
+  // réplicas
+  const wrap=el('g',{},svg);
+  const mol=el('g',{id:'s4mol'},wrap);
+  mol.appendChild(chainG);
+  /* Las réplicas son polilíneas estáticas, no <use>: 24 instancias de un grupo
+     vivo obligan a Chrome a repintar la estructura entera en cada fotograma. */
+  const grid=el('g',{class:'fade'},svg);
+  const cells=[];
+  for(let i=0;i<24;i++){
+    const gx=318+(i%6)*44,gy=118+Math.floor(i/6)*52;
+    const mini=fold.map(p=>((p[0]-300)*.17+gx).toFixed(1)+','+((p[1]-250)*.17+gy).toFixed(1)).join(' ');
+    const u=el('polyline',{points:mini,fill:'none',stroke:'#9083cc','stroke-width':1.6,
+      'stroke-linejoin':'round','stroke-linecap':'round'},grid);
+    u.style.opacity=0;u.style.transition='opacity .4s ease '+(i*26)+'ms';
+    cells.push(u);
+  }
+  const counter=txt('0',{class:'num',x:150,y:330,'text-anchor':'middle'},svg);
+  counter.classList.add('fade');
+  const clab=txt('estructuras publicadas',{class:'lbl-s',x:150,y:350,'text-anchor':'middle'},svg);
+  clab.classList.add('fade');
+
+  return function(s){
+    on(letters,s<1);
+    chainG.classList.toggle('jitter',s===1&&!RM);
+    on(lab.g,s>=1&&s<4); on(ai.g,s>=2&&s<4);
+    animate('s4lab',s>=1?'go':'no',s>=1?118:0,4200,v=>{lab.bar.setAttribute('width',v.toFixed(1));},lin);
+    animate('s4ai',s>=2?'go':'no',s>=2?212:0,900,v=>{ai.bar.setAttribute('width',v.toFixed(1));},eout);
+
+    on(conn,s===2);
+    animatePts('s4chain',s>=3?'fold':'line',s>=3?fold:line,1800,function(p){
+      link.setAttribute('points',p.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' '));
+      for(let i=0;i<N;i++){beads[i].setAttribute('cx',p[i][0].toFixed(1));beads[i].setAttribute('cy',p[i][1].toFixed(1));}
+    },eio);
+    for(let i=0;i<N;i++){
+      beads[i].setAttribute('fill',s>=3?PL[i]:'#fff');
+      beads[i].setAttribute('stroke',s>=3?PL[i]:'var(--accent)');
+    }
+    link.setAttribute('stroke',s>=3?'#8d93a8':'#b3a8d8');
+    on(leg,s===3);
+
+    /* el centro del plegado va de (300,250) a (150,250) mientras encoge;
+       a escala 1 la transformación tiene que ser la identidad */
+    animate('s4zoom',s>=4?'small':'big',s>=4?.52:1,1100,function(v){
+      const cxx=300-(1-v)*312.5;
+      wrap.setAttribute('transform','translate('+(cxx-300*v).toFixed(2)+','+(250-250*v).toFixed(2)+') scale('+v.toFixed(3)+')');
+    },eio);
+    on(grid,s>=4);
+    cells.forEach(c=>{c.style.opacity=s>=4?1:0;});
+    on(counter,s>=4); on(clab,s>=4);
+    animate('s4count',s>=4?'on':'off',s>=4?200000000:0,1900,v=>{counter.textContent=fmt(v);},eout);
+  };
+}
+
+/* ============ 5 · ANTIBIÓTICOS ============ */
+function buildS5(svg){
+  const pts=[[150,170],[118,152],[118,116],[150,98],[182,116],[182,152],[214,170],[214,206],
+             [182,224],[150,206],[86,170],[86,206],[246,152],[246,116]];
+  const bonds=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[5,6],[6,7],[7,8],[8,9],[9,0],[1,10],[10,11],[6,12],[12,13]];
+  const wrap=el('g',{},svg);
+  const mol=el('g',{id:'s5mol'},wrap);
+  const links=[],nodes=[],ghosts=[];
+  bonds.forEach(function(b){
+    const l=el('line',{x1:pts[b[0]][0],y1:pts[b[0]][1],x2:pts[b[1]][0],y2:pts[b[1]][1],
+      stroke:'var(--accent)','stroke-width':2.2},mol);
+    l.style.opacity=0;links.push(l);
+  });
+  pts.forEach(function(p,i){
+    const c=el('circle',{cx:p[0],cy:p[1],r:i===0?9:7,fill:i===0?'var(--accent)':'#fff',
+      stroke:'var(--accent)','stroke-width':2.2},mol);
+    c.style.opacity=0;nodes.push(c);
+    if(i>0){
+      const g=el('g',{},wrap);
+      [[-22,-14],[20,-16]].forEach(function(o){
+        const gh=el('circle',{cx:p[0]+o[0],cy:p[1]+o[1],r:6,fill:'none',stroke:'#aeb4bd',
+          'stroke-width':1.4,'stroke-dasharray':'2.5 2.5'},g);
+        gh.style.opacity=0;
+      });
+      ghosts.push(g);
+    }
+  });
+  nodes[0].style.opacity=1;
+  const beat0=el('circle',{cx:150,cy:170,r:9,fill:'none',stroke:'var(--accent)','stroke-width':1.6,
+    style:'animation:pulse 2.2s ease-in-out infinite;transform-box:fill-box;transform-origin:center'},svg);
+  beat0.classList.add('fade');
+  const step=txt('en cada paso: ¿mata bacterias? ¿es tóxico?',{class:'lbl-s',x:150,y:262,'text-anchor':'middle'},svg);
+  step.classList.add('fade');
+
+  // clones
+  /* Los candidatos son hexágonos sueltos, no <use> de la molécula: 44 instancias
+     vivas ahogan el pintado y aquí solo hace falta que se lean como «moléculas». */
+  const hexd=(function(){let d='';for(let k=0;k<6;k++){const a=k*Math.PI/3;
+    d+=(k?'L':'M')+(11*Math.cos(a)).toFixed(1)+' '+(11*Math.sin(a)).toFixed(1);}return d+'Z';})();
+  const rnd=seeded(23),clones=[],home=[],away=[],mouth=[];
+  for(let i=0;i<44;i++){
+    const u=el('path',{d:hexd,fill:'none',stroke:'var(--accent)','stroke-width':1.8},svg);
+    u.style.opacity=0;u.style.transition='opacity .45s ease '+(i*14)+'ms, fill .5s ease';
+    clones.push(u);
+    home.push([150,170]);
+    // se dispersan por todo el lienzo, pero sin taparle la cara a la molécula
+    let ax,ay,k=0;
+    do{ax=44+rnd()*512;ay=62+rnd()*252;k++;}
+    while(k<40&&ax>56&&ax<280&&ay>76&&ay<248);
+    away.push([ax,ay]);
+    // los dos supervivientes caen apilados en el cuello del embudo
+    mouth.push(i<2?[450,240+i*32]:[360+rnd()*180,108+rnd()*84]);
+  }
+  const counter=txt('0',{class:'num',x:150,y:288,'text-anchor':'middle'},svg);
+  counter.classList.add('fade');
+  const clab=txt('compuestos que no existían',{class:'lbl-s',x:150,y:306,'text-anchor':'middle'},svg);
+  clab.classList.add('fade');
+
+  // embudo
+  const fun=el('g',{class:'fade'},svg);
+  el('path',{d:'M330 76 L570 76 L470 220 L470 300 L430 300 L430 220 Z',fill:'none',
+    stroke:'var(--edge)','stroke-width':1.6},fun);
+  const f1=txt('0',{class:'lbl-b',x:450,y:104,'text-anchor':'middle'},fun);
+  txt('candidatos generados',{class:'lbl-s',x:450,y:120,'text-anchor':'middle'},fun);
+  const f2=txt('24',{class:'lbl-b',x:450,y:180,'text-anchor':'middle'},fun);
+  txt('sintetizados de verdad',{class:'lbl-s',x:450,y:196,'text-anchor':'middle'},fun);
+  f2.style.transition='opacity .5s ease .9s';
+  const f3=el('g',{},fun);
+  txt('2',{class:'num',x:486,y:258},f3);
+  txt('NG1 · DN1',{class:'lbl-a',x:486,y:278},f3);
+  f3.style.transition='opacity .5s ease 1.3s';
+
+  // bacterias
+  const bact=el('g',{class:'fade'},svg);
+  const cells=[],frags=[];
+  // el rótulo va encima: los restos ocupan la franja de abajo al reventar
+  txt('gonorrea multirresistente · SARM',{class:'lbl-s',x:150,y:336,'text-anchor':'middle'},bact);
+  for(let i=0;i<6;i++){
+    const bx=64+i*38,by=372;
+    const e=el('ellipse',{cx:bx,cy:by,rx:13,ry:8,transform:'rotate('+(i*29)+' '+bx+' '+by+')',
+      fill:'#d4d8de'},bact);
+    cells.push(e);
+    for(let k=0;k<3;k++){
+      const f=el('path',{d:'M-7 -3 q9 -6 14 2 q-7 7 -14 1 Z',fill:'#9aa2ac',opacity:0},bact);
+      frags.push({n:f,x:bx,y:by,a:(k*2.1+i)});
+    }
+  }
+
+  return function(s){
+    on(beat0,s===0); on(step,s===1);
+    animate('s5grow',s>=1?'grow':'seed',s>=1?1:0,3000,function(v){
+      const k=v*13;
+      for(let i=1;i<14;i++){
+        const d=k-(i-1);
+        nodes[i].style.opacity=d>=.55?1:0;
+        const gp=Math.max(0,1-Math.abs(d-.28)*3.4);
+        [...ghosts[i-1].children].forEach(c=>{c.style.opacity=gp*.9;});
+      }
+      for(let i=0;i<bonds.length;i++){
+        const hi=Math.max(bonds[i][0],bonds[i][1]);
+        links[i].style.opacity=(k-(hi-1))>=.55?1:0;
+      }
+    },lin);
+
+    on(counter,s>=2); on(clab,s>=2);
+    animate('s5count',s>=2?'on':'off',s>=2?36000000:0,2000,v=>{counter.textContent=fmt(v);},eout);
+    animatePts('s5clones',s>=3?'funnel':(s>=2?'away':'home'),
+      s>=3?mouth:(s>=2?away:home),1700,function(p){
+      for(let i=0;i<clones.length;i++)
+        clones[i].setAttribute('transform','translate('+p[i][0].toFixed(1)+','+p[i][1].toFixed(1)+')');
+    },eio);
+    // al filtrar, solo sobreviven los dos primeros
+    clones.forEach(function(c,i){
+      c.style.transitionDelay=(s>=3?600+i*12:i*14)+'ms';
+      c.style.opacity=s<2?0:(s<3?.45:(i<2?1:0));
+      c.setAttribute('fill',s>=3&&i<2?'var(--accent)':'none');
+    });
+
+    on(fun,s>=3);
+    animate('s5f1',s>=3?'on':'off',s>=3?36000000:0,1500,v=>{f1.textContent=fmt(v);},eout);
+    f2.style.opacity=s>=3?1:0; f3.style.opacity=s>=3?1:0;
+
+    on(bact,s>=4);
+    animate('s5kill',s>=4?'burst':'whole',s>=4?1:0,1500,function(v){
+      for(let i=0;i<6;i++){
+        const d=Math.max(0,Math.min(1,v*2.2-i*.16));
+        cells[i].style.opacity=1-d;
+        cells[i].style.transformBox='fill-box';cells[i].style.transformOrigin='center';
+        cells[i].style.transform='scale('+(1-d*.35)+')';
+      }
+      // los restos se quedan: si se desvanecieran, el beat terminaría en vacío
+      frags.forEach(function(f,i){
+        const d=Math.max(0,Math.min(1,v*2.2-Math.floor(i/3)*.16));
+        const r=d*24,an=f.a;
+        f.n.setAttribute('transform','translate('+(f.x+Math.cos(an)*r).toFixed(1)+','+(f.y+Math.sin(an)*r).toFixed(1)+') rotate('+(d*160).toFixed(0)+')');
+        f.n.setAttribute('opacity',(d<.15?d*5:.75).toFixed(2));
+      });
+    },eout);
+  };
+}
+
+/* ============ motor ============ */
+const slides=[].slice.call(document.querySelectorAll('.slide'));
+const builders={1:buildS1,2:buildS2,3:buildS3,4:buildS4,5:buildS5};
+const svgIds={1:'sv1',2:'sv2',3:'sv3',4:'sv4',5:'sv5'};
+const hooks={};
+for(const k in builders) hooks[k]=builders[k](document.getElementById(svgIds[k]));
+
+const pn=document.getElementById('pn'),pt=document.getElementById('pt');
+const prog=document.getElementById('prog'),hint=document.getElementById('hint');
+pt.textContent=slides.length;
+const fills=slides.map(function(sl){
+  const seg=document.createElement('i'),f=document.createElement('b');
+  f.style.background=sl.style.getPropertyValue('--accent')||'#14171c';
+  seg.appendChild(f);prog.appendChild(seg);return f;
+});
+
+let si=0,step=0;
+function render(){
+  const sl=slides[si];
+  const seen={};
+  sl.querySelectorAll('[data-from]').forEach(function(e){
+    const f=+e.dataset.from,v=step>=f;
+    const k=seen[f]=(seen[f]||0)+1;          // escalonado dentro de cada grupo
+    e.style.transitionDelay=(v?(k-1)*140:0)+'ms';
+    on(e,v);
+  });
+  sl.querySelectorAll('[data-at]').forEach(e=>on(e,step===+e.dataset.at));
+  if(hooks[si]) hooks[si](step);
+  const max=+sl.dataset.steps-1;
+  fills.forEach(function(f,k){
+    f.style.width=k<si?'100%':k>si?'0%':(max?(step/max*100):100)+'%';
+  });
+  pn.textContent=si+1;
+}
+function show(i,last){
+  slides.forEach(function(s,k){
+    s.classList.toggle('is-active',k===i);
+    s.classList.toggle('is-past',k<i);
+  });
+  si=i; step=last?+slides[i].dataset.steps-1:0; render();
+}
+function next(){
+  hint.classList.add('gone');
+  if(step<+slides[si].dataset.steps-1){step++;render();}
+  else if(si<slides.length-1) show(si+1,false);
+}
+function prev(){
+  hint.classList.add('gone');
+  if(step>0){step--;render();}
+  else if(si>0) show(si-1,true);
+}
+document.addEventListener('keydown',function(e){
+  if(['ArrowRight','ArrowDown',' ','PageDown','Enter'].indexOf(e.key)>=0){e.preventDefault();next();}
+  else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].indexOf(e.key)>=0){e.preventDefault();prev();}
+  else if(e.key==='Home') show(0,false);
+  else if(e.key==='End') show(slides.length-1,true);
+});
+document.addEventListener('click',function(e){
+  if(e.target.closest('a')) return;
+  (e.clientX<innerWidth*.22)?prev():next();
+});
+let tx=null;
+document.addEventListener('touchstart',e=>{tx=e.changedTouches[0].clientX;},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(tx===null) return;
+  const d=e.changedTouches[0].clientX-tx;
+  if(Math.abs(d)>50){d<0?next():prev();}
+  tx=null;
+},{passive:true});
+
+show(0,false);
+})();
+</script>
+</body>
+</html>

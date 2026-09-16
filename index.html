@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diplomado en Inteligencia Artificial Aplicada al Mundo Laboral · Trabajo Científico</title>
+<meta name="description" content="Diplomado en 5 módulos: fundamentos y panorama de la IA (IAG vs IAD y tendencias), ingeniería de prompt, ética y normativa, automatización y gestión de datos, y creación de agentes inteligentes.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;700;800&family=Archivo:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Tailwind (disponible para futuras diapositivas de la portada). Preflight desactivado: el reset lo controla este archivo. -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { corePlugins: { preflight: false } };</script>
+
+<style>
+/* ==========================================================================
+   RESET + VARIABLES
+   Mundo A (conceptos / agentes / instalación) = paleta de 2_ia_agentes_ia
+   Mundo B (fundamentos de Python)             = paleta de 1_fundamentos-python
+   ========================================================================== */
+*{ margin:0; padding:0; box-sizing:border-box; }
+button,input,textarea,select{ font:inherit; color:inherit; }
+:root{
+  /* --- mundo A --- */
+  --bg:#0a0e1a;
+  --surface:rgba(255,255,255,.04);
+  --accent:#00f5d4;
+  --accent-deep:#00c9ae;
+  --gold:#ffd166;
+  --danger:#ff6b6b;
+  --text:#e9edf7;
+  --muted:#8b94b3;
+  --line:rgba(255,255,255,.09);
+  --claude:#d97757;
+  --codebuff:#19c37d;
+  --python:#4b8bbe;
+  --vscode:#0098ff;
+  --node:#3c873a;
+  --git:#f05133;
+  --github:#8b5cf6;
+  --font-display:'Fraunces',Georgia,serif;
+  --font-body:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
+  /* --- mundo B --- */
+  --ink:#0d1b18;
+  --paper:#f5efe4;
+  --moss:#1f5d4c;
+  --moss-bright:#2e8b6f;
+  --lime:#c8f25a;
+  --clay:#e8623d;
+  --amber:#f2b134;
+  --sky:#5ec8e0;
+  --slate-deep:#0b1320;
+  --slate-soft:#152033;
+  --shadow:0 18px 50px -20px rgba(0,0,0,.55);
+  --serif:'Fraunces',Georgia,serif;
+  --sans:'Archivo',sans-serif;
+  --mono:'Space Mono',monospace;
+}
+html,body{ height:100%; width:100%; overflow:hidden; background:var(--bg); color:var(--text);
+  font-family:var(--font-body); -webkit-font-smoothing:antialiased; }
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(1100px 700px at 15% 10%, rgba(0,245,212,.07), transparent 60%),
+    radial-gradient(900px 700px at 90% 90%, rgba(66,133,244,.06), transparent 60%);
+}
+#net{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.55; }
+
+/* ==========================================================================
+   ESCENARIO Y TRANSICIONES (motor único, estilo 2_ia_agentes_ia)
+   ========================================================================== */
+#stage{ position:relative; width:100vw; height:100vh; height:100dvh; overflow:hidden; z-index:1; }
+.slide{
+  /* el tope no baja de 104px: es lo que ocupa el rótulo de bloque fijo (top:56px),
+     que en pantallas bajas se montaba sobre la primera línea de la diapositiva */
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:max(7vh,104px) 5vw 12vh;
+  opacity:0; transform:translateX(60px) scale(.98);
+  transition:opacity .6s ease, transform .7s cubic-bezier(.2,.8,.2,1); pointer-events:none;
+}
+.slide.active{ opacity:1; transform:none; pointer-events:auto; }
+.slide.prev{ transform:translateX(-60px) scale(.98); }
+.slide-scroll{ width:100%; max-height:100%; overflow-y:auto; overflow-x:hidden; }
+/* la barra de desplazamiento se oculta: afea la proyección. El scroll sigue
+   funcionando con rueda, trackpad y teclado. */
+.slide-scroll,.py-stage{ scrollbar-width:none; -ms-overflow-style:none; }
+.slide-scroll::-webkit-scrollbar,.py-stage::-webkit-scrollbar{ width:0; height:0; display:none; }
+
+#progress{ position:fixed; top:0; left:0; height:3px; width:0; background:linear-gradient(90deg,var(--accent),var(--accent-deep)); z-index:60; transition:width .6s ease; }
+.progress-num{ position:fixed; top:56px; left:24px; z-index:50; font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.18em; }
+.progress-num b{ color:var(--accent); font-size:16px; }
+.block-tag{ position:fixed; top:56px; left:50%; transform:translateX(-50%); z-index:50; font-size:10.5px;
+  letter-spacing:.22em; text-transform:uppercase; font-weight:700; color:var(--muted);
+  background:rgba(255,255,255,.04); border:1px solid var(--line); padding:6px 16px; border-radius:99px; backdrop-filter:blur(8px); }
+.block-tag.is-hidden{ display:none; }
+
+.nav-btn{ position:fixed; bottom:30px; z-index:45; display:inline-flex; align-items:center; gap:10px; padding:14px 22px; border-radius:99px; background:rgba(255,255,255,.05); backdrop-filter:blur(10px); border:1px solid var(--line); color:var(--text); cursor:pointer; font-size:14px; font-weight:700; letter-spacing:.08em; transition:all .25s ease; }
+.nav-btn:hover{ background:var(--accent); color:#041210; border-color:var(--accent); transform:translateY(-3px); }
+.nav-btn.is-disabled{ opacity:.25; pointer-events:none; filter:grayscale(.6); }
+.nav-btn .arr{ font-size:18px; }
+#prev{ left:24px; } #next{ right:24px; }
+#navHint{ position:fixed; bottom:38px; left:50%; transform:translateX(-50%); font-size:12px; color:var(--muted); letter-spacing:.18em; text-transform:uppercase; z-index:40; display:flex; align-items:center; gap:8px; padding:8px 18px; background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:99px; backdrop-filter:blur(10px); }
+#navHint kbd{ background:rgba(255,255,255,.08); padding:3px 8px; border-radius:6px; border:1px solid rgba(255,255,255,.18); font-family:inherit; color:var(--text); }
+
+/* ==========================================================================
+   TIPOGRAFÍA BASE (mundo A)
+   ========================================================================== */
+.eyebrow{ display:inline-block; font-size:11px; letter-spacing:.34em; text-transform:uppercase; color:var(--accent); padding:6px 14px; border:1px solid rgba(0,245,212,.35); border-radius:99px; margin-bottom:16px; font-weight:600; }
+h1,h2,h3{ font-family:var(--font-display); }
+h1{ font-size:clamp(40px,7vw,96px); font-weight:900; line-height:1; letter-spacing:-.02em; }
+h2{ font-size:clamp(28px,4vw,52px); font-weight:700; line-height:1.08; letter-spacing:-.01em; }
+.hl{ color:var(--accent); }
+.slide-head{ text-align:center; }
+.slide-head .lead{ margin:10px auto 0; color:var(--muted); font-size:15px; max-width:680px; line-height:1.5; }
+.slide-head .lead b{ color:var(--text); font-weight:600; }
+
+/* ==========================================================================
+   PORTADA
+   ========================================================================== */
+/* portada: sin rótulo arriba, el padding va simétrico para que el bloque
+   quede centrado de verdad en la pantalla (9vh abajo deja aire a la navegación) */
+.hero{ text-align:center; flex-direction:column; position:relative; padding:9vh 5vw; }
+.hero-top{ display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:clamp(20px,4vh,44px); opacity:0; animation:reveal .8s .15s forwards; flex-wrap:wrap; }
+.hero .orbit{ width:76px; height:76px; opacity:0; animation:reveal .8s .05s forwards, floaty 6s ease-in-out infinite 1s; filter:drop-shadow(0 0 22px rgba(0,245,212,.55)); }
+@keyframes floaty{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-10px);} }
+.mc-name{ position:relative; opacity:0; animation:reveal 1s .35s forwards; }
+.mc-name h1{ font-size:clamp(60px,10.8vw,178px); line-height:.88; font-weight:900; letter-spacing:-.03em; }
+.mc-name .ln1{ display:block; font-family:var(--font-body); font-size:.15em; font-weight:700; color:var(--gold); letter-spacing:.34em; text-transform:uppercase; margin-bottom:24px; }
+.mc-name .ln2{ display:block; }
+.grad{ background:linear-gradient(100deg,#00f5d4,#4285f4,#ffd166,#00f5d4); background-size:300% 100%;
+  -webkit-background-clip:text; background-clip:text; color:transparent; animation:shimmer 7s linear infinite; text-shadow:0 0 60px rgba(0,245,212,.25); }
+@keyframes shimmer{ to{ background-position:300% 0;} }
+.mc-name .ln3{ display:block; font-family:var(--font-display); font-style:italic; font-size:.3em; font-weight:600; margin-top:16px; color:var(--muted); letter-spacing:0; }
+@keyframes reveal{ from{opacity:0; transform:translateY(20px);} to{opacity:1; transform:none;} }
+/* firma del docente en portada */
+.hero-author{ display:flex; flex-direction:column; align-items:center; gap:11px;
+  margin-top:clamp(30px,5.5vh,58px); opacity:0; animation:reveal .8s .85s forwards; }
+.hero-author .ha-name{ font-family:var(--font-display); font-weight:600;
+  font-size:clamp(19px,2.1vw,27px); color:var(--text); letter-spacing:.01em; }
+.hero-author .ha-role{ font-size:11px; font-weight:700; letter-spacing:.3em;
+  text-transform:uppercase; color:var(--gold); }
+.hero-cta{ margin-top:clamp(28px,4.8vh,54px); opacity:0; animation:reveal .8s 1.2s forwards; display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+.btn-primary{ display:inline-flex; align-items:center; gap:10px; padding:16px 32px; border-radius:99px; background:var(--accent); color:#041210; font-weight:800; font-size:14px; letter-spacing:.08em; text-transform:uppercase; border:none; cursor:pointer; text-decoration:none; box-shadow:0 16px 44px rgba(0,245,212,.28); transition:transform .25s; font-family:var(--font-body); animation:breath 3s ease-in-out infinite; }
+.btn-primary:hover{ transform:translateY(-3px); }
+@keyframes breath{ 0%,100%{ box-shadow:0 16px 44px rgba(0,245,212,.28);} 50%{ box-shadow:0 16px 54px rgba(0,245,212,.5);} }
+
+/* ==========================================================================
+   AGENDA · ANTES/AHORA · PANELES GENÉRICOS
+   ========================================================================== */
+.wrapA{ width:100%; max-width:1140px; }
+.duo{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:26px; align-items:stretch; }
+.pane{ padding:24px 24px; border-radius:20px; background:var(--surface); border:1px solid var(--line); transition:transform .3s, border-color .3s; }
+.pane:hover{ transform:translateY(-4px); }
+.pane .tag{ display:inline-block; font-size:11px; letter-spacing:.2em; text-transform:uppercase; font-weight:700; padding:5px 12px; border-radius:99px; background:rgba(255,255,255,.06); color:var(--muted); }
+.pane h3{ font-size:24px; margin-top:12px; }
+.pane .dur{ font-size:12px; color:var(--gold); font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin-top:4px; }
+.pane p{ font-size:13.5px; color:var(--muted); line-height:1.6; margin-top:10px; }
+.pane ul{ list-style:none; margin-top:14px; display:flex; flex-direction:column; gap:7px; }
+.pane ul li{ font-size:13.5px; color:var(--text); padding-left:20px; position:relative; line-height:1.4; }
+.pane ul li::before{ content:"▸"; position:absolute; left:0; color:var(--accent); }
+.pane.now{ border-color:rgba(0,245,212,.4); background:rgba(0,245,212,.04); }
+.pane.now .tag{ background:rgba(0,245,212,.12); color:var(--accent); }
+.pane.now h3{ color:var(--accent); }
+.pane.past{ border-color:rgba(255,107,107,.35); }
+.pane.past .tag{ background:rgba(255,107,107,.12); color:var(--danger); }
+.pane.gold{ border-color:rgba(255,209,102,.4); }
+.pane.gold .tag{ background:rgba(255,209,102,.12); color:var(--gold); }
+.pane.gold h3{ color:var(--gold); }
+.note-foot{ text-align:center; margin-top:22px; font-size:14px; color:var(--muted); }
+.note-foot b{ color:var(--accent); }
+
+/* --- diapositiva de perfil del docente --- */
+.pf{ width:100%; max-width:1240px; }
+.pf-grid{ display:grid; grid-template-columns:300px 1fr; gap:32px; align-items:start; }
+.pf-frame{ position:relative; border-radius:22px; overflow:hidden; border:1px solid var(--line);
+  background:var(--surface); aspect-ratio:1/1; }
+.pf-frame img{ width:100%; height:100%; object-fit:cover; display:block; }
+.pf-frame::after{ content:""; position:absolute; inset:0; border-radius:22px;
+  box-shadow:inset 0 -70px 90px -40px rgba(4,10,16,.9); pointer-events:none; }
+.pf-edu{ margin-top:18px; padding:16px 16px 14px; border-radius:18px; background:var(--surface); border:1px solid var(--line); }
+.pf-edu-t{ font-size:10px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:var(--accent); margin-bottom:11px; }
+.pf-edu-row{ display:grid; grid-template-columns:24px 1fr; gap:2px 10px; padding:7px 0; border-top:1px solid var(--line); }
+.pf-edu-row:first-of-type{ border-top:none; }
+.pf-edu-row .n{ grid-row:span 2; font-family:var(--font-mono); font-size:10.5px; color:var(--muted); padding-top:3px; }
+.pf-edu-row .lv{ font-size:9.5px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); }
+.pf-edu-row .dg{ font-size:12.5px; color:var(--text); line-height:1.3; }
+.pf-edu-row.phd .dg{ color:var(--accent); font-weight:700; }
+
+.pf-social{ margin-top:14px; padding:16px 16px 14px; border-radius:18px; background:var(--surface); border:1px solid var(--line); }
+.pf-soc-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.pf-social .soc{ display:flex; align-items:center; gap:9px; padding:9px 10px; border-radius:12px;
+  background:rgba(255,255,255,.03); border:1px solid var(--line); color:var(--muted);
+  text-decoration:none; font-size:11.5px; font-weight:700; letter-spacing:.02em;
+  transition:color .22s, border-color .22s, background .22s, transform .22s; }
+.pf-social .soc svg{ width:17px; height:17px; flex:none; }
+.pf-social .soc:hover{ transform:translateY(-2px); background:rgba(255,255,255,.06); }
+.pf-social .soc.yt:hover{ color:#ff4d4d; border-color:rgba(255,77,77,.5); }
+.pf-social .soc.li:hover{ color:#4aa3ff; border-color:rgba(74,163,255,.5); }
+.pf-social .soc.ig:hover{ color:#ff6ec7; border-color:rgba(255,110,199,.5); }
+.pf-social .soc.wa:hover{ color:#3ddc84; border-color:rgba(61,220,132,.5); }
+
+.pf-name{ font-size:clamp(30px,4vw,50px); line-height:1.02; font-weight:900; letter-spacing:-.02em; margin-top:10px; }
+.pf-phd{ display:inline-block; vertical-align:super; margin-left:10px; font-family:var(--font-mono);
+  font-size:12px; font-weight:700; letter-spacing:.16em; color:var(--gold); }
+.pf-bio{ margin-top:12px; font-size:14.5px; line-height:1.65; color:var(--muted); max-width:72ch; }
+.pf-bio b{ color:var(--text); font-weight:700; }
+
+.pf-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:20px; }
+.pf-stat{ padding:14px 14px 12px; border-radius:16px; background:var(--surface); border:1px solid var(--line); }
+.pf-stat .v{ font-family:var(--font-display); font-size:30px; font-weight:900; color:var(--accent); line-height:1; }
+.pf-stat .k{ margin-top:6px; font-size:11px; color:var(--muted); line-height:1.35; }
+
+.pf-cols{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px; }
+.pf-box{ padding:16px 16px 14px; border-radius:18px; background:var(--surface); border:1px solid var(--line); }
+.pf-box-t{ font-size:10px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:var(--gold); margin-bottom:10px; }
+.pf-list{ list-style:none; display:flex; flex-direction:column; gap:9px; }
+.pf-list li{ font-size:13px; line-height:1.3; padding-left:13px; position:relative; color:var(--text); }
+.pf-list li::before{ content:""; position:absolute; left:0; top:6px; width:5px; height:5px; border-radius:50%; background:var(--accent); opacity:.65; }
+.pf-list li b{ font-weight:700; }
+.pf-list li span{ display:block; font-size:11.5px; color:var(--muted); margin-top:2px; }
+.pf-now{ display:inline-block; margin-left:6px; font-style:normal; font-size:9.5px; font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase; padding:2px 8px; border-radius:99px;
+  background:rgba(0,245,212,.12); color:var(--accent); }
+.pf-inv{ margin-top:11px; padding-top:10px; border-top:1px solid var(--line); font-size:11.5px; line-height:1.45; color:var(--muted); }
+.pf-inv b{ color:var(--text); font-weight:700; }
+
+.pf-skills{ display:flex; flex-direction:column; gap:8px; margin-top:16px; }
+.pf-sk{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.pf-sk .c{ min-width:104px; font-size:9.5px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+.pf-sk .s{ font-size:11.5px; font-weight:600; padding:5px 11px; border-radius:99px;
+  background:rgba(255,255,255,.04); border:1px solid var(--line); color:var(--text); }
+
+.pf-links{ display:flex; align-items:center; gap:10px 18px; flex-wrap:wrap; margin-top:20px; }
+.pf-links a{ font-size:12.5px; font-weight:600; color:var(--muted); text-decoration:none; transition:color .2s; }
+.pf-links a:hover{ color:var(--accent); }
+.pf-links a.go{ padding:10px 20px; border-radius:99px; background:rgba(0,245,212,.1);
+  border:1px solid rgba(0,245,212,.45); color:var(--accent); font-weight:700;
+  letter-spacing:.08em; text-transform:uppercase; font-size:11px; }
+.pf-links a.go:hover{ background:rgba(0,245,212,.18); }
+
+@media (max-width:1080px){
+  .pf-grid{ grid-template-columns:230px 1fr; gap:24px; }
+  .pf-stats{ grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:820px){
+  .pf-grid{ grid-template-columns:1fr; }
+  .pf-frame{ max-width:240px; margin:0 auto; }
+  .pf-cols{ grid-template-columns:1fr; }
+  .pf-sk .c{ min-width:0; width:100%; }
+}
+
+/* --- rejilla de los 5 módulos del diplomado --- */
+.mod-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:24px; }
+.mod-card{
+  padding:18px 18px 16px; border-radius:18px; background:var(--surface);
+  border:1px solid var(--line); position:relative; overflow:hidden;
+  transition:transform .3s, border-color .3s, box-shadow .3s;
+}
+.mod-card::before{ content:""; position:absolute; inset:0 auto 0 0; width:3px; background:var(--accent); opacity:.5; }
+.mod-card:hover{ transform:translateY(-3px); border-color:rgba(0,245,212,.4); }
+.mod-card .mod-n{
+  font-family:var(--font-mono); font-size:11px; font-weight:700; letter-spacing:.18em;
+  color:#fff; text-transform:uppercase;
+}
+.mod-card h3{ font-size:17px; margin-top:7px; line-height:1.25; color:#fff; }
+.mod-card p{ font-size:12.5px; color:var(--muted); margin-top:8px; line-height:1.45; }
+@media (max-width:900px){ .mod-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:620px){ .mod-grid{ grid-template-columns:1fr; } }
+
+/* tarjetas de módulo: enlace con remate "Entrar" */
+.mod-card{ text-decoration:none; display:flex; flex-direction:column; }
+.mod-card p{ flex:1; }
+.mod-card .mod-go{ display:inline-flex; align-items:center; gap:7px; margin-top:12px;
+  font-family:var(--font-mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase;
+  font-weight:700; color:var(--accent); opacity:.55; transition:opacity .25s, gap .25s; }
+.mod-card .mod-go i{ font-style:normal; transition:transform .25s; }
+.mod-card:hover .mod-go{ opacity:1; gap:11px; }
+.mod-card:hover .mod-go i{ transform:translateX(3px); }
+.mod-card:hover::before{ opacity:1; }
+.mod-card::before{ transition:opacity .25s; }
+
+/* movimiento en reposo: flotación muy leve, desfasada tarjeta a tarjeta,
+   para que la rejilla respire sin distraer durante la proyección */
+@keyframes modFloat{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-4px);} }
+@keyframes modGlow{ 0%,100%{ opacity:.35;} 50%{ opacity:.8;} }
+.mod-card{ animation:modFloat 7s ease-in-out infinite; will-change:transform; }
+.mod-card::before{ animation:modGlow 7s ease-in-out infinite; }
+.mod-grid .mod-card:nth-child(1),.mod-grid .mod-card:nth-child(1)::before{ animation-delay:0s; }
+.mod-grid .mod-card:nth-child(2),.mod-grid .mod-card:nth-child(2)::before{ animation-delay:-.9s; }
+.mod-grid .mod-card:nth-child(3),.mod-grid .mod-card:nth-child(3)::before{ animation-delay:-1.8s; }
+.mod-grid .mod-card:nth-child(4),.mod-grid .mod-card:nth-child(4)::before{ animation-delay:-2.7s; }
+.mod-grid .mod-card:nth-child(5),.mod-grid .mod-card:nth-child(5)::before{ animation-delay:-3.6s; }
+/* al pasar el ratón la tarjeta se detiene y se eleva: el foco manda sobre la flotación */
+.mod-card:hover{ animation:none; transform:translateY(-6px); box-shadow:0 18px 40px -22px rgba(0,245,212,.55); }
+.mod-card:hover::before{ animation:none; }
+
+/* ==========================================================================
+   ÍNDICE / MENÚ (estilo panel editorial de fundamentos)
+   ========================================================================== */
+.topbar{ position:fixed; top:0; left:0; right:0; z-index:55; display:flex; justify-content:space-between;
+  align-items:center; padding:.9rem 1.3rem; pointer-events:none; }
+.brand-badge{ font-family:var(--mono); font-size:.64rem; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--ink); background:var(--lime); padding:.45em .9em; border-radius:100px;
+  box-shadow:0 8px 20px -8px rgba(0,0,0,.5); display:inline-block; pointer-events:auto; text-decoration:none; }
+.menu-btn{ pointer-events:auto; background:#fff; color:var(--ink); border:none; cursor:pointer;
+  font-family:var(--mono); font-size:.68rem; letter-spacing:.18em; text-transform:uppercase;
+  padding:.5em .95em; border-radius:100px; box-shadow:0 8px 20px -8px rgba(0,0,0,.5); transition:.2s; font-weight:700; }
+.menu-btn:hover{ background:var(--lime); transform:translateY(-2px); }
+.menu-overlay{ position:fixed; inset:0; z-index:90; background:rgba(13,27,24,.55); backdrop-filter:blur(6px);
+  opacity:0; visibility:hidden; transition:.3s; }
+.menu-overlay.open{ opacity:1; visibility:visible; }
+.menu-panel{ position:absolute; top:0; right:0; height:100%; width:min(440px,92vw); background:var(--paper);
+  color:var(--ink); box-shadow:-20px 0 60px -20px rgba(0,0,0,.5); padding:1.8rem; overflow:auto;
+  transform:translateX(40px); transition:transform .35s cubic-bezier(.2,.8,.2,1); }
+.menu-overlay.open .menu-panel{ transform:none; }
+.menu-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem; }
+.menu-head .mk{ font-family:var(--mono); font-size:.7rem; letter-spacing:.26em; text-transform:uppercase; color:var(--moss); }
+.menu-close{ background:var(--ink); color:var(--paper); border:none; width:36px; height:36px; border-radius:50%;
+  cursor:pointer; font-size:1rem; transition:.2s; }
+.menu-close:hover{ background:var(--clay); transform:rotate(90deg); }
+.menu-group{ font-family:var(--mono); font-size:.64rem; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--clay); margin:1.1rem 0 .5rem; padding-left:.4rem; }
+.menu-list{ list-style:none; padding:0; margin:0; }
+.menu-list li{ padding:.6rem .9rem; border-radius:12px; cursor:pointer; display:flex; align-items:baseline; gap:.8rem;
+  transition:.2s; border:1.5px solid transparent; margin-bottom:.15rem; }
+.menu-list li .mn{ font-family:var(--mono); font-size:.72rem; color:var(--clay); font-weight:700; flex-shrink:0; min-width:2.2ch; }
+.menu-list li:hover{ background:#fff; border-color:var(--moss); transform:translateX(-4px); }
+.menu-list li.current{ background:var(--moss); color:var(--paper); }
+.menu-list li.current .mn{ color:var(--lime); }
+.menu-list li .mt{ font-family:var(--serif); font-weight:600; font-size:.98rem; line-height:1.15; display:block; }
+.menu-list li .md{ font-size:.73rem; color:#6a786f; display:block; margin-top:.1rem; }
+.menu-list li.current .md{ color:rgba(245,239,228,.75); }
+
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+@media (max-width:960px){
+  .duo{ grid-template-columns:1fr; gap:14px; }
+}
+@media (max-width:820px){
+  .slide{ padding:5.5rem 6vw 6rem; align-items:flex-start; }
+  .slide-scroll{ max-height:none; }
+  #prev,#next{ bottom:16px; padding:11px 16px; }
+  #prev .lbl,#next .lbl{ display:none; }
+  #navHint{ display:none; }
+  .progress-num{ top:auto; bottom:22px; left:50%; transform:translateX(-50%); }
+  .block-tag{ font-size:9px; padding:5px 12px; }
+  .mc-name h1{ font-size:clamp(44px,13.5vw,76px); }
+  .hero-author{ margin-top:26px; }
+  .hero-top{ flex-direction:column; gap:10px; }
+}
+@media (prefers-reduced-motion:reduce){
+  *{ animation:none !important; transition:none !important; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="net"></canvas>
+
+<div id="progress"></div>
+<div class="progress-num"><b id="curNum">1</b> / <span id="totNum">1</span></div>
+<div class="block-tag is-hidden" id="blockTag"></div>
+
+<div class="topbar">
+  <span class="brand-badge">Trabajo Científico · Diplomado en IA Aplicada al Mundo Laboral</span>
+  <div style="display:flex;gap:.5rem;align-items:center;pointer-events:auto">
+    <a class="brand-badge" href="https://wa.me/573184280112?text=Hola%2C%20quiero%20informaci%C3%B3n%20del%20Diplomado%20en%20Inteligencia%20Artificial%20Aplicada%20al%20Mundo%20Laboral" target="_blank" rel="noopener" style="background:var(--paper)">← Diplomado</a>
+    <button class="menu-btn" id="menuBtn" aria-label="Índice de secciones">☰ Índice</button>
+  </div>
+</div>
+
+<div class="menu-overlay" id="menuOverlay">
+  <div class="menu-panel">
+    <div class="menu-head">
+      <span class="mk">Saltar a una sección</span>
+      <button class="menu-close" id="menuClose" aria-label="Cerrar">✕</button>
+    </div>
+    <div id="menuBody"></div>
+  </div>
+</div>
+
+<div id="stage">
+
+<!-- 01 · PORTADA -->
+<section class="slide hero active" data-block="Presentación" data-title="Portada" data-sub="Diplomado en IA Aplicada al Mundo Laboral">
+  <div class="slide-scroll">
+    <div class="hero-top">
+      <svg class="orbit" viewBox="0 0 64 64" fill="none">
+        <circle cx="32" cy="32" r="7" fill="#00f5d4"/>
+        <ellipse cx="32" cy="32" rx="28" ry="11" stroke="#00f5d4" stroke-opacity=".6" stroke-width="2"/>
+        <ellipse cx="32" cy="32" rx="28" ry="11" stroke="#4285f4" stroke-opacity=".6" stroke-width="2" transform="rotate(60 32 32)"/>
+        <ellipse cx="32" cy="32" rx="28" ry="11" stroke="#ffd166" stroke-opacity=".6" stroke-width="2" transform="rotate(120 32 32)"/>
+        <circle cx="60" cy="32" r="3" fill="#4285f4"/><circle cx="18" cy="53" r="3" fill="#ffd166"/><circle cx="14" cy="20" r="2.4" fill="#00f5d4"/>
+      </svg>
+    </div>
+    <div class="mc-name">
+      <h1>
+        <span class="ln1">Diplomado en</span>
+        <span class="ln2">Inteligencia <span class="grad">Artificial</span></span>
+        <span class="ln3">aplicada al mundo laboral</span>
+      </h1>
+    </div>
+    <div class="hero-author">
+      <span class="ha-name">Oscar Iván Vargas Pineda</span>
+      <span class="ha-role">Docente</span>
+    </div>
+    <div class="hero-cta">
+      <button class="btn-primary" onclick="go(1)">Empezar →</button>
+    </div>
+  </div>
+</section>
+
+<!-- 02 · PERFIL DEL DOCENTE -->
+<section class="slide" data-block="Presentación" data-title="Quién dicta el curso" data-sub="Oscar Iván Vargas Pineda, PhD">
+  <div class="slide-scroll pf">
+    <div class="pf-grid">
+
+      <!-- columna izquierda: foto + formación -->
+      <aside class="pf-side">
+        <div class="pf-frame">
+          <img src="index/oscar-vargas.png" alt="Oscar Iván Vargas Pineda" loading="lazy">
+        </div>
+        <div class="pf-edu">
+          <div class="pf-edu-t">Formación académica</div>
+          <div class="pf-edu-row"><span class="n">01</span><span class="lv">Pregrado</span><span class="dg">Ingeniero Agroindustrial</span></div>
+          <div class="pf-edu-row"><span class="n">02</span><span class="lv">Especialista</span><span class="dg">Gestión del Agua</span></div>
+          <div class="pf-edu-row"><span class="n">03</span><span class="lv">Magíster</span><span class="dg">Gestión Ambiental Sostenible</span></div>
+          <div class="pf-edu-row"><span class="n">04</span><span class="lv">Magíster</span><span class="dg">Inteligencia Artificial Aplicada</span></div>
+          <div class="pf-edu-row phd"><span class="n">05</span><span class="lv">Doctor</span><span class="dg">Ciencias Agrarias</span></div>
+        </div>
+
+        <div class="pf-social">
+          <div class="pf-edu-t">Sígueme</div>
+          <div class="pf-soc-grid">
+            <a class="soc yt" href="https://www.youtube.com/@TCientifico" target="_blank" rel="noopener" title="YouTube · @TCientifico">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814ZM9.545 15.568V8.432L15.818 12l-6.273 3.568Z"/></svg>
+              <span>YouTube</span>
+            </a>
+            <a class="soc li" href="https://www.linkedin.com/in/oscar-ivan-vargas-pineda-2aa543240/" target="_blank" rel="noopener" title="LinkedIn">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.36V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43A2.06 2.06 0 113.27 5.37a2.06 2.06 0 012.07 2.06zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45C23.2 24 24 23.23 24 22.28V1.72C24 .77 23.2 0 22.22 0z"/></svg>
+              <span>LinkedIn</span>
+            </a>
+            <a class="soc ig" href="https://www.instagram.com/trabajocientifico/" target="_blank" rel="noopener" title="Instagram · @trabajocientifico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".9" fill="currentColor" stroke="none"/></svg>
+              <span>Instagram</span>
+            </a>
+            <a class="soc wa" href="https://wa.me/573184280112" target="_blank" rel="noopener" title="WhatsApp · +57 318 428 0112">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.263.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884a9.82 9.82 0 0 1 6.988 2.896 9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.885-9.885 9.885M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.359.101 11.945c0 2.096.547 4.142 1.588 5.945L0 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.585 0 11.946-5.359 11.949-11.945a11.87 11.87 0 0 0-3.497-8.4"/></svg>
+              <span>WhatsApp</span>
+            </a>
+          </div>
+        </div>
+      </aside>
+
+      <!-- columna derecha: identidad + trayectoria -->
+      <div class="pf-main">
+        <span class="eyebrow">Científico de datos · Docente investigador</span>
+        <h2 class="pf-name">Oscar Iván <span class="hl">Vargas Pineda</span><span class="pf-phd">PhD</span></h2>
+        <p class="pf-bio">Más de diez años transformando datos en decisiones. Conecto la <b>academia, la consultoría internacional y la divulgación</b> para enseñar ciencia de datos a investigadores, docentes y profesionales que nunca han programado.</p>
+
+        <div class="pf-stats">
+          <div class="pf-stat"><div class="v">10+</div><div class="k">Años de experiencia profesional</div></div>
+          <div class="pf-stat"><div class="v">7</div><div class="k">Años como docente universitario</div></div>
+          <div class="pf-stat"><div class="v">5</div><div class="k">Años como consultor de datos</div></div>
+          <div class="pf-stat"><div class="v">9</div><div class="k">Publicaciones como primer autor</div></div>
+        </div>
+
+        <div class="pf-cols">
+          <div class="pf-box">
+            <div class="pf-box-t">Docencia universitaria</div>
+            <ul class="pf-list">
+              <li><b>Universidad de los Llanos</b><span>Ingeniería Agroindustrial</span></li>
+              <li><b>Universidad Santo Tomás</b><span>Ingeniería Industrial</span></li>
+              <li><b>Universidad Jorge Tadeo Lozano</b><span>Posgrado · Diseño y Creación con IA</span></li>
+              <li><b>Universidad Central</b><span>Pregrado y posgrado</span></li>
+            </ul>
+            <div class="pf-inv">Invitado: <b>Politécnica de Madrid</b> (España) · <b>Montpellier</b> (Francia) · <b>El Bosque</b> (Colombia)</div>
+          </div>
+
+          <div class="pf-box">
+            <div class="pf-box-t">Consultoría en datos</div>
+            <ul class="pf-list">
+              <li><b>Earth Innovation Institute</b><span>Científico de datos · IA aplicada a sostenibilidad <em class="pf-now">Actual</em></span></li>
+              <li><b>Banco Mundial</b><span>Análisis de datos</span></li>
+              <li><b>Banco Interamericano de Desarrollo</b><span>Análisis de datos</span></li>
+              <li><b>ECOPETROL</b> · <b>Fundación ALISOS</b><span>Datos para industria y modelamiento</span></li>
+            </ul>
+            <div class="pf-inv">Creador del <b>Diplomado en Ciencia de Datos y Machine Learning</b> y de 6 cursos de profundización.</div>
+          </div>
+        </div>
+
+        <div class="pf-skills">
+          <div class="pf-sk"><span class="c">Lenguajes</span><span class="s">Python</span><span class="s">R</span><span class="s">SQL</span></div>
+          <div class="pf-sk"><span class="c">Análisis</span><span class="s">Machine Learning</span><span class="s">Visualización</span><span class="s">Automatización</span></div>
+          <div class="pf-sk"><span class="c">IA · Asistentes</span><span class="s">Claude Code</span><span class="s">Codex</span><span class="s">Antigravity</span></div>
+          <div class="pf-sk"><span class="c">Software</span><span class="s">ArcGIS Pro</span><span class="s">VENSIM</span><span class="s">Power BI</span></div>
+        </div>
+
+        <div class="pf-links">
+          <a class="go" href="index/perfil.html" target="_blank" rel="noopener">Ver perfil completo →</a>
+          <a href="https://trabajocientifico.org/" target="_blank" rel="noopener">trabajocientifico.org</a>
+          <a href="mailto:oscarvargas@trabajocientifico.org">oscarvargas@trabajocientifico.org</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- 03 · LA RUTA · los cinco módulos -->
+<section class="slide" data-block="Presentación" data-title="La ruta" data-sub="Los cinco módulos del diplomado">
+  <div class="slide-scroll wrapA">
+    <div class="slide-head">
+      <span class="eyebrow">Cómo vamos a avanzar</span>
+      <h2>Cinco módulos: de <span class="hl">entender la IA</span> a <span class="hl">crear agentes</span></h2>
+      <p class="lead">Cada módulo se apoya en el anterior: primero entiendes el panorama de la IA, luego aprendes a comunicarte con ella, la usas con criterio ético y legal, automatizas tus datos y procesos, y terminas construyendo tus propios agentes inteligentes.</p>
+    </div>
+    <div class="mod-grid">
+      <a class="mod-card" href="index/modulo1.html">
+        <div class="mod-n">Módulo 1</div>
+        <h3>Fundamentos y Panorama de la IA</h3>
+        <p>Qué es la IA y cómo "piensa": IA generativa frente a IA discriminativa, y las tendencias que ya están cambiando el trabajo.</p>
+        <span class="mod-go">Entrar <i>&rarr;</i></span>
+      </a>
+      <a class="mod-card" href="index/modulo2.html">
+        <div class="mod-n">Módulo 2</div>
+        <h3>Ingeniería de Prompt y Comunicación con IA</h3>
+        <p>Cómo pedirle a una IA exactamente lo que necesitas: rol, contexto, formato de salida e iteración.</p>
+        <span class="mod-go">Entrar <i>&rarr;</i></span>
+      </a>
+      <a class="mod-card" href="index/modulo3.html">
+        <div class="mod-n">Módulo 3</div>
+        <h3>Ética, Normativa y Uso Responsable de la IA</h3>
+        <p>Sesgos, privacidad y límites de la IA; marcos normativos vigentes y cómo usarla de forma responsable en tu organización.</p>
+        <span class="mod-go">Entrar <i>&rarr;</i></span>
+      </a>
+      <a class="mod-card" href="index/modulo4.html">
+        <div class="mod-n">Módulo 4</div>
+        <h3>Automatización y Gestión de Datos con IA</h3>
+        <p>Ordenar, analizar y transformar datos con apoyo de IA, y automatizar las tareas repetitivas de tu día a día.</p>
+        <span class="mod-go">Entrar <i>&rarr;</i></span>
+      </a>
+      <a class="mod-card" href="index/modulo5.html">
+        <div class="mod-n">Módulo 5</div>
+        <h3>Creación de Agentes Inteligentes</h3>
+        <p>Del asistente que responde al agente que ejecuta: diseñar, montar y poner a trabajar agentes de IA en tu computador.</p>
+        <span class="mod-go">Entrar <i>&rarr;</i></span>
+      </a>
+    </div>
+    <p class="note-foot"><b>Regla de la casa:</b> nadie avanza solo. Si algo no funciona, lo resolvemos en vivo antes de pasar al siguiente módulo.</p>
+  </div>
+</section>
+
+</div>
+
+<button id="prev" class="nav-btn" aria-label="Anterior"><span class="arr">‹</span><span class="lbl">Anterior</span></button>
+<button id="next" class="nav-btn" aria-label="Siguiente"><span class="lbl">Siguiente</span><span class="arr">›</span></button>
+<div id="navHint"><span>Navega</span><kbd>←</kbd><kbd>→</kbd></div>
+
+<script>
+const mobileMQ = window.matchMedia('(max-width:820px)');
+
+/* ================================================================
+   FONDO NEURAL (canvas)
+   ================================================================ */
+(function(){
+  const cv = document.getElementById('net'); if(!cv) return;
+  const ctx = cv.getContext('2d');
+  let w, h, nodes, raf;
+  const COUNT = 58;
+  function resize(){ w = cv.width = innerWidth; h = cv.height = innerHeight; }
+  function init(){
+    nodes = [];
+    for(let i=0;i<COUNT;i++) nodes.push({ x:Math.random()*w, y:Math.random()*h, vx:(Math.random()-.5)*.35, vy:(Math.random()-.5)*.35 });
+  }
+  function tick(){
+    ctx.clearRect(0,0,w,h);
+    for(const n of nodes){ n.x+=n.vx; n.y+=n.vy; if(n.x<0||n.x>w) n.vx*=-1; if(n.y<0||n.y>h) n.vy*=-1; }
+    for(let i=0;i<nodes.length;i++){
+      const a = nodes[i];
+      for(let j=i+1;j<nodes.length;j++){
+        const b = nodes[j]; const dx=a.x-b.x, dy=a.y-b.y; const d=Math.hypot(dx,dy);
+        if(d<130){ ctx.strokeStyle='rgba(0,245,212,'+(0.14*(1-d/130))+')'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); }
+      }
+      ctx.fillStyle='rgba(0,245,212,.55)'; ctx.beginPath(); ctx.arc(a.x,a.y,1.6,0,6.283); ctx.fill();
+    }
+    raf = requestAnimationFrame(tick);
+  }
+  function start(){ cancelAnimationFrame(raf); if(!mobileMQ.matches) tick(); }
+  addEventListener('resize', () => { resize(); init(); });
+  document.addEventListener('visibilitychange', () => { if(document.hidden) cancelAnimationFrame(raf); else start(); });
+  resize(); init(); start();
+})();
+
+/* ================================================================
+   MOTOR DE DIAPOSITIVAS
+   ================================================================ */
+const slides = [...document.querySelectorAll('.slide')];
+const total = slides.length;
+let current = 0;
+const progress = document.getElementById('progress');
+const curNum = document.getElementById('curNum');
+const blockTag = document.getElementById('blockTag');
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+document.getElementById('totNum').textContent = total;
+
+function render(){
+  slides.forEach((s,i) => {
+    s.classList.remove('active','prev');
+    if(i === current){ s.classList.add('active'); }
+    else if(i < current) s.classList.add('prev');
+  });
+  const s = slides[current];
+  const sc = s.querySelector('.slide-scroll');
+  if(sc) sc.scrollTop = 0;
+  progress.style.width = ((current+1)/total*100) + '%';
+  curNum.textContent = current + 1;
+  blockTag.textContent = s.dataset.block || '';
+  /* la portada va limpia: sin rótulo de bloque encima del título */
+  blockTag.classList.toggle('is-hidden', s.classList.contains('hero') || !s.dataset.block);
+  prevBtn.classList.toggle('is-disabled', current === 0);
+  nextBtn.classList.toggle('is-disabled', current === total-1);
+  syncMenu();
+}
+function go(i){
+  if(i < 0 || i >= total) return;
+  current = i; render();
+}
+function next(){ go(current+1); }
+function prev(){ go(current-1); }
+nextBtn.addEventListener('click', next);
+prevBtn.addEventListener('click', prev);
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){ openMenu(false); return; }
+  if(e.key === 'ArrowRight' || e.key === 'PageDown'){ e.preventDefault(); next(); }
+  if(e.key === 'ArrowLeft'  || e.key === 'PageUp'){ e.preventDefault(); prev(); }
+  if(e.key === 'Home') go(0);
+  if(e.key === 'End') go(total-1);
+});
+let touchX = 0;
+document.addEventListener('touchstart', e => touchX = e.touches[0].clientX, {passive:true});
+document.addEventListener('touchend', e => {
+  if(e.target.closest('button, a')) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  if(Math.abs(dx) > 70){ dx < 0 ? next() : prev(); }
+}, {passive:true});
+
+
+/* ---------------- ÍNDICE ---------------- */
+const menuOverlay = document.getElementById('menuOverlay');
+const menuBody = document.getElementById('menuBody');
+(function buildMenu(){
+  let html = '', lastBlock = null;
+  slides.forEach((s,k) => {
+    const b = s.dataset.block || '';
+    if(b !== lastBlock){
+      if(lastBlock !== null) html += '</ul>';
+      html += '<div class="menu-group">'+b+'</div><ul class="menu-list">';
+      lastBlock = b;
+    }
+    html += '<li data-go="'+k+'"><span class="mn">'+String(k+1).padStart(2,'0')+'</span>'
+         +  '<span><span class="mt">'+(s.dataset.title||'')+'</span><span class="md">'+(s.dataset.sub||'')+'</span></span></li>';
+  });
+  html += '</ul>';
+  menuBody.innerHTML = html;
+  menuBody.querySelectorAll('li').forEach(li => li.onclick = () => { go(+li.dataset.go); openMenu(false); });
+})();
+function syncMenu(){
+  menuBody.querySelectorAll('li').forEach(li => li.classList.toggle('current', +li.dataset.go === current));
+}
+function openMenu(o){ menuOverlay.classList.toggle('open', o); if(o) syncMenu(); }
+document.getElementById('menuBtn').onclick = () => openMenu(true);
+document.getElementById('menuClose').onclick = () => openMenu(false);
+menuOverlay.onclick = e => { if(e.target === menuOverlay) openMenu(false); };
+
+/* arranque */
+render();
+</script>
+</body>
+</html>
