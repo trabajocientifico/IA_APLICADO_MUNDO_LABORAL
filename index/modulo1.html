@@ -329,6 +329,14 @@ h2{ font-size:clamp(28px,4vw,52px); font-weight:700; line-height:1.08; letter-sp
 @keyframes nudge{ 0%,100%{ transform:translateX(0); opacity:.5;} 50%{ transform:translateX(3px); opacity:1;} }
 .ia-ex{ display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
 .ia-ex span{ font-size:11.5px; padding:6px 12px; border-radius:99px; background:rgba(255,255,255,.04); border:1px solid var(--line); font-weight:600; color:var(--text); }
+/* enlace al cortometraje (modulo10.html): deliberadamente tenue, para que no
+   compita con el contenido de la diapositiva. Se enciende al pasar el cursor. */
+.ia-corto{ display:inline-flex; align-items:center; gap:7px; align-self:flex-start; margin-top:2px;
+  font-size:11.5px; font-weight:600; letter-spacing:.01em; text-decoration:none;
+  color:var(--muted); opacity:.65; padding:5px 2px; border-bottom:1px solid transparent;
+  transition:color .25s, opacity .25s, border-color .25s; }
+.ia-corto svg{ width:13px; height:13px; flex:none; }
+.ia-corto:hover, .ia-corto:focus-visible{ color:var(--accent); opacity:1; border-color:rgba(0,245,212,.45); }
 
 /* ==========================================================================
    TARJETAS DE CONCEPTO (se abren al tocar)
@@ -1208,6 +1216,13 @@ body:has(.slide.anim-slide.active) #next:hover{ transform:translateY(-50%) scale
         <div class="ia-ex">
           <span>🖼 Reconoce imágenes</span><span>🌐 Traduce</span><span>🎯 Recomienda</span><span>✍ Genera texto y código</span>
         </div>
+        <!-- El parámetro volver= le dice al cortometraje a dónde regresar; va
+             codificado porque lleva el # y la tilde del título de esta slide. -->
+        <a class="ia-corto"
+           href="modulo10.html?volver=modulo1.html%23t%3D%C2%BFQu%C3%A9%20es%20la%20IA%3F">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m10 9 5 3-5 3z"/></svg>
+          Verlo contado como historia · el ruido de una moto
+        </a>
       </div>
     </div>
   </div>
