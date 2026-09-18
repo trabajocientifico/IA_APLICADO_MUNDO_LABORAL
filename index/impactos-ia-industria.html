@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Impactos de la inteligencia artificial en el sector industrial</title>
+<meta name="description" content="Doce gráficas con datos verificables sobre robotización, adopción de IA en la industria, empleo e inversión.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+/* ══════════════════════════════════════════════════════════════
+   PRESENTACIÓN DE DATOS · negro, minimalista, una gráfica por
+   pantalla. El sistema visual está documentado en
+   references/identidad-visual.md — aquí solo se aplica.
+   ══════════════════════════════════════════════════════════════ */
+
+:root{
+  --bg:#000000;
+
+  /* rueda categórica · orden fijo, nunca ciclada */
+  --c1:#22D3EE; --c2:#EAB308; --c3:#E879F9; --c4:#4ADE80;
+  --c5:#60A5FA; --c6:#FB923C; --c7:#A78BFA; --c8:#FB7185;
+
+  /* rampa secuencial · magnitud */
+  --s1:#07313D; --s2:#0B5566; --s3:#0E7C91;
+  --s4:#14A3BB; --s5:#22D3EE; --s6:#7DE9FB;
+
+  /* rampa divergente · polaridad (neutro gris en el centro) */
+  --d1:#FB7185; --d2:#C4626F; --d0:#6E6A74; --d4:#3A8FA3; --d5:#22B8D4;
+
+  /* tintas de texto */
+  --ink:#F2F4F8; --ink2:#C8CBD2; --muted:#8B909B; --dim:#5A5E68;
+  --line:rgba(255,255,255,.10);
+  --sombra:rgba(255,255,255,.05);
+
+  --sans:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+
+  /* ── EL MANDO DEL RITMO ──────────────────────────────────────
+     Sube o baja este número y cambia TODO a la vez: el dibujado de
+     la gráfica, la cascada de barras, el fundido entre diapositivas
+     y la entrada del titular y del pie. El motor también lo lee.
+       1 = rápido · 2 = el doble de lento · 3 = el triple
+     A 2, la barra más larga termina de crecer justo cuando se acaba
+     de leer el titular. */
+  --ritmo:2;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--ink);
+  font-family:var(--sans);-webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums}
+
+/* ── escena ────────────────────────────────────────────────── */
+#escena{position:relative;width:100vw;height:100vh;height:100dvh;overflow:hidden}
+
+/* Las inactivas siguen ocupando el marco entero: ECharts necesita medir el
+   contenedor para dibujar, y con display:none mediría cero. */
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;
+  padding:6vh 5vw 5.4vh;opacity:0;pointer-events:none;visibility:hidden;
+  transition:opacity calc(.31s * var(--ritmo)) ease,
+             visibility 0s linear calc(.31s * var(--ritmo))}
+.slide.activa{opacity:1;pointer-events:auto;visibility:visible;
+  transition:opacity calc(.31s * var(--ritmo)) ease, visibility 0s}
+
+/* ── portada ───────────────────────────────────────────────── */
+.portada{justify-content:center;align-items:flex-start;gap:0}
+.portada-titulo{font-size:clamp(40px,5.6vw,88px);font-weight:800;line-height:1.02;
+  letter-spacing:-.03em;max-width:17ch}
+.portada-titulo em{font-style:normal;color:var(--c1)}
+.portada .firma{margin-top:clamp(28px,5vh,54px);display:flex;flex-direction:column;gap:9px}
+.portada .docente{font-size:clamp(15px,1.7vw,21px);font-weight:500;color:var(--ink2)}
+.portada .fecha{font-family:var(--mono);font-size:12.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--muted)}
+.portada::after{content:"";position:absolute;left:5vw;bottom:5.4vh;width:clamp(60px,9vw,130px);
+  height:3px;background:var(--c1)}
+
+/* ── diapositiva de datos ──────────────────────────────────── */
+.titular{font-size:clamp(26px,3.2vw,50px);font-weight:600;line-height:1.12;
+  letter-spacing:-.022em;max-width:26ch}
+.titular em{font-style:normal;color:var(--c1)}
+.apunte{margin-top:10px;font-size:clamp(13px,1.3vw,17px);line-height:1.5;
+  color:var(--muted);max-width:74ch}
+
+/* El lienzo se come todo lo que sobra: la gráfica manda. Sin marco, sin
+   tarjeta, sin sombra. */
+.lienzo{flex:1;min-height:0;width:100%;margin-top:clamp(14px,2.4vh,28px)}
+
+/* la cifra sola · una por presentación */
+.cifra-sola{display:flex;flex-direction:column;justify-content:center;gap:14px}
+.cifra-sola .n{font-size:clamp(90px,17vw,260px);font-weight:800;line-height:.86;
+  letter-spacing:-.045em;color:var(--c1)}
+.cifra-sola .l{font-size:clamp(14px,1.6vw,20px);color:var(--muted);max-width:46ch}
+.slide.activa .cifra-sola .n{animation:surgir calc(.48s * var(--ritmo)) calc(.07s * var(--ritmo)) both}
+.slide.activa .cifra-sola .l{animation:surgir calc(.48s * var(--ritmo)) calc(.16s * var(--ritmo)) both}
+
+/* ── pie de fuentes ────────────────────────────────────────── */
+.fuentes{margin-top:clamp(10px,1.8vh,20px);padding-top:11px;border-top:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:6px 22px;font-size:12.5px;line-height:1.45;
+  color:var(--muted);max-width:92%}
+.fuentes .f{display:inline-flex;align-items:baseline;gap:7px}
+.fuentes .n{font-family:var(--mono);font-size:11px;color:var(--c1);flex-shrink:0}
+.fuentes a{color:var(--muted);text-decoration:none;border-bottom:1px solid rgba(255,255,255,.18)}
+.fuentes a:hover{color:var(--ink);border-bottom-color:var(--c1)}
+.fuentes a:focus-visible{outline:2px solid var(--c1);outline-offset:3px;border-radius:2px}
+.fuentes .meta{color:var(--dim)}
+
+/* ── contador · el único cromo en pantalla ─────────────────── */
+#contador{position:fixed;right:5vw;bottom:5.4vh;z-index:20;font-family:var(--mono);
+  font-size:12px;letter-spacing:.18em;color:var(--dim);pointer-events:none}
+#contador b{color:var(--ink2);font-weight:500}
+
+/* ── entrada ───────────────────────────────────────────────── */
+@keyframes surgir{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.slide.activa .titular,
+.slide.activa .apunte,
+.slide.activa .fuentes,
+.slide.activa .portada-titulo,
+.slide.activa .firma{animation:surgir calc(.375s * var(--ritmo)) both}
+.slide.activa .apunte{animation-delay:calc(.055s * var(--ritmo))}
+.slide.activa .firma{animation-delay:calc(.085s * var(--ritmo))}
+.slide.activa .fuentes{animation-delay:calc(.11s * var(--ritmo))}
+
+@media(max-width:820px){
+  .slide{padding:5vh 6vw 6vh}
+  .titular{font-size:clamp(21px,5.4vw,30px);max-width:none}
+  .fuentes{font-size:11.5px;max-width:100%}
+  #contador{right:6vw;bottom:2.4vh}
+}
+@media(prefers-reduced-motion:reduce){
+  .slide,.slide *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<div id="escena">
+<!-- ══════════════════════════════════════════════════════════════
+     LAS DIAPOSITIVAS
+     Una <section class="slide"> por diapositiva, numeradas por el
+     orden del DOM. La primera es siempre la portada.
+
+     Cada diapositiva de datos declara data-g="claveDeLaGrafica" y
+     lleva exactamente tres cosas: el titular, el lienzo y el pie.
+     EL PIE NO SE ESCRIBE: lo rellena el motor desde GRAFICAS[clave]
+     .fuentes. Una gráfica sin fuente no se puede dibujar.
+     ══════════════════════════════════════════════════════════════ -->
+
+  <section class="slide portada activa">
+    <h1 class="portada-titulo">Impactos de la <em>inteligencia artificial</em> en el sector industrial</h1>
+    <div class="firma">
+      <p class="docente">Docente: Oscar Iván Vargas Pineda</p>
+      <p class="fecha">18 de septiembre de 2026</p>
+    </div>
+  </section>
+
+  <section class="slide" data-g="instalaciones">
+    <h2 class="titular">En 2024 se instalaron 542.000 robots industriales</h2>
+    <p class="apunte">El parque operativo en todo el mundo llegó a 4.664.000 unidades, un 9 % más que el año anterior.</p>
+    <div class="lienzo cifra-sola">
+      <span class="n">542.000</span>
+      <span class="l">robots industriales instalados en el mundo durante 2024</span>
+    </div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide" data-g="serie">
+    <h2 class="titular">China pasó de 23.000 robots al año a 295.000</h2>
+    <p class="apunte">Instalaciones anuales de robots industriales, 2011-2024. Los cuatro mercados que le siguen llevan una década sin moverse del mismo escalón.</p>
+    <div class="lienzo"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide" data-g="regiones">
+    <h2 class="titular">Tres de cada cuatro robots nuevos se instalan en Asia</h2>
+    <p class="apunte">Reparto de las instalaciones de 2024. Las cifras publicadas por el IFR suman 99 % por redondeo.</p>
+    <div class="lienzo"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide" data-g="paises">
+    <h2 class="titular">China instala seis veces más robots que Japón</h2>
+    <p class="apunte">Los cinco mayores mercados en 2024, en unidades instaladas. Cifras redondeadas al millar en la recopilación del AI Index.</p>
+    <div class="lienzo"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide" data-g="densidad">
+    <h2 class="titular">Corea del Sur tiene 1.220 robots por 10.000 obreros</h2>
+    <p class="apunte">Densidad robótica en la manufactura, 2024; la media mundial es de 132. El IFR revisó a la baja la cifra de China —166 unidades— con los nuevos datos de empleo de su oficina nacional de estadística.</p>
+    <div class="lienzo"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide" data-g="paradoja">
+    <h2 class="titular">Comprar robots no es lo mismo que estar robotizado</h2>
+    <p class="apunte">Cada punto es un país: a la derecha, cuántos robots instaló en 2024 ①; arriba, cuántos tiene ya por cada 10.000 empleados ②. China está sola abajo a la derecha — compra más que nadie y sigue siendo la menos robotizada de las cinco.</p>
+    <div class="lienzo"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide" data-g="pictograma">
+    <h2 class="titular">Una de cada cinco empresas europeas usa IA</h2>
+    <p class="apunte">El 20,0 % de las empresas de la UE de 10 o más empleados, en 2025. Un año antes era el 13,5 %. Cada círculo es el 5 % de las empresas.</p>
+    <div class="lienzo"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide" data-g="tamano">
+    <h2 class="titular">Más de la mitad de las empresas grandes de la UE usa IA</h2>
+    <p class="apunte">Entre las pequeñas, una de cada seis. Empresas de la UE por tramo de empleo, 2025.</p>
+    <div class="lienzo"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide" data-g="paisesue">
+    <h2 class="titular">Entre Dinamarca y Rumanía hay ocho veces de diferencia</h2>
+    <p class="apunte">Los tres países de la UE con mayor y con menor proporción de empresas que usan IA, 2025. No se muestran los otros veintiuno.</p>
+    <div class="lienzo"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide" data-g="tecnologias">
+    <h2 class="titular">La IA que más usan las empresas europeas lee texto</h2>
+    <p class="apunte">Porcentaje de empresas de la UE de 10 o más empleados que usa cada tecnología, 2025.</p>
+    <div class="lienzo"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide" data-g="empleo">
+    <h2 class="titular">En los países ricos, el 41 % del empleo está expuesto</h2>
+    <p class="apunte">Empleo expuesto a la IA generativa según el nivel de ingreso del país. En las ocupaciones feminizadas, el 16 % cae en las categorías de mayor exposición; en las masculinizadas, el 3 %.</p>
+    <div class="lienzo"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide" data-g="inversion">
+    <h2 class="titular">Estados Unidos invirtió 23 veces más que China en IA</h2>
+    <p class="apunte">Inversión privada en IA durante 2025, en miles de millones de dólares. El total mundial fue de 344,7, un 127,5 % más que en 2024. Incluye todos los sectores, no solo el industrial.</p>
+    <div class="lienzo"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+</div>
+
+<div id="contador"><b id="cActual">1</b> / <span id="cTotal">1</span></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   1 · EL CUADERNO DE FUENTES
+   Una entrada por documento consultado. La clave es corta y
+   memorizable; se usa desde GRAFICAS. Reglas en
+   references/datos-y-fuentes.md
+
+     org        quién publica (la sigla o el nombre corto)
+     titulo     el documento, tal como se llama
+     url        enlace PROFUNDO a la página donde se lee la cifra,
+                nunca la portada del sitio
+     consultado AAAA-MM-DD en que se verificó
+
+   Si una entrada no se usa en ninguna gráfica, sobra: el
+   verificador la marca.
+   ══════════════════════════════════════════════════════════════ */
+const FUENTES = {
+  ifr_instal: {
+    org: "IFR",
+    titulo: "World Robotics 2025 — Global Robot Demand in Factories Doubles over 10 Years",
+    url: "https://ifr.org/ifr-press-releases/news/global-robot-demand-in-factories-doubles-over-10-years",
+    consultado: "2026-09-18"
+  },
+  ifr_densidad: {
+    org: "IFR",
+    titulo: "World Robotics 2025 — Robot Density Surges in Europe, Asia and Americas",
+    url: "https://ifr.org/ifr-press-releases/news/robot-density-surges-in-europe-asia-and-americas",
+    consultado: "2026-09-18"
+  },
+  owid_robots: {
+    org: "Our World in Data",
+    titulo: "Annual industrial robots installed (serie del IFR vía AI Index 2026)",
+    url: "https://ourworldindata.org/grapher/annual-industrial-robots-installed",
+    consultado: "2026-09-18"
+  },
+  eurostat_noticia: {
+    org: "Eurostat",
+    titulo: "20% of EU enterprises use AI technologies",
+    url: "https://ec.europa.eu/eurostat/web/products-eurostat-news/w/ddn-20251211-2",
+    consultado: "2026-09-18"
+  },
+  eurostat_se: {
+    org: "Eurostat",
+    titulo: "Statistics Explained — Use of artificial intelligence in enterprises",
+    url: "https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Use_of_artificial_intelligence_in_enterprises",
+    consultado: "2026-09-18"
+  },
+  oit_genai: {
+    org: "OIT",
+    titulo: "New ILO data confirm women face higher workplace risks from generative AI than men",
+    url: "https://www.ilo.org/resource/news/new-ilo-data-confirm-women-face-higher-workplace-risks-generative-ai-men",
+    consultado: "2026-09-18"
+  },
+  hai_index: {
+    org: "Stanford HAI",
+    titulo: "Inside the AI Index: 12 Takeaways from the 2026 Report",
+    url: "https://hai.stanford.edu/news/inside-the-ai-index-12-takeaways-from-the-2026-report",
+    consultado: "2026-09-18"
+  }
+};
+
+/* En español el decimal es coma y el millar punto: el `{c}` de ECharts imprime
+   el número crudo de JavaScript y sacaría «13.5 %». */
+const mil = n => n.toLocaleString("es-ES");
+const pct = n => n.toLocaleString("es-ES") + " %";
+const ETIQ = { color: "#C8CBD2", fontFamily: "JetBrains Mono", fontSize: 13 };
+
+/* ══════════════════════════════════════════════════════════════
+   2 · LAS GRÁFICAS
+   Una entrada por diapositiva de datos, con la clave que aparece
+   en su data-g.
+
+     fuentes  array de claves de FUENTES. Obligatorio y no vacío.
+     option   la opción de ECharts. El tema ya pone color,
+              tipografía, ejes y tooltip: aquí van los datos y lo
+              que sea propio de esta gráfica.
+
+     color    cómo se reparte el color dentro de una gráfica de UNA
+              sola serie. Sin esto saldría toda del mismo tono,
+              porque ECharts asigna la paleta por serie, no por dato:
+
+                "categoria"  una tinta de la rueda por dato, en el
+                             orden escrito aquí. Hasta 8 datos.
+                "escala"     rampa de cian según el valor. Para
+                             rankings largos.
+                "destacar"   la categoría de `destacar:[…]` en --c1
+                             y el resto en gris. Cuando el titular
+                             habla de una sola.
+
+              Si no se declara, el motor usa "categoria" con 8 datos
+              o menos y "escala" con más. Reglas en
+              references/identidad-visual.md
+
+   Cuando una gráfica consolida VARIAS fuentes, cada serie declara
+   su clave en `fuente:` y el motor le cuelga ①②③ al nombre, que
+   aparece en la leyenda y en el tooltip. El pie numera igual.
+
+   Catálogo de tipos en references/catalogo-graficas.md
+   ══════════════════════════════════════════════════════════════ */
+const GRAFICAS = {
+
+  /* la cifra sola · sin option: de aquí solo sale el pie */
+  instalaciones: { fuentes: ["ifr_instal"] },
+
+  /* multilínea · cinco series, así que la rueda ya va por serie y no se
+     declara `color`. El orden de las series fija la tinta de cada país, y esa
+     tinta se respeta en el resto del mazo. */
+  serie: {
+    fuentes: ["owid_robots"],
+    option: {
+      grid: { left: 24, right: 72, top: 52, bottom: 0, containLabel: true },
+      xAxis: { type: "category", boundaryGap: false,
+               data: [2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024] },
+      yAxis: { type: "value", axisLabel: { formatter: v => mil(v) } },
+      tooltip: { trigger: "axis", valueFormatter: v => mil(v) + " robots" },
+      /* Solo China lleva etiqueta al final de la línea: los otros cuatro
+         terminan en 45.000, 34.000, 31.000 y 27.000 y las etiquetas se
+         montarían unas sobre otras. A ellos los nombra la leyenda. */
+      series: [
+        { name: "China",          type: "line", symbol: "circle", symbolSize: 6,
+          data: [23000,23000,37000,57000,69000,97000,156000,155000,148000,178000,268000,290000,276000,295000],
+          endLabel: { show: true, formatter: "{a}", color: "#C8CBD2", fontSize: 14 } },
+        { name: "Japón",          type: "line", symbol: "circle", symbolSize: 6,
+          data: [28000,29000,25000,29000,35000,39000,46000,55000,50000,39000,47000,50000,46000,45000] },
+        { name: "Estados Unidos", type: "line", symbol: "circle", symbolSize: 6,
+          data: [21000,22000,24000,26000,28000,31000,33000,40000,33000,31000,35000,40000,38000,34000] },
+        { name: "Corea del Sur",  type: "line", symbol: "circle", symbolSize: 6,
+          data: [26000,19000,21000,25000,38000,41000,40000,38000,33000,31000,31000,32000,31000,31000] },
+        { name: "Alemania",       type: "line", symbol: "circle", symbolSize: 6,
+          data: [20000,18000,18000,20000,20000,20000,21000,27000,22000,22000,24000,26000,28000,27000] }
+      ]
+    }
+  },
+
+  /* dona · tres partes de un total */
+  regiones: {
+    fuentes: ["ifr_instal"],
+    color: "categoria",
+    option: {
+      tooltip: { trigger: "item", formatter: p => p.name + ": " + pct(p.value) + " de las instalaciones" },
+      legend: { show: false },
+      series: [{
+        type: "pie", radius: ["46%", "72%"], center: ["50%", "52%"],
+        label: { color: "#C8CBD2", fontSize: 15, formatter: "{b}\n{c} %" },
+        labelLine: { lineStyle: { color: "rgba(255,255,255,.2)" } },
+        data: [
+          { name: "Asia",     value: 74 },
+          { name: "Europa",   value: 16 },
+          { name: "Américas", value: 9 }
+        ]
+      }]
+    }
+  },
+
+  /* barras · el titular habla de China, así que China se enciende y el resto
+     se apaga. El radio del tema redondea arriba: en horizontal hay que girarlo. */
+  paises: {
+    fuentes: ["owid_robots"],
+    color: "destacar", destacar: ["China"],
+    option: {
+      grid: { left: 24, right: 88, top: 16, bottom: 0, containLabel: true },
+      xAxis: { type: "value", axisLabel: { show: false }, splitLine: { show: false } },
+      yAxis: { type: "category", inverse: true,
+               data: ["China", "Japón", "Estados Unidos", "Corea del Sur", "Alemania"] },
+      tooltip: { trigger: "item", formatter: p => p.name + ": " + mil(p.value) + " robots instalados en 2024" },
+      series: [{
+        type: "bar", barWidth: "48%",
+        itemStyle: { borderRadius: [0, 4, 4, 0] },
+        data: [295000, 45000, 34000, 31000, 27000],
+        label: { show: true, position: "right", formatter: p => mil(p.value), ...ETIQ }
+      }]
+    }
+  },
+
+  /* barras · trece categorías: más de las que tiene la rueda, así que el color
+     va por valor con la rampa secuencial */
+  densidad: {
+    fuentes: ["ifr_densidad"],
+    color: "escala",
+    option: {
+      grid: { left: 24, right: 72, top: 16, bottom: 0, containLabel: true },
+      xAxis: { type: "value", axisLabel: { show: false }, splitLine: { show: false } },
+      yAxis: { type: "category", inverse: true,
+               data: ["Corea del Sur","Singapur","Alemania","Japón","Suecia","Dinamarca",
+                      "Eslovenia","Estados Unidos","Taipéi chino","Suiza","Canadá","China","México"] },
+      tooltip: { trigger: "item", formatter: p => p.name + ": " + mil(p.value) + " robots por cada 10.000 empleados" },
+      series: [{
+        type: "bar", barWidth: "62%",
+        itemStyle: { borderRadius: [0, 4, 4, 0] },
+        data: [1220, 818, 449, 446, 377, 329, 315, 307, 302, 294, 241, 166, 62],
+        label: { show: true, position: "right", formatter: p => mil(p.value),
+                 color: "#C8CBD2", fontFamily: "JetBrains Mono", fontSize: 12 },
+        markLine: {
+          silent: true, symbol: "none",
+          lineStyle: { color: "#EAB308", type: "dashed", width: 2 },
+          /* Sin rótulo: en una markLine vertical ECharts gira el texto para que
+             siga la línea y queda ilegible encima de las barras. */
+          label: { show: false },
+          data: [{ xAxis: 132 }]
+        }
+      }]
+    }
+  },
+
+  /* dispersión · dos medidas de dos fuentes distintas, una en cada eje.
+     Las etiquetas se colocan a mano porque Japón y Alemania caen casi a la
+     misma altura y con `position` automática se pisan. */
+  paradoja: {
+    fuentes: ["owid_robots", "ifr_densidad"],
+    color: "categoria",
+    option: {
+      grid: { left: 24, right: 96, top: 24, bottom: 0, containLabel: true },
+      xAxis: { type: "value", axisLabel: { formatter: v => mil(v) }, splitLine: { show: false } },
+      yAxis: { type: "value", axisLabel: { formatter: v => mil(v) } },
+      tooltip: { trigger: "item",
+        formatter: p => "<b>" + p.name + "</b><br>" + mil(p.value[0]) + " robots instalados en 2024 ①<br>"
+                      + mil(p.value[1]) + " por cada 10.000 empleados ②" },
+      series: [{
+        type: "scatter", symbolSize: 26,
+        data: [
+          { name: "China",          value: [295000, 166],  label: { position: "top" } },
+          { name: "Japón",          value: [45000, 446],   label: { position: "right" } },
+          { name: "Estados Unidos", value: [34000, 307],   label: { position: "right" } },
+          { name: "Corea del Sur",  value: [31000, 1220],  label: { position: "top" } },
+          { name: "Alemania",       value: [27000, 449],   label: { position: "left" } }
+        ],
+        label: { show: true, formatter: "{b}", color: "#C8CBD2", fontSize: 14, distance: 10 }
+      }]
+    }
+  },
+
+  /* pictograma · veinte círculos en dos filas; cuatro encendidos son el 20 %.
+     Un porcentaje se cuenta mejor con muñecos que con una barra. */
+  pictograma: {
+    fuentes: ["eurostat_noticia"],
+    color: "destacar", destacar: ["usa IA"],
+    option: {
+      grid: { left: 40, right: 40, top: 20, bottom: 20 },
+      xAxis: { show: false, type: "value", min: -0.6, max: 9.6 },
+      yAxis: { show: false, type: "value", min: -0.8, max: 1.8 },
+      tooltip: { trigger: "item",
+        formatter: p => p.name === "usa IA"
+          ? "Usa IA · 4 de cada 20 empresas"
+          : "No usa IA · 16 de cada 20 empresas" },
+      series: [{
+        type: "scatter", symbol: "circle", symbolSize: 70,
+        data: [
+          { name: "usa IA", value: [0,1] }, { name: "usa IA", value: [1,1] },
+          { name: "usa IA", value: [2,1] }, { name: "usa IA", value: [3,1] },
+          { name: "no usa IA", value: [4,1] }, { name: "no usa IA", value: [5,1] },
+          { name: "no usa IA", value: [6,1] }, { name: "no usa IA", value: [7,1] },
+          { name: "no usa IA", value: [8,1] }, { name: "no usa IA", value: [9,1] },
+          { name: "no usa IA", value: [0,0] }, { name: "no usa IA", value: [1,0] },
+          { name: "no usa IA", value: [2,0] }, { name: "no usa IA", value: [3,0] },
+          { name: "no usa IA", value: [4,0] }, { name: "no usa IA", value: [5,0] },
+          { name: "no usa IA", value: [6,0] }, { name: "no usa IA", value: [7,0] },
+          { name: "no usa IA", value: [8,0] }, { name: "no usa IA", value: [9,0] }
+        ]
+      }]
+    }
+  },
+
+  tamano: {
+    fuentes: ["eurostat_se"],
+    color: "categoria",
+    option: {
+      grid: { left: 24, right: 76, top: 16, bottom: 0, containLabel: true },
+      xAxis: { type: "value", max: 60, axisLabel: { show: false }, splitLine: { show: false } },
+      yAxis: { type: "category", inverse: true,
+               data: ["Grandes · 250 o más", "Medianas · 50 a 249", "Pequeñas · 10 a 49"] },
+      tooltip: { trigger: "item", formatter: p => p.name + ": " + pct(p.value) },
+      series: [{
+        type: "bar", barWidth: "44%",
+        itemStyle: { borderRadius: [0, 4, 4, 0] },
+        data: [55.03, 30.36, 17],
+        label: { show: true, position: "right", formatter: p => pct(p.value), ...ETIQ }
+      }]
+    }
+  },
+
+  paisesue: {
+    fuentes: ["eurostat_noticia"],
+    color: "categoria",
+    option: {
+      grid: { left: 24, right: 72, top: 16, bottom: 0, containLabel: true },
+      xAxis: { type: "value", axisLabel: { show: false }, splitLine: { show: false } },
+      yAxis: { type: "category", inverse: true,
+               data: ["Dinamarca", "Finlandia", "Suecia", "Bulgaria", "Polonia", "Rumanía"] },
+      tooltip: { trigger: "item", formatter: p => p.name + ": " + pct(p.value) + " de sus empresas usa IA" },
+      series: [{
+        type: "bar", barWidth: "50%",
+        itemStyle: { borderRadius: [0, 4, 4, 0] },
+        data: [42.0, 37.8, 35.0, 8.5, 8.4, 5.2],
+        label: { show: true, position: "right", formatter: p => pct(p.value), ...ETIQ }
+      }]
+    }
+  },
+
+  tecnologias: {
+    fuentes: ["eurostat_noticia"],
+    color: "categoria",
+    option: {
+      grid: { left: 24, right: 64, top: 16, bottom: 0, containLabel: true },
+      xAxis: { type: "value", axisLabel: { show: false }, splitLine: { show: false } },
+      yAxis: { type: "category", inverse: true,
+               data: ["Analizar lenguaje escrito",
+                      "Generar imágenes, vídeo o audio",
+                      "Generar lenguaje escrito o hablado",
+                      "Convertir el habla en texto"] },
+      tooltip: { trigger: "item", formatter: p => p.name + ": " + pct(p.value) + " de las empresas" },
+      series: [{
+        type: "bar", barWidth: "46%",
+        itemStyle: { borderRadius: [0, 4, 4, 0] },
+        data: [11.8, 9.5, 8.8, 7.2],
+        label: { show: true, position: "right", formatter: p => pct(p.value), ...ETIQ }
+      }]
+    }
+  },
+
+  empleo: {
+    fuentes: ["oit_genai"],
+    color: "categoria",
+    option: {
+      grid: { left: 24, right: 76, top: 16, bottom: 0, containLabel: true },
+      xAxis: { type: "value", max: 50, axisLabel: { show: false }, splitLine: { show: false } },
+      yAxis: { type: "category", inverse: true,
+               data: ["Países de ingreso alto", "Países de ingreso bajo"] },
+      tooltip: { trigger: "item", formatter: p => p.name + ": " + pct(p.value) + " del empleo expuesto" },
+      series: [{
+        type: "bar", barWidth: "38%",
+        itemStyle: { borderRadius: [0, 4, 4, 0] },
+        data: [41, 11],
+        label: { show: true, position: "right", formatter: p => pct(p.value), ...ETIQ }
+      }]
+    }
+  },
+
+  inversion: {
+    fuentes: ["hai_index"],
+    color: "destacar", destacar: ["Estados Unidos"],
+    option: {
+      grid: { left: 24, right: 96, top: 16, bottom: 0, containLabel: true },
+      xAxis: { type: "value", axisLabel: { show: false }, splitLine: { show: false } },
+      yAxis: { type: "category", inverse: true, data: ["Estados Unidos", "China"] },
+      tooltip: { trigger: "item", formatter: p => p.name + ": " + mil(p.value) + " mil millones de dólares" },
+      series: [{
+        type: "bar", barWidth: "38%",
+        itemStyle: { borderRadius: [0, 4, 4, 0] },
+        data: [285.9, 12.4],
+        label: { show: true, position: "right", formatter: p => mil(p.value) + " mil M USD", ...ETIQ }
+      }]
+    }
+  }
+
+};
+
+/* ══════════════════════════════════════════════════════════════
+   3 · MOTOR
+   A partir de aquí no hace falta tocar nada.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+"use strict";
+
+const raiz  = document.documentElement;
+const tk    = n => getComputedStyle(raiz).getPropertyValue(n).trim();
+const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches
+            || window.__ESTATICO === true;   // lo activa capturar.ps1
+
+/* El mando del ritmo vive en :root para que CSS y JavaScript usen el mismo. */
+const RITMO = parseFloat(tk("--ritmo")) || 1;
+
+/* ── tema · todo sale de los tokens, ni un color literal ───── */
+const PALETA = [1,2,3,4,5,6,7,8].map(i => tk("--c" + i));
+const RAMPA  = [1,2,3,4,5,6].map(i => tk("--s" + i));
+const INK    = tk("--ink"), INK2 = tk("--ink2");
+const MUTED  = tk("--muted"), LINE = tk("--line"), BG = tk("--bg");
+const DIM    = tk("--dim");
+
+const ejeBase = {
+  axisLine:  { lineStyle: { color: LINE } },
+  axisTick:  { show: false },
+  axisLabel: { color: MUTED, fontSize: 12 },
+  /* Los ejes NO llevan nombre: la unidad va en el apunte. ECharts coloca el
+     nombre al final del eje y se sale del lienzo en el horizontal, o pisa la
+     etiqueta más alta en el vertical. Si alguna vez hace falta, estos valores
+     lo ponen encima y a la izquierda, y el `grid.top` tiene que subir a 44. */
+  nameLocation: "end", nameGap: 26,
+  nameTextStyle: { color: "#5A5E68", fontSize: 11, fontFamily: "JetBrains Mono", align: "left" },
+  splitLine: { lineStyle: { color: LINE, type: "solid" } }
+};
+/* Las cifras van en monoespaciada y los nombres de categoría en Inter: una
+   lista de países en mono se lee como si fuera código. */
+const ejeCifras = Object.assign({}, ejeBase, {
+  axisLabel: { color: MUTED, fontSize: 12, fontFamily: "JetBrains Mono" }
+});
+
+echarts.registerTheme("datos", {
+  color: PALETA,
+  backgroundColor: "transparent",
+  textStyle: { fontFamily: "Inter, system-ui, sans-serif", color: INK2 },
+  /* El eje de categorías no lleva rejilla; el de magnitud sí. */
+  categoryAxis: Object.assign({}, ejeBase, { splitLine: { show: false } }),
+  valueAxis:    ejeCifras,
+  logAxis:      ejeCifras,
+  timeAxis:     ejeCifras,
+  legend: {
+    top: 0, right: 0, icon: "roundRect", itemWidth: 11, itemHeight: 11,
+    itemGap: 18, textStyle: { color: MUTED, fontSize: 13 },
+    inactiveColor: "#5A5E68"
+  },
+  tooltip: {
+    backgroundColor: "rgba(8,8,10,.94)",
+    borderColor: "rgba(255,255,255,.14)", borderWidth: 1,
+    padding: [10, 13], extraCssText: "backdrop-filter:blur(6px);border-radius:10px",
+    textStyle: { color: INK, fontSize: 13.5, fontFamily: "Inter" },
+    axisPointer: { lineStyle: { color: "rgba(255,255,255,.28)" },
+                   crossStyle: { color: "rgba(255,255,255,.28)" } }
+  },
+  bar:  { barMaxWidth: 64,
+          itemStyle: { borderColor: BG, borderWidth: 2, borderRadius: [4,4,0,0] } },
+  line: { lineStyle: { width: 2 }, symbolSize: 8, smooth: false },
+  pie:  { itemStyle: { borderColor: BG, borderWidth: 2 } }
+});
+
+/* ── defectos que el tema de ECharts no alcanza a poner ────── */
+const SUP = ["①","②","③","④","⑤","⑥"];
+
+/* Copia profunda que RESPETA las funciones. Con JSON.parse(JSON.stringify())
+   un `formatter(p){…}` desaparecería sin avisar y la gráfica saldría con las
+   etiquetas en blanco. */
+function clonar(v){
+  if (Array.isArray(v)) return v.map(clonar);
+  if (v && typeof v === "object") {
+    const o = {};
+    for (const k in v) o[k] = clonar(v[k]);
+    return o;
+  }
+  return v;
+}
+
+/* ══ color ═══════════════════════════════════════════════════
+   ECharts reparte la paleta POR SERIE, no por dato: sin esto,
+   cualquier gráfica de una sola serie —que son casi todas— sale
+   entera del mismo tono. Las reglas de cada estrategia están en
+   references/identidad-visual.md
+   ═══════════════════════════════════════════════════════════ */
+const COLOREABLE = /^(bar|pictorialBar|pie|scatter|effectScatter|funnel|treemap)$/;
+
+const aRGB  = h => [1,3,5].map(i => parseInt(h.slice(i, i + 2), 16));
+const aHex  = c => "#" + c.map(v => Math.round(v).toString(16).padStart(2, "0")).join("");
+/* t va de 0 a 1 y NO arranca en el primer escalón: el más oscuro de la rampa
+   se funde con el negro y la barra más pequeña desaparecería. */
+function enRampa(t){
+  const p = (0.34 + 0.66 * Math.max(0, Math.min(1, t))) * (RAMPA.length - 1);
+  const i = Math.min(Math.floor(p), RAMPA.length - 2);
+  const f = p - i;
+  const a = aRGB(RAMPA[i]), b = aRGB(RAMPA[i + 1]);
+  return aHex(a.map((v, k) => v + (b[k] - v) * f));
+}
+
+/* Un dato puede venir como número, como [x,y] o como {name,value}: estas tres
+   lo leen sin obligar a escribirlo de una forma concreta. */
+const valorDe = d =>
+  typeof d === "number" ? d
+  : Array.isArray(d) ? d[d.length - 1]
+  : d && typeof d === "object" ? (Array.isArray(d.value) ? d.value[d.value.length - 1] : d.value)
+  : 0;
+const nombreDe = (d, i, cats) =>
+  (d && typeof d === "object" && !Array.isArray(d) && d.name) ? d.name
+  : (cats && cats[i] !== undefined) ? cats[i] : String(i);
+/* Envuelve el dato para colgarle un itemStyle sin perder su forma original. */
+function conColor(d, color){
+  const base = (d && typeof d === "object" && !Array.isArray(d)) ? clonar(d) : { value: d };
+  base.itemStyle = Object.assign({}, base.itemStyle, { color });
+  return base;
+}
+
+function colorear(def, o, series){
+  if (series.length !== 1) return;            // varias series: la rueda ya va por serie
+  const s = series[0];
+  if (!COLOREABLE.test(s.type || "")) return; // una línea no se pinta punto a punto
+  const datos = s.data || [];
+  if (!datos.length) return;
+
+  const cats = (o.xAxis && o.xAxis.type === "category" && o.xAxis.data)
+            || (o.yAxis && o.yAxis.type === "category" && o.yAxis.data)
+            || null;
+  const modo = def.color || (datos.length > PALETA.length ? "escala" : "categoria");
+
+  if (modo === "categoria") {
+    /* Una tinta por dato, en el orden en que están ESCRITOS en el archivo: así
+       el color sigue a la entidad y no al puesto en el ranking. */
+    s.data = datos.map((d, i) => conColor(d, PALETA[i % PALETA.length]));
+
+  } else if (modo === "escala") {
+    const vs = datos.map(valorDe);
+    const min = Math.min.apply(null, vs), max = Math.max.apply(null, vs);
+    const ancho = (max - min) || 1;
+    /* La raíz y no el valor crudo: en un ranking casi siempre hay un dato que
+       multiplica por veinte al resto, y con reparto lineal las once barras de
+       abajo salen del mismo tono. Sigue siendo monótona —a más valor, más
+       claro—, solo que reparte mejor la parte baja. */
+    s.data = datos.map((d, i) => conColor(d, enRampa(Math.sqrt((vs[i] - min) / ancho))));
+
+  } else if (modo === "destacar") {
+    const foco = def.destacar || [];
+    s.data = datos.map((d, i) =>
+      conColor(d, foco.indexOf(nombreDe(d, i, cats)) >= 0 ? PALETA[0] : DIM));
+  }
+}
+
+function preparar(def){
+  /* Se trabaja sobre una copia: si se mutara el original, las marcas ①②③ se
+     acumularían en cada visita a la diapositiva. */
+  const o = clonar(def.option);
+  const fuentes = def.fuentes || [];
+  const series  = [].concat(o.series || []);
+
+  /* Con varias fuentes, cada serie dice de cuál sale. La marca va en el
+     nombre porque así aparece en la leyenda Y en el tooltip, sin tener
+     que escribir un formatter por gráfica. */
+  if (fuentes.length > 1) {
+    series.forEach(s => {
+      const i = fuentes.indexOf(s.fuente);
+      if (i >= 0 && s.name && s.name.indexOf(SUP[i]) < 0) s.name = s.name + " " + SUP[i];
+    });
+  }
+
+  const hayVarias = series.length > 1;
+  const esPastel  = series.length === 1 && /^(pie|treemap|sunburst|funnel)$/.test(series[0].type || "");
+  const ejes      = !!(o.xAxis || o.yAxis || o.radiusAxis);
+
+  colorear(def, o, series);
+
+  o.animation = !quieto;
+  o.animationEasing = "cubicOut";
+  o.animationDuration       = 800 * RITMO;
+  o.animationDurationUpdate = 500 * RITMO;
+  o.animationDelay          = i => i * 40 * RITMO;
+  o.animationDelayUpdate    = i => i * 20 * RITMO;
+
+  if (o.tooltip === undefined) {
+    o.tooltip = { trigger: ejes && !esPastel ? "axis" : "item" };
+  }
+  /* Resaltado al pasar el cursor: la serie señalada sube, el resto baja. */
+  series.forEach(s => {
+    s.emphasis = Object.assign({ focus: hayVarias ? "series" : "self" }, s.emphasis);
+    if (esPastel) s.emphasis.scaleSize = 8;
+  });
+
+  if (o.legend === undefined && hayVarias) o.legend = {};
+  if (o.legend === undefined && esPastel)  o.legend = { top: 0, right: 0, orient: "vertical" };
+  /* `left: 24` y no 0: containLabel reserva justo el ancho que mide y se queda
+     corto por un carácter — «00.000» en vez de «100.000». Ese margen es el
+     colchón. No se baja aunque parezca que sobra. */
+  if (o.grid === undefined && ejes) o.grid = { left: 24, right: 40, top: hayVarias ? 52 : 20, bottom: 0, containLabel: true };
+
+  o.series = series;
+  return o;
+}
+
+/* ── pie de fuentes · se renderiza, no se escribe ──────────── */
+function pintarPie(sec, def){
+  const caja = sec.querySelector(".fuentes");
+  if (!caja) return;
+  const claves = def.fuentes || [];
+  caja.innerHTML = claves.map((k, i) => {
+    const f = FUENTES[k];
+    if (!f) return `<span class="f">⚠ falta la fuente «${k}» en FUENTES</span>`;
+    const n = claves.length > 1 ? `<span class="n">${SUP[i]}</span>` : "";
+    return `${n}<span class="f"><a href="${f.url}" target="_blank" rel="noopener">`
+         + `${f.org} · ${f.titulo}</a><span class="meta">· consultado ${f.consultado}</span></span>`;
+  }).join("");
+}
+
+/* ── gráficas ──────────────────────────────────────────────── */
+const instancias = new Map();
+
+function dibujar(sec){
+  const clave = sec.dataset.g;
+  if (!clave) return;
+  const def = GRAFICAS[clave];
+  const el  = sec.querySelector(".lienzo");
+  if (!def || !el) return;
+  /* Una diapositiva de «cifra sola» tiene entrada en GRAFICAS —de ahí sale su
+     pie— pero no tiene opción: no hay nada que dibujar. */
+  if (!def.option) return;
+
+  let ch = instancias.get(clave);
+  if (!ch) {
+    ch = echarts.init(el, "datos", { renderer: "canvas" });
+    instancias.set(clave, ch);
+  }
+  /* El contenedor pudo cambiar de tamaño mientras la diapositiva estaba
+     oculta (una rotación, un F11): medir antes de dibujar. */
+  ch.resize();
+  /* El segundo argumento en true tira la opción anterior en vez de
+     fundirla, que es lo que hace que la animación vuelva a arrancar
+     cada vez que se llega a la diapositiva. */
+  ch.setOption(preparar(def), true);
+}
+
+addEventListener("resize", () => instancias.forEach(ch => ch.resize()));
+
+/* ── navegación ────────────────────────────────────────────── */
+const slides = [...document.querySelectorAll(".slide")];
+const total  = slides.length;
+let actual   = 0;
+
+document.getElementById("cTotal").textContent = String(total).padStart(2, "0");
+const cActual = document.getElementById("cActual");
+
+/* Los pies se pintan todos de entrada, no al llegar a la diapositiva: así una
+   presentación recién abierta ya es auditable sin recorrerla entera. */
+slides.forEach(s => {
+  const def = GRAFICAS[s.dataset.g];
+  if (def) pintarPie(s, def);
+});
+
+function ir(i){
+  if (i < 0 || i >= total || i === actual) return;
+  actual = i;
+  pintar();
+}
+function pintar(){
+  slides.forEach((s, i) => s.classList.toggle("activa", i === actual));
+  cActual.textContent = String(actual + 1).padStart(2, "0");
+  dibujar(slides[actual]);
+}
+const sig = () => ir(actual + 1);
+const ant = () => ir(actual - 1);
+
+addEventListener("keydown", e => {
+  if (e.target.isContentEditable) return;
+  switch (e.key) {
+    case "ArrowRight": case "PageDown": case " ": e.preventDefault(); sig(); break;
+    case "ArrowLeft":  case "PageUp":           e.preventDefault(); ant(); break;
+    case "Home": e.preventDefault(); ir(0); break;
+    case "End":  e.preventDefault(); ir(total - 1); break;
+  }
+});
+
+/* Clic: mitad derecha avanza, izquierda retrocede. El lienzo y los
+   enlaces quedan fuera, o los tooltips se volverían inusables. */
+addEventListener("click", e => {
+  if (e.target.closest(".lienzo, a, button")) return;
+  (e.clientX > innerWidth / 2 ? sig : ant)();
+});
+
+let tocoX = null;
+addEventListener("touchstart", e => { tocoX = e.touches[0].clientX; }, { passive: true });
+addEventListener("touchend", e => {
+  if (tocoX === null) return;
+  const d = e.changedTouches[0].clientX - tocoX;
+  tocoX = null;
+  if (Math.abs(d) > 60) (d < 0 ? sig : ant)();
+}, { passive: true });
+
+/* capturar.ps1 navega con el hash: mazo.html#4 */
+function porHash(){
+  const m = /^#(\d+)$/.exec(location.hash);
+  if (m) ir(+m[1]);
+}
+addEventListener("hashchange", porHash);
+
+/* ECharts dibuja el texto de los ejes en un canvas y lo mide con la métrica de
+   la fuente que haya cargada en ese momento. Si mide con la de reserva, las
+   etiquetas quedan descolocadas. `fonts.ready` no basta: puede resolverse antes
+   de que la cara concreta esté disponible; hay que pedir cada una. */
+function alLlegarLasFuentes(fn){
+  if (!document.fonts || !document.fonts.load) return;
+  Promise.all([
+    document.fonts.load('12px "JetBrains Mono"'),
+    document.fonts.load('600 40px Inter'),
+    document.fonts.ready
+  ]).then(fn).catch(() => {});
+}
+
+pintar();
+porHash();
+alLlegarLasFuentes(() => {
+  instancias.forEach(ch => ch.resize());
+  dibujar(slides[actual]);
+});
+window.go = ir;   // lo usa capturar.ps1
+})();
+</script>
+</body>
+</html>

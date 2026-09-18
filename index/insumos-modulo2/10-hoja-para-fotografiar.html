@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Insumo 10 · Hojas para fotografiar</title>
+<style>
+  :root{--ink:#111317;--muted:#6b7280;--line:#e6e8eb;--accent:#2563eb}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#f2f3f5;color:var(--ink);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+       padding:2rem 1rem;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:820px;margin:0 auto}
+  .intro{background:#fff;border:1px solid var(--line);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1.6rem}
+  .intro h1{font-size:1.35rem;letter-spacing:-.02em;margin-bottom:.4rem}
+  .intro p{font-size:.9rem;color:var(--muted);line-height:1.55;max-width:62ch}
+  .intro ol{margin:.7rem 0 0 1.1rem;font-size:.9rem;line-height:1.6;color:#3c424c}
+  .kicker{font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:.5rem}
+
+  .sheet{background:#fff;border:1px solid var(--line);border-radius:14px;padding:2rem;margin-bottom:1.6rem;
+         box-shadow:0 10px 30px -22px rgba(17,19,23,.4)}
+  .sheet h2{font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);
+            font-weight:700;margin-bottom:1.2rem;border-bottom:1px solid var(--line);padding-bottom:.5rem}
+
+  /* ---- hoja 1: recibo ---- */
+  .recibo{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.95rem;line-height:1.85;
+          max-width:26rem;margin:0 auto;color:#1a1d22}
+  .recibo .head{text-align:center;line-height:1.5;margin-bottom:.9rem}
+  .recibo .head b{font-size:1.05rem;letter-spacing:.04em}
+  .recibo .sep{border-top:1px dashed #9aa1ab;margin:.7rem 0}
+  .recibo .row{display:flex;justify-content:space-between;gap:1rem}
+  .recibo .row span:last-child{white-space:nowrap}
+  .recibo .tot{font-weight:700;font-size:1.05rem}
+  .blur{filter:blur(1.15px);opacity:.72;letter-spacing:.02em}
+  .smudge{background:linear-gradient(105deg,transparent 12%,rgba(60,66,76,.32) 48%,transparent 86%);
+          filter:blur(.6px);opacity:.85}
+  .faint{opacity:.28}
+
+  /* ---- hoja 2: tablero ---- */
+  .board{background:#eef0f3;border-radius:10px;padding:1.4rem;display:flex;flex-wrap:wrap;gap:.9rem;justify-content:center}
+  .note{width:11rem;min-height:7rem;padding:.8rem .85rem;border-radius:2px;
+        font-family:"Bradley Hand","Segoe Script","Comic Sans MS",cursive;
+        font-size:.92rem;line-height:1.35;color:#23262b;
+        box-shadow:2px 3px 8px -3px rgba(17,19,23,.45)}
+  .n-y{background:#fdf3a8}
+  .n-p{background:#ffd4e0}
+  .n-b{background:#c7e6fb}
+  .n-g{background:#cdf0cf}
+  .r1{transform:rotate(-2.1deg)} .r2{transform:rotate(1.6deg)}
+  .r3{transform:rotate(-1deg)}   .r4{transform:rotate(2.4deg)}
+  .r5{transform:rotate(.8deg)}   .r6{transform:rotate(-2.8deg)}
+  .board-title{font-family:"Bradley Hand","Segoe Script","Comic Sans MS",cursive;
+               font-size:1.15rem;width:100%;text-align:center;margin-bottom:.4rem;color:#3c424c}
+
+  .tip{font-size:.8rem;color:var(--muted);margin-top:1rem;line-height:1.5;border-top:1px dashed #d8dce2;padding-top:.8rem}
+
+  @media print{
+    body{background:#fff;padding:0}
+    .intro,.tip{display:none}
+    .sheet{border:none;box-shadow:none;page-break-after:always;padding:1.5rem}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="intro">
+    <div class="kicker">Insumo 10 · Reto «Foto a dato»</div>
+    <h1>Hojas para fotografiar</h1>
+    <p>Para quien no tenga a mano un recibo, un tablero o una hoja escrita. Sirve proyectada en pantalla o impresa: lo importante es que el participante <b>le tome una foto con el celular</b> y suba esa foto a la IA, no que copie el texto.</p>
+    <ol>
+      <li>Fotografíe la hoja 1 y corra el primer prompt de la lámina (tabla Concepto | Valor | Fecha).</li>
+      <li>Fotografíe la hoja 2 y corra el segundo prompt (lista de tareas + «ideas sin dueño»).</li>
+      <li>Compare lo que extrajo la IA contra lo que usted ve en la hoja.</li>
+    </ol>
+  </div>
+
+  <!-- ================= HOJA 1 ================= -->
+  <section class="sheet">
+    <h2>Hoja 1 · Recibo</h2>
+    <div class="recibo">
+      <div class="head">
+        <b>FERRETERÍA LA 30</b><br>
+        NIT 900.118.4<span class="blur">2</span>7-3<br>
+        Cra 30 # 12-4<span class="blur">5</span> · Tel 604 44<span class="faint">2 18 90</span>
+      </div>
+      <div class="sep"></div>
+      <div class="row"><span>Factura N.º</span><span>FV-<span class="blur">20 8 4</span>1</span></div>
+      <div class="row"><span>Fecha</span><span>14/03/2026</span></div>
+      <div class="row"><span>Vence</span><span>1<span class="blur">3</span>/04/2026</span></div>
+      <div class="row"><span>Cliente</span><span>Distrib. Andina</span></div>
+      <div class="sep"></div>
+      <div class="row"><span>2 x Guante carnaza</span><span>38.400</span></div>
+      <div class="row"><span>1 x Taladro perc.</span><span>4<span class="smudge">29.900</span></span></div>
+      <div class="row"><span>6 x Broca 3/8</span><span>27.600</span></div>
+      <div class="row"><span>1 x Extensión 10 m</span><span>5<span class="blur">6</span>.800</span></div>
+      <div class="row"><span>4 x Candado 40 mm</span><span>72.000</span></div>
+      <div class="row"><span>3 x Silicona trans.</span><span>21.300</span></div>
+      <div class="sep"></div>
+      <div class="row"><span>Subtotal</span><span>646.000</span></div>
+      <div class="row"><span>IVA 19%</span><span>122.740</span></div>
+      <div class="row tot"><span>TOTAL</span><span>768.740</span></div>
+      <div class="sep"></div>
+      <div class="row"><span>Forma de pago</span><span class="blur">Crédito 30 d</span></div>
+      <div class="row"><span>Recibió</span><span class="faint">R. Castaño</span></div>
+      <div style="text-align:center;margin-top:.8rem;font-size:.8rem" class="faint">
+        *** GRACIAS POR SU COMPRA ***
+      </div>
+    </div>
+    <p class="tip"><b>Qué se espera:</b> seis campos están deliberadamente borrosos o manchados: un dígito del NIT, el número de factura, el día de vencimiento, el valor del taladro, el valor de la extensión y la forma de pago. El prompt dice «no interpretes ni corrijas cifras; si algo no se alcanza a leer, escribe <i>ilegible</i>».<br><br>El plante fino está en la extensión (<i>5_.800</i>): el subtotal impreso, el IVA y el total sí cuadran entre sí, así que el valor borroso <b>se puede deducir por resta</b>. Es justo la inferencia razonable que el prompt prohíbe. Si la IA escribe 56.800 sin avisar que lo dedujo, acertó el número y falló la instrucción — y en un recibo real, donde el subtotal también puede estar mal, ese mismo hábito produce un dato falso. Esa es la conversación del ejercicio.</p>
+  </section>
+
+  <!-- ================= HOJA 2 ================= -->
+  <section class="sheet">
+    <h2>Hoja 2 · Tablero de reunión</h2>
+    <div class="board">
+      <div class="board-title">Comité operativo — pendientes</div>
+      <div class="note n-y r1">Camilo: cambiar hora del proceso a las 4 pm — jueves</div>
+      <div class="note n-b r2">¿Y si hacemos las entregas de la norte en dos turnos?</div>
+      <div class="note n-p r3">Paola — pedir 2 temporales antes del 25 de oct</div>
+      <div class="note n-g r4">Rubén: medir devoluciones semana siguiente</div>
+      <div class="note n-y r5">Mirar lo del costo de parada de planta</div>
+      <div class="note n-b r6">Ojalá tuviéramos alertas automáticas de stock</div>
+      <div class="note n-p r2">Llamar al proveedor del sistema — acuerdo de actualizaciones</div>
+      <div class="note n-g r1">Centro de costo de los temporales: ¿cuál?</div>
+      <div class="note n-y r3">Traer cotización de empaque a comité — Édgar</div>
+      <div class="note n-b r4">Idea: tablero de indicadores en la entrada de bodega</div>
+    </div>
+    <p class="tip"><b>Qué se espera:</b> hay diez notas. Cuatro tienen responsable y fecha, dos tienen responsable sin fecha, tres son ideas sin dueño y una es una pregunta abierta («¿cuál centro de costo?») que no es ni tarea ni idea. El prompt pide separar tareas de «ideas sin dueño»; la pregunta abierta es la que obliga a decidir y suele revelar que la IA la clasifica como tarea con responsable inventado.</p>
+  </section>
+
+</div>
+</body>
+</html>

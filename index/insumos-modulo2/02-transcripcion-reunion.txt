@@ -1,0 +1,126 @@
+TRANSCRIPCIÓN — COMITÉ OPERATIVO SEMANAL
+Distribuidora Andina S.A.S. · Sede principal, sala 3
+Asistentes: Marcela (jefe de operaciones), Édgar (compras), Liliana (cartera),
+Rubén (bodega), Camilo (sistemas), Paola (talento humano).
+Se conecta por video: Fernando (gerencia comercial).
+
+---
+
+MARCELA: Arrancamos. Son las nueve y diez, empecemos que Fernando solo tiene
+media hora. Primer punto, el tema de las entregas en la zona norte.
+
+RUBÉN: Sí. Llevamos tres semanas con la misma queja. Los pedidos que salen
+después de las once de la mañana no alcanzan a llegar el mismo día y el cliente
+los está devolviendo. La semana pasada se devolvieron once pedidos.
+
+MARCELA: ¿Once de cuántos?
+
+RUBÉN: De unos ciento veinte, más o menos. No tengo el número exacto aquí.
+
+FERNANDO: Eso es casi un diez por ciento. Es muchísimo. ¿Y por qué salen
+después de las once?
+
+RUBÉN: Porque el alistamiento depende de que cartera libere los pedidos, y
+cartera está liberando en la tarde del día anterior o en la mañana del mismo día.
+
+LILIANA: Es que nosotros no podemos liberar antes si el cliente no ha pagado.
+Yo entiendo el problema pero el cupo se revisa cuando entra el pago, no antes.
+
+MARCELA: Bueno, ahí hay un cuello de botella que no es de nadie en particular.
+Propongo esto: adelantamos el corte de liberación a las cuatro de la tarde del
+día anterior, y los que queden sin liberar a esa hora se van al despacho del día
+siguiente. ¿Todos de acuerdo?
+
+LILIANA: De acuerdo, pero necesito que sistemas me cambie el horario del proceso
+automático, porque hoy corre a las seis.
+
+CAMILO: Eso lo puedo hacer. Es un parámetro. Lo dejo listo el jueves.
+
+MARCELA: Perfecto, Camilo el jueves. Rubén, tú mides la semana siguiente cuántos
+pedidos se devuelven y nos traes el dato al comité.
+
+RUBÉN: Listo.
+
+MARCELA: Siguiente punto. Édgar, el tema de los proveedores de empaque.
+
+ÉDGAR: Tenemos las tres cotizaciones que pidió gerencia. La más barata es
+Empaques del Valle, pero no tienen certificación y el plazo de entrega es de
+veinte días. Las otras dos están entre ocho y quince por ciento más caras pero
+entregan en ocho días.
+
+FERNANDO: ¿Y cuánto es la diferencia en plata al año?
+
+ÉDGAR: Calculando sobre el consumo del año pasado, unos cuarenta millones.
+
+FERNANDO: Cuarenta millones no es poco. Yo lo pensaría.
+
+MARCELA: Pero si nos quedamos sin empaque cinco días esperando, el costo de la
+parada es mayor. ¿Alguien tiene ese número?
+
+ÉDGAR: No lo tengo calculado.
+
+MARCELA: Entonces no decidimos hoy. Que se traiga el costo de una parada de
+producción por falta de empaque y lo vemos la próxima semana. Édgar, ¿lo tienes
+tú o es de operaciones?
+
+ÉDGAR: Yo puedo pedir el histórico, pero el cálculo lo tendría que hacer alguien
+de planta.
+
+MARCELA: Que alguien lo mire. Lo dejamos pendiente.
+
+FERNANDO: Yo tengo que salirme en cinco minutos. ¿El tema de la campaña de
+noviembre lo vemos ahora o lo dejamos?
+
+MARCELA: Rápido, ¿qué necesitas?
+
+FERNANDO: Necesito saber si bodega aguanta un pico del treinta por ciento la
+primera semana de noviembre. Si no aguanta, cambiamos las fechas de la campaña.
+
+RUBÉN: Con el personal actual, no. Necesitaríamos dos auxiliares más por dos
+semanas.
+
+PAOLA: Temporales los consigo, pero necesito la solicitud con quince días de
+anticipación y aprobación de presupuesto.
+
+MARCELA: Paola, arranca el proceso para tener los dos temporales listos la
+última semana de octubre. La aprobación de presupuesto la gestiono yo con
+financiera.
+
+PAOLA: ¿Con qué centro de costo los cargo?
+
+MARCELA: Eso lo definimos con financiera. Yo te aviso.
+
+FERNANDO: Me salgo. Cualquier cosa me escriben. (Se desconecta.)
+
+MARCELA: Último punto, el tema del sistema que se cayó el martes.
+
+CAMILO: Fue el servidor de facturación. Estuvo abajo dos horas y veinte minutos.
+La causa fue una actualización que se aplicó sin avisar.
+
+MARCELA: ¿Quién la aplicó?
+
+CAMILO: El proveedor del sistema, directamente. Nosotros nos enteramos cuando ya
+estaba caído.
+
+MARCELA: Eso no puede volver a pasar. Necesitamos un acuerdo con el proveedor
+para que cualquier actualización se avise con setenta y dos horas y se haga
+fuera de horario laboral.
+
+CAMILO: Estoy de acuerdo. Yo lo hablo con ellos.
+
+MARCELA: ¿Y quién firma ese acuerdo? Porque el contrato lo maneja jurídica.
+
+CAMILO: Ahí sí no sé cómo es el procedimiento.
+
+MARCELA: Bueno, se averigua. Alguien tiene que llevarlo a jurídica.
+
+LILIANA: Una cosa antes de cerrar. Lo del corte a las cuatro de la tarde, ¿desde
+cuándo aplica? ¿Desde el jueves que Camilo hace el cambio o desde el lunes?
+
+MARCELA: Desde el lunes, para que no quede a mitad de semana.
+
+CAMILO: Pero entonces yo lo dejo listo el jueves y empieza a correr el lunes.
+
+MARCELA: Exacto. Cerramos. Nos vemos el próximo martes.
+
+(Fin de la grabación. Duración: 41 minutos.)
