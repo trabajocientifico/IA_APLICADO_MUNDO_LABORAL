@@ -77,7 +77,7 @@
   .good{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;line-height:1.5;
         background:#f7f8fa;border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:.7rem .8rem;color:#1f2430}
   .fix{max-height:0;overflow:hidden;opacity:0;transition:max-height .6s cubic-bezier(.16,1,.3,1),opacity .4s ease,margin-top .4s ease;margin-top:0}
-  .card.open .fix{max-height:420px;opacity:1;margin-top:.7rem}
+  .card.open .fix{max-height:34rem;opacity:1;margin-top:.7rem}
   .flipnote{font-size:.7rem;color:#9aa1ab;margin-top:.55rem;letter-spacing:.04em}
   .card.open .flipnote{display:none}
 
@@ -149,6 +149,70 @@
   .scroll{overflow:auto;max-height:78vh;padding-right:.3rem}
   .scroll::-webkit-scrollbar{width:6px}
   .scroll::-webkit-scrollbar-thumb{background:#e3e6ea;border-radius:99px}
+
+  /* ================================================================
+     LÁMINA DE TÉCNICA · de la 7 en adelante
+     Izquierda el prompt, derecha el material del ejercicio.
+     .solo cuando la técnica no necesita material que repartir.
+     ================================================================ */
+  .lab{display:grid;grid-template-columns:1fr 1.05fr;gap:1.6rem;align-items:start;margin-top:1rem}
+  .lab.solo{grid-template-columns:1fr;max-width:74ch}
+  .lab>div{min-width:0}
+
+  .mat-h{
+    font-size:.72rem;color:var(--muted);margin-bottom:.45rem;
+    display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;
+  }
+  .mat-h .pill{margin:0}
+  /* El material se escribe en el HTML con la sangría del documento; el
+     white-space:pre-wrap la mostraría tal cual, así que los bloques van
+     pegados al margen izquierdo. El botón Copiar sí desangra por su cuenta. */
+  .mat{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.76rem;line-height:1.55;
+    background:#fbfbfc;border:1px dashed #d8dce2;border-radius:10px;
+    padding:.8rem .9rem;color:#3c424c;white-space:pre-wrap;
+    max-height:clamp(15rem,46vh,30rem);overflow:auto;
+  }
+  .mat::-webkit-scrollbar{width:6px}
+  .mat::-webkit-scrollbar-thumb{background:#e3e6ea;border-radius:99px}
+  .mat table{font-size:.72rem;margin:.2rem 0}
+  .mat th,.mat td{padding:.3rem .4rem}
+
+  .check{
+    font-size:.78rem;color:var(--muted);margin-top:.6rem;padding-left:1.1rem;position:relative;line-height:1.45;
+  }
+  .check::before{content:"?";position:absolute;left:0;top:0;color:var(--accent);font-weight:750}
+
+  .mini{font-size:.78rem;color:var(--muted);line-height:1.5;margin-top:.5rem}
+  .lab .why{margin-top:.7rem}
+  .lab .prompt{font-size:.8rem;line-height:1.55}
+  .lab .good{font-size:.76rem}
+
+  /* ---- lámina multimodal: recibo y tablero para fotografiar ----
+     Tomados de insumos-modulo2/10-hoja-para-fotografiar.html ---- */
+  .recibo{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.76rem;line-height:1.7;
+          max-width:22rem;color:#1a1d22;background:#fff;border:1px solid var(--line);
+          border-radius:10px;padding:1rem 1.2rem}
+  .recibo .head{text-align:center;line-height:1.45;margin-bottom:.7rem}
+  .recibo .head b{font-size:.88rem;letter-spacing:.04em}
+  .recibo .sep{border-top:1px dashed #9aa1ab;margin:.55rem 0}
+  .recibo .row{display:flex;justify-content:space-between;gap:1rem}
+  .recibo .row span:last-child{white-space:nowrap}
+  .recibo .tot{font-weight:700}
+  .blur{filter:blur(1.1px);opacity:.72;letter-spacing:.02em}
+  .smudge{background:linear-gradient(105deg,transparent 12%,rgba(60,66,76,.32) 48%,transparent 86%);
+          filter:blur(.6px);opacity:.85}
+  .faint{opacity:.28}
+  .board{background:#eef0f3;border-radius:10px;padding:.9rem;display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center}
+  .note{width:8.2rem;min-height:4.6rem;padding:.55rem .6rem;border-radius:2px;
+        font-family:"Bradley Hand","Segoe Script","Comic Sans MS",cursive;
+        font-size:.72rem;line-height:1.3;color:#23262b;
+        box-shadow:2px 3px 8px -3px rgba(17,19,23,.45)}
+  .n-y{background:#fdf3a8} .n-p{background:#ffd4e0}
+  .n-b{background:#c7e6fb} .n-g{background:#cdf0cf}
+  .r1{transform:rotate(-2.1deg)} .r2{transform:rotate(1.6deg)}
+  .r3{transform:rotate(-1deg)}   .r4{transform:rotate(2.4deg)}
+  .r5{transform:rotate(.8deg)}   .r6{transform:rotate(-2.8deg)}
 </style>
 </head>
 <body>
@@ -202,20 +266,27 @@
   <section class="slide">
     <div class="kicker step">Mapa de técnicas</div>
     <h2 class="step">Mapa de técnicas del módulo</h2>
-    <p class="meta step" style="margin-bottom:.6rem">Cada reto práctico entrena una de estas técnicas. Este mapa es la referencia a la que volvemos todo el módulo.</p>
+    <p class="meta step" style="margin-bottom:.6rem">De aquí en adelante, <b>una lámina por técnica</b>: cada una trae su prompt y el material para hacerla. Esta tabla es el índice.</p>
     <div class="step scroll">
       <table>
-        <tr><th>Técnica</th><th>En qué consiste</th><th>Cuándo la uso</th></tr>
-        <tr><td><span class="tech">zero-shot</span></td><td>Pedir la tarea sin ejemplos</td><td>Tareas simples y desechables</td></tr>
-        <tr><td><span class="tech">rol + contexto</span></td><td>Asignar un oficio y dar la situación real</td><td>Cuando el tono y el criterio importan</td></tr>
-        <tr><td><span class="tech">few-shot</span></td><td>Mostrar 2–5 ejemplos de entrada y salida deseada</td><td>Clasificar, etiquetar, imitar un estilo propio</td></tr>
-        <tr><td><span class="tech">paso a paso</span></td><td>Pedir que razone por etapas antes de concluir</td><td>Cálculos, comparaciones, decisiones con criterios</td></tr>
-        <tr><td><span class="tech">prompt inverso</span></td><td>Que la IA pregunte antes de responder</td><td>Cuando yo mismo no tengo claro lo que quiero</td></tr>
-        <tr><td><span class="tech">meta-prompt</span></td><td>Pedirle que escriba o mejore el prompt</td><td>Tareas nuevas o repetitivas que voy a plantillar</td></tr>
-        <tr><td><span class="tech">salida estructurada</span></td><td>Exigir tabla, columnas y valores permitidos</td><td>Cuando el resultado alimenta un Excel o un proceso</td></tr>
-        <tr><td><span class="tech">anclaje en fuente</span></td><td>Restringir la respuesta a un documento mío</td><td>Reglamentos, manuales, informes: reduce invención</td></tr>
-        <tr><td><span class="tech">multimodal</span></td><td>Entrada por imagen o voz, no solo texto</td><td>Papel, tableros, recibos, práctica de conversación</td></tr>
-        <tr><td><span class="tech">plantilla con variables</span></td><td>Prompt fijo con campos entre corchetes</td><td>Tareas que repito cada semana</td></tr>
+        <tr><th>Técnica</th><th>En qué consiste</th><th>Cuándo la uso</th><th>Lámina</th></tr>
+        <tr><td><span class="tech">zero-shot</span></td><td>Pedir la tarea sin ejemplos</td><td>Tareas simples y desechables</td><td class="n">2</td></tr>
+        <tr><td><span class="tech">rol + contexto</span></td><td>Asignar un oficio y dar la situación real</td><td>Cuando el tono y el criterio importan</td><td class="n">7</td></tr>
+        <tr><td><span class="tech">salida estructurada</span></td><td>Exigir tabla, columnas y valores permitidos</td><td>Cuando el resultado alimenta un Excel o un proceso</td><td class="n">8</td></tr>
+        <tr><td><span class="tech">restricciones</span></td><td>Decir qué no debe hacer, no solo qué debe hacer</td><td>Cuando hay algo que no puedo prometer</td><td class="n">9</td></tr>
+        <tr><td><span class="tech">dato vs. interpretación</span></td><td>Separar lo que dicen los números de lo que uno deduce</td><td>Informes, análisis, cualquier cosa que lea gerencia</td><td class="n">10</td></tr>
+        <tr><td><span class="tech">criterios medibles</span></td><td>Poner un umbral que se pueda revisar después</td><td>Cuando «dame ideas» no se puede calificar</td><td class="n">11</td></tr>
+        <tr><td><span class="tech">tarea en dos pasos</span></td><td>Pedir el resultado y además la explicación del cambio</td><td>Corregir, traducir, reescribir: cuando quiero aprender</td><td class="n">12</td></tr>
+        <tr><td><span class="tech">few-shot</span></td><td>Mostrar 2–5 ejemplos de entrada y salida deseada</td><td>Clasificar, etiquetar, imitar un estilo propio</td><td class="n">13</td></tr>
+        <tr><td><span class="tech">paso a paso</span></td><td>Pedir que razone por etapas antes de concluir</td><td>Cálculos, comparaciones, decisiones con criterios</td><td class="n">14</td></tr>
+        <tr><td><span class="tech">prompt inverso</span></td><td>Que la IA pregunte antes de responder</td><td>Cuando yo mismo no tengo claro lo que quiero</td><td class="n">15</td></tr>
+        <tr><td><span class="tech">meta-prompt</span></td><td>Pedirle que escriba o mejore el prompt</td><td>Tareas nuevas o repetitivas que voy a plantillar</td><td class="n">16</td></tr>
+        <tr><td><span class="tech">anclaje en fuente</span></td><td>Restringir la respuesta a un documento mío</td><td>Reglamentos, manuales, informes: reduce invención</td><td class="n">17</td></tr>
+        <tr><td><span class="tech">multimodal</span></td><td>Entrada por imagen, no solo texto</td><td>Papel, tableros, recibos, pantallazos</td><td class="n">18</td></tr>
+        <tr><td><span class="tech">rol persistente</span></td><td>Que sostenga un personaje y no ceda al primer turno</td><td>Ensayar una conversación difícil, en voz</td><td class="n">19</td></tr>
+        <tr><td><span class="tech">verificación</span></td><td>Comprobar por tipo de afirmación, no «lo que suene raro»</td><td>Siempre que haya cifras, citas, normas o enlaces</td><td class="n">20</td></tr>
+        <tr><td><span class="tech">iteración</span></td><td>Corregir sobre la marcha en vez de empezar de nuevo</td><td>Todo lo que importa de verdad</td><td class="n">21</td></tr>
+        <tr><td><span class="tech">plantilla con variables</span></td><td>Prompt fijo con campos entre corchetes</td><td>Tareas que repito cada semana</td><td class="n">22</td></tr>
       </table>
     </div>
   </section>
@@ -273,272 +344,755 @@
     </div>
   </section>
 
-  <!-- 4 -->
+  <!-- 7 · técnica 01 · rol + contexto -->
   <section class="slide">
-    <div class="kicker">Reto 1 · en parejas</div>
-    <h2>Rescate de prompts</h2>
-    <p class="meta" style="margin-bottom:1rem">Cada pareja recibe estos 6 prompts flojos y los reescribe. Después se descubre una versión de referencia. <span class="pill">Insumo 01 · rescate-de-prompts.md</span></p>
-    <div class="grid2 scroll">
-      <div class="card fcard step">
-        <span class="tag w">01 · Correo</span>
-        <div class="bad">hazme un correo para mi jefe</div>
-        <div class="fix"><div class="good">Actúa como mi asistente de comunicación interna. Soy analista de compras. Llevo 3 días esperando la aprobación de una orden por $12 millones que vence el viernes. Escribe un correo de máximo 120 palabras a mi jefe pidiendo la aprobación: tono respetuoso, urgencia clara sin reclamo, y cierra con una pregunta concreta sobre la fecha. Sin signos de exclamación.</div>
-        <div class="why"><strong>Por qué así · <span class="tech">rol + contexto</span></strong>Lo que cambia el resultado no es pedir “un buen correo”, sino entregar el dato que solo yo tengo: el monto, los días de espera y la fecha límite. La restricción de las exclamaciones evita el tono efusivo que estos modelos usan por defecto.</div></div>
-        <div class="flipnote">clic para ver la versión reescrita</div>
+    <div class="kicker step">Técnica 01 · <span class="tech">rol + contexto</span></div>
+    <h2 class="step">El correo que sí se envía</h2>
+    <p class="meta step">Reescriba el prompt flojo metiéndole el contexto del caso. En parejas, 6 minutos.</p>
+    <div class="lab">
+      <div class="step">
+        <div class="card fcard">
+          <span class="tag w">El prompt flojo</span>
+          <div class="bad">hazme un correo para mi jefe</div>
+          <div class="fix">
+            <div class="good">Actúa como mi asistente de comunicación interna. Soy analista de compras. Llevo 3 días esperando la aprobación de una orden por $12 millones que vence el viernes. Escribe un correo de máximo 120 palabras a mi jefe pidiendo la aprobación: tono respetuoso, urgencia clara sin reclamo, y cierra con una pregunta concreta sobre la fecha. Sin signos de exclamación.</div>
+            <div class="why"><strong>Por qué así · <span class="tech">rol + contexto</span></strong>Lo que cambia el resultado no es pedir «un buen correo», sino entregar el dato que solo yo tengo: el monto, los días de espera y la fecha límite. La restricción de las exclamaciones evita el tono efusivo que estos modelos usan por defecto.</div>
+          </div>
+          <div class="flipnote">clic para ver la versión de referencia</div>
+        </div>
       </div>
-      <div class="card fcard step">
-        <span class="tag w">02 · Acta</span>
-        <div class="bad">resume esta reunión</div>
-        <div class="fix"><div class="good">Eres secretario técnico de un comité. Con la transcripción que pego abajo entrega: 1) 5 puntos clave en viñetas; 2) una tabla con columnas Compromiso | Responsable | Fecha; 3) los temas que quedaron sin decisión. Máximo 300 palabras. No inventes responsables: si no aparece el nombre, escribe “sin asignar”.</div>
-        <div class="why"><strong>Por qué así · <span class="tech">salida estructurada</span></strong>Un resumen libre obliga a releerlo todo; una tabla de compromisos se puede usar. La frase “si no aparece, escribe sin asignar” es una válvula anti-invención: le da al modelo una salida legítima cuando el dato no existe, en vez de dejarlo completar con lo más probable.<br><span class="pill">Insumo 02 · transcripcion-reunion.txt</span></div></div>
-        <div class="flipnote">clic para ver la versión reescrita</div>
-      </div>
-      <div class="card fcard step">
-        <span class="tag w">03 · Cliente molesto</span>
-        <div class="bad">responde a este cliente que está furioso</div>
-        <div class="fix"><div class="good">Actúa como asesor de servicio al cliente de una empresa de internet hogar. El cliente lleva 4 días sin servicio y ya escribió dos veces. Responde en máximo 100 palabras: reconoce la falla, no prometas fechas que no puedo garantizar, ofrece dos opciones reales (visita técnica el sábado o descuento proporcional) y pide un solo dato para escalar el caso. Tono humano, sin plantillas corporativas.</div>
-        <div class="why"><strong>Por qué así · <span class="tech">restricciones</span></strong>Aquí lo decisivo es lo prohibido. Sin el “no prometas fechas que no puedo garantizar”, el modelo ofrece soluciones que la empresa no puede cumplir, porque su objetivo es sonar satisfactorio. Definir las dos opciones reales lo mantiene dentro de lo que sí puedo entregar.</div></div>
-        <div class="flipnote">clic para ver la versión reescrita</div>
-      </div>
-      <div class="card fcard step">
-        <span class="tag w">04 · Informe</span>
-        <div class="bad">hazme un informe de ventas</div>
-        <div class="fix"><div class="good">Eres analista comercial. Con los datos que pego (ventas mensuales por sucursal, enero–agosto) escribe un informe de una página para gerencia con esta estructura: qué pasó (3 viñetas con cifras), por qué puede estar pasando (2 hipótesis marcadas como hipótesis), qué recomiendo (2 acciones con responsable sugerido). Usa solo los números que te doy y señala cualquier dato faltante.</div>
-        <div class="why"><strong>Por qué así · <span class="tech">separar dato de interpretación</span></strong>La estructura “qué pasó / por qué puede estar pasando / qué recomiendo” obliga al modelo a marcar dónde termina el dato y empieza la inferencia. Pedir que las causas vayan rotuladas como hipótesis evita que una suposición llegue a gerencia con apariencia de hallazgo.<br><span class="pill">Insumo 03 · ventas-por-sucursal.md</span></div></div>
-        <div class="flipnote">clic para ver la versión reescrita</div>
-      </div>
-      <div class="card fcard step">
-        <span class="tag w">05 · Capacitación</span>
-        <div class="bad">dame ideas para una capacitación</div>
-        <div class="fix"><div class="good">Actúa como diseñador instruccional. Necesito una capacitación de 2 horas, presencial, para 25 auxiliares administrativos que nunca han usado IA y son resistentes al cambio. Propón 3 opciones de agenda distintas en una tabla con columnas Momento | Actividad | Minutos | Material. Cada opción debe tener al menos 60 % del tiempo en práctica. Sin exposición magistral de más de 20 minutos seguidos.</div>
-        <div class="why"><strong>Por qué así · <span class="tech">criterios medibles</span></strong>“Dame ideas” produce una lista que no se puede juzgar. Al fijar público, duración, resistencia al cambio y un umbral verificable (60 % de práctica), el prompt trae criterios de calidad incorporados: puedo revisar la propuesta contra ellos en vez de opinar.</div></div>
-        <div class="flipnote">clic para ver la versión reescrita</div>
-      </div>
-      <div class="card fcard step">
-        <span class="tag w">06 · Corrección</span>
-        <div class="bad">corrige este texto</div>
-        <div class="fix"><div class="good">Corrige el texto que pego abajo en dos pasos. Primero devuélvelo corregido en ortografía, puntuación y claridad, conservando mi voz y sin agregar ideas nuevas. Después lista en viñetas los 5 cambios más importantes que hiciste y por qué. Es un texto para el boletín interno de la empresa, público no técnico.</div>
-        <div class="why"><strong>Por qué así · <span class="tech">tarea en dos pasos</span></strong>Pedir el texto corregido y además la lista de cambios convierte la herramienta en algo que enseña: veo qué me corrigió y decido si acepto. “Conservando mi voz y sin agregar ideas nuevas” evita el efecto más común al corregir con IA, que el texto quede impecable pero deje de sonar mío.</div></div>
-        <div class="flipnote">clic para ver la versión reescrita</div>
+      <div class="step">
+        <div class="mat-h"><span class="pill">Insumo 01 · caso 01</span> Lo que la IA no puede adivinar.</div>
+        <div class="mat">Usted es analista de compras.
+Lleva tres días esperando la aprobación de una orden por $12 millones.
+La orden vence el viernes y después toca repetir todo el trámite.
+Su jefe responde mejor a los mensajes cortos y concretos.</div>
+        <p class="check">Al terminar: marque cuáles de las seis piezas quedaron en su versión — rol, contexto, tarea, formato, restricciones, ejemplo. La que más se olvida en toda la sala suele ser la misma.</p>
       </div>
     </div>
   </section>
 
-  <!-- 5 -->
+  <!-- 8 · técnica 02 · salida estructurada -->
   <section class="slide">
-    <div class="kicker step">Reto 2</div>
-    <h2 class="step">Duelo de IAs</h2>
-    <p class="lead step">El mismo prompt, tres herramientas distintas. Cada participante califica y descubre que las IAs tienen “personalidad”.</p>
-    <div class="cols step" style="margin-top:1.2rem">
-      <div>
-        <div class="prompt">Actúa como jefe de talento humano. Redacta el anuncio interno de un cambio de horario: la jornada del viernes pasa de 5:00 p.m. a 3:00 p.m., pero de lunes a jueves se extiende 30 minutos. Máximo 150 palabras, tono cercano, anticipa las dos molestias más probables del equipo y responde a ambas dentro del texto.</div>
-        <p class="meta" style="margin-top:.7rem">Se pega igual en ChatGPT, Gemini y Claude (o Copilot).</p>
-        <p class="meta" style="margin-top:.4rem"><span class="pill">Insumo 11 · duelo-de-ias-planilla.md</span></p>
+    <div class="kicker step">Técnica 02 · <span class="tech">salida estructurada</span></div>
+    <h2 class="step">Un acta que se puede usar</h2>
+    <p class="meta step">El resumen libre obliga a releerlo todo. La tabla de compromisos se reparte.</p>
+    <div class="lab">
+      <div class="step">
+        <div class="card fcard">
+          <span class="tag w">El prompt flojo</span>
+          <div class="bad">resume esta reunión</div>
+          <div class="fix">
+            <div class="good">Eres secretario técnico de un comité. Con la transcripción que pego abajo entrega: 1) 5 puntos clave en viñetas; 2) una tabla con columnas Compromiso | Responsable | Fecha; 3) los temas que quedaron sin decisión. Máximo 300 palabras. No inventes responsables: si no aparece el nombre, escribe "sin asignar".</div>
+            <div class="why"><strong>Por qué así · <span class="tech">salida estructurada</span></strong>La frase «si no aparece, escribe sin asignar» es una válvula anti-invención: le da al modelo una salida legítima cuando el dato no existe, en vez de dejarlo completar con lo más probable.</div>
+          </div>
+          <div class="flipnote">clic para ver la versión de referencia</div>
+        </div>
       </div>
-      <div>
-        <table>
-          <tr><th>Criterio</th><th>Qué se observa</th><th>1–5</th></tr>
-          <tr><td>Precisión</td><td>Cumple lo pedido sin inventar</td><td class="n">☐</td></tr>
-          <tr><td>Tono</td><td>Suena a la organización, no a robot</td><td class="n">☐</td></tr>
-          <tr><td>Formato</td><td>Longitud y estructura respetadas</td><td class="n">☐</td></tr>
-          <tr><td>Utilidad</td><td>¿Lo publicarías con menos de 3 ediciones?</td><td class="n">☐</td></tr>
-        </table>
-        <div class="why" style="margin-top:.8rem"><strong>Para qué sirve este ejercicio</strong>El prompt está diseñado con una exigencia que separa modelos: “anticipa las dos molestias más probables y respóndelas dentro del texto”. Eso no es redacción, es inferencia sobre personas. Cada herramienta fue entrenada y ajustada distinto, así que difieren en concisión, tono y obediencia al formato. <em>Conclusión del bloque: no existe la mejor IA, existe la más adecuada para cada tipo de tarea, y eso se descubre probando.</em></div>
+      <div class="step">
+        <div class="mat-h"><span class="pill">Insumo 02 · transcripcion-reunion.txt</span> Se pega debajo del prompt.</div>
+        <div class="mat">TRANSCRIPCIÓN — COMITÉ OPERATIVO SEMANAL
+Distribuidora Andina S.A.S. · Sede principal, sala 3
+Asistentes: Marcela (jefe de operaciones), Édgar (compras), Liliana (cartera),
+Rubén (bodega), Camilo (sistemas), Paola (talento humano).
+Se conecta por video: Fernando (gerencia comercial).
+
+MARCELA: Arrancamos. Son las nueve y diez, empecemos que Fernando solo tiene
+media hora. Primer punto, el tema de las entregas en la zona norte.
+
+RUBÉN: Sí. Llevamos tres semanas con la misma queja. Los pedidos que salen
+después de las once de la mañana no alcanzan a llegar el mismo día y el cliente
+los está devolviendo. La semana pasada se devolvieron once pedidos.
+
+MARCELA: ¿Once de cuántos?
+
+RUBÉN: De unos ciento veinte, más o menos. No tengo el número exacto aquí.
+
+FERNANDO: Eso es casi un diez por ciento. Es muchísimo. ¿Y por qué salen
+después de las once?
+
+RUBÉN: Porque el alistamiento depende de que cartera libere los pedidos, y
+cartera está liberando en la tarde del día anterior o en la mañana del mismo día.
+
+LILIANA: Es que nosotros no podemos liberar antes si el cliente no ha pagado.
+Yo entiendo el problema pero el cupo se revisa cuando entra el pago, no antes.
+
+MARCELA: Bueno, ahí hay un cuello de botella que no es de nadie en particular.
+Propongo esto: adelantamos el corte de liberación a las cuatro de la tarde del
+día anterior, y los que queden sin liberar a esa hora se van al despacho del día
+siguiente. ¿Todos de acuerdo?
+
+LILIANA: De acuerdo, pero necesito que sistemas me cambie el horario del proceso
+automático, porque hoy corre a las seis.
+
+CAMILO: Eso lo puedo hacer. Es un parámetro. Lo dejo listo el jueves.
+
+MARCELA: Perfecto, Camilo el jueves. Rubén, tú mides la semana siguiente cuántos
+pedidos se devuelven y nos traes el dato al comité.
+
+RUBÉN: Listo.
+
+MARCELA: Siguiente punto. Édgar, el tema de los proveedores de empaque.
+
+ÉDGAR: Tenemos las tres cotizaciones que pidió gerencia. La más barata es
+Empaques del Valle, pero no tienen certificación y el plazo de entrega es de
+veinte días. Las otras dos están entre ocho y quince por ciento más caras pero
+entregan en ocho días.
+
+FERNANDO: ¿Y cuánto es la diferencia en plata al año?
+
+ÉDGAR: Calculando sobre el consumo del año pasado, unos cuarenta millones.
+
+FERNANDO: Cuarenta millones no es poco. Yo lo pensaría.
+
+MARCELA: Pero si nos quedamos sin empaque cinco días esperando, el costo de la
+parada es mayor. ¿Alguien tiene ese número?
+
+ÉDGAR: No lo tengo calculado.
+
+MARCELA: Entonces no decidimos hoy. Que se traiga el costo de una parada de
+producción por falta de empaque y lo vemos la próxima semana. Édgar, ¿lo tienes
+tú o es de operaciones?
+
+ÉDGAR: Yo puedo pedir el histórico, pero el cálculo lo tendría que hacer alguien
+de planta.
+
+MARCELA: Que alguien lo mire. Lo dejamos pendiente.
+
+FERNANDO: Yo tengo que salirme en cinco minutos. ¿El tema de la campaña de
+noviembre lo vemos ahora o lo dejamos?
+
+MARCELA: Rápido, ¿qué necesitas?
+
+FERNANDO: Necesito saber si bodega aguanta un pico del treinta por ciento la
+primera semana de noviembre. Si no aguanta, cambiamos las fechas de la campaña.
+
+RUBÉN: Con el personal actual, no. Necesitaríamos dos auxiliares más por dos
+semanas.
+
+PAOLA: Temporales los consigo, pero necesito la solicitud con quince días de
+anticipación y aprobación de presupuesto.
+
+MARCELA: Paola, arranca el proceso para tener los dos temporales listos la
+última semana de octubre. La aprobación de presupuesto la gestiono yo con
+financiera.
+
+PAOLA: ¿Con qué centro de costo los cargo?
+
+MARCELA: Eso lo definimos con financiera. Yo te aviso.
+
+FERNANDO: Me salgo. Cualquier cosa me escriben. (Se desconecta.)
+
+MARCELA: Último punto, el tema del sistema que se cayó el martes.
+
+CAMILO: Fue el servidor de facturación. Estuvo abajo dos horas y veinte minutos.
+La causa fue una actualización que se aplicó sin avisar.
+
+MARCELA: ¿Quién la aplicó?
+
+CAMILO: El proveedor del sistema, directamente. Nosotros nos enteramos cuando ya
+estaba caído.
+
+MARCELA: Eso no puede volver a pasar. Necesitamos un acuerdo con el proveedor
+para que cualquier actualización se avise con setenta y dos horas y se haga
+fuera de horario laboral.
+
+CAMILO: Estoy de acuerdo. Yo lo hablo con ellos.
+
+MARCELA: ¿Y quién firma ese acuerdo? Porque el contrato lo maneja jurídica.
+
+CAMILO: Ahí sí no sé cómo es el procedimiento.
+
+MARCELA: Bueno, se averigua. Alguien tiene que llevarlo a jurídica.
+
+LILIANA: Una cosa antes de cerrar. Lo del corte a las cuatro de la tarde, ¿desde
+cuándo aplica? ¿Desde el jueves que Camilo hace el cambio o desde el lunes?
+
+MARCELA: Desde el lunes, para que no quede a mitad de semana.
+
+CAMILO: Pero entonces yo lo dejo listo el jueves y empieza a correr el lunes.
+
+MARCELA: Exacto. Cerramos. Nos vemos el próximo martes.
+
+(Fin de la grabación. Duración: 41 minutos.)</div>
+        <p class="check">Al terminar: cuente cuántas filas quedaron «sin asignar» y revise si alguna trae un nombre que usted no encuentra en la transcripción.</p>
       </div>
     </div>
   </section>
 
-  <!-- 6 -->
+  <!-- 9 · técnica 03 · restricciones -->
   <section class="slide">
-    <div class="kicker step">Reto 3</div>
-    <h2 class="step">Iterar, no repetir</h2>
-    <p class="lead step">Toman una tarea real propia y la trabajan en 5 turnos. Prohibido borrar el chat y empezar de nuevo.</p>
-    <ol class="turns step" style="margin-top:1.1rem">
-      <li>Pega tu prompt mejorado del reto 1.<span>Punto de partida.</span></li>
-      <li>“Antes de responder, hazme las 3 preguntas que más te faltan para hacerlo bien.”<span>La IA revela lo que asumiste.</span></li>
-      <li>Responde sus preguntas y pide la versión final.<span>Aquí suele aparecer el salto de calidad.</span></li>
-      <li>“Recórtalo un 30 % sin perder ninguna idea.”<span>Ajuste de forma.</span></li>
-      <li>“Dame dos versiones: una más formal y una más directa.”<span>Sales con opciones, no con un solo texto.</span></li>
-    </ol>
-    <div class="why step" style="margin-top:1rem;max-width:74ch">
-      <strong>Concepto · la conversación es el contexto</strong>
-      Cada turno se suma a lo anterior, así que corregir sobre la marcha es más eficiente que volver a empezar: el modelo ya tiene el caso cargado. Abrir un chat nuevo por cada intento equivale a explicarlo todo desde cero. Y el turno 2 —pedirle que pregunte— es el que hace visibles los supuestos que uno ni siquiera sabía que estaba dejando al azar.
-    </div>
-    <p class="lead step">Al terminar, cada uno guarda su primer prompt “pro” en un documento personal que se irá llenando durante el módulo.</p>
-  </section>
-
-  <!-- 7 -->
-  <section class="slide">
-    <div class="kicker step">Lo que puede salir mal</div>
-    <h2 class="step">¿Quién miente?</h2>
-    <p class="lead step">Antes de confiar, verificar. Cada participante corre este prompt en su sector y busca cada dato en Google.</p>
-    <div class="prompt step" style="margin-top:1.1rem">Dame 5 datos con cifra y fuente sobre <b>[mi sector: logística / educación / salud / retail]</b> en Colombia en los últimos 2 años. Incluye el nombre de la entidad, el año y el enlace.</div>
-    <div class="grid3 step" style="margin-top:1.3rem">
-      <div class="card"><span class="tag w">Se cae</span><p class="meta">Enlaces que no existen, informes con nombre creíble pero inventado, cifras mezcladas de años distintos.</p></div>
-      <div class="card"><span class="tag a">Por qué pasa</span><p class="meta">El modelo completa texto probable, no consulta una base de datos. Suena seguro incluso cuando falla.</p></div>
-      <div class="card"><span class="tag k">Qué hacer</span><p class="meta">Usarla para redactar y estructurar; verificar toda cifra, cita, norma y nombre propio antes de publicar.</p></div>
-    </div>
-    <div class="why step" style="margin-top:1.3rem;max-width:74ch">
-      <strong>Concepto · alucinación</strong>
-      Se llama alucinación a una respuesta fluida y plausible pero falsa. No es un error ocasional del sistema, es una consecuencia de cómo funciona: el modelo construye la secuencia más verosímil, y un informe inventado con nombre de entidad real es altamente verosímil. Aparece más en cifras, citas bibliográficas, artículos de normas, enlaces y nombres propios. <em>De ahí la división de trabajo del resto del módulo: la IA redacta y organiza; la verificación es humana y no se delega.</em>
-    </div>
-  </section>
-
-  <!-- 7b · verificación -->
-  <section class="slide">
-    <div class="kicker step">Verificar</div>
-    <h2 class="step">Verificar no se delega</h2>
-    <p class="lead step">El módulo repite que la verificación es humana. Este es el procedimiento, en el orden en que se hace.</p>
-    <ol class="turns step" style="margin-top:1rem">
-      <li>Subraya todo lo verificable.<span>Cifras, años, citas, artículos de normas, enlaces y nombres propios. Lo demás —redacción, estructura, tono— no necesita verificación.</span></li>
-      <li>Abre cada enlace.<span>Si no abre, no existe. Es el error más rápido de detectar y el más frecuente.</span></li>
-      <li>Busca la cifra en la fuente primaria.<span>La entidad que produjo el dato, no un resumen de segunda mano que puede venir del mismo error.</span></li>
-      <li>Comprueba que el año coincida.<span>La falla típica no es inventar la cifra: es traer una cifra real y atribuirla a otro año o a otra entidad.</span></li>
-      <li>Lo que no se pudo verificar, se borra o se marca.<span>“Sin confirmar” es una respuesta profesional. Una cifra inventada con fuente inventada, no.</span></li>
-    </ol>
-    <div class="why step" style="margin-top:1rem;max-width:74ch">
-      <strong>Por qué este orden</strong>
-      El modelo suena exactamente igual de seguro cuando acierta que cuando inventa: no hay señal en el texto que distinga un dato real de uno construido. Por eso no sirve “verificar lo que suene raro” —nada suena raro— sino verificar por tipo de afirmación. Y se hace antes de que el texto salga de su pantalla: una vez enviado el correo o publicado el informe, el error ya es suyo, no de la herramienta.
-    </div>
-    <div class="step" style="margin-top:.8rem">
-      <span class="pill">Insumo 08 · verificacion.md</span>
-      <span class="pill">5 afirmaciones, 3 son falsas</span>
-    </div>
-  </section>
-
-  <!-- 7c · reto 4 · paso a paso -->
-  <section class="slide">
-    <div class="kicker step">Reto 4</div>
-    <h2 class="step">Que muestre el razonamiento</h2>
-    <p class="lead step">Hay que elegir un proveedor entre tres. Se corre el mismo caso con dos prompts y se comparan las respuestas.</p>
-    <div class="grid2 step" style="margin-top:1.1rem">
-      <div>
-        <span class="tag w">A · solo la respuesta</span>
-        <div class="prompt" style="margin-top:.4rem">Con los datos de los tres proveedores que pego abajo, dime cuál debo contratar.</div>
+    <div class="kicker step">Técnica 03 · <span class="tech">restricciones</span></div>
+    <h2 class="step">Lo que la IA no debe hacer</h2>
+    <p class="meta step">Aquí lo decisivo no es lo que se pide, sino lo que se prohíbe.</p>
+    <div class="lab">
+      <div class="step">
+        <div class="card fcard">
+          <span class="tag w">El prompt flojo</span>
+          <div class="bad">responde a este cliente que está furioso</div>
+          <div class="fix">
+            <div class="good">Actúa como asesor de servicio al cliente de una empresa de internet hogar. El cliente lleva 4 días sin servicio y ya escribió dos veces. Responde en máximo 100 palabras: reconoce la falla, no prometas fechas que no puedo garantizar, ofrece dos opciones reales (visita técnica el sábado o descuento proporcional) y pide un solo dato para escalar el caso. Tono humano, sin plantillas corporativas.</div>
+            <div class="why"><strong>Por qué así · <span class="tech">restricciones</span></strong>Sin el «no prometas fechas que no puedo garantizar», el modelo ofrece soluciones que la empresa no puede cumplir, porque su objetivo es sonar satisfactorio. Definir las dos opciones reales lo mantiene dentro de lo que sí puedo entregar.</div>
+          </div>
+          <div class="flipnote">clic para ver la versión de referencia</div>
+        </div>
       </div>
-      <div>
-        <span class="tag k">B · el razonamiento primero</span>
-        <div class="prompt" style="margin-top:.4rem">Con los datos de los tres proveedores que pego abajo, evalúa uno por uno cada criterio antes de concluir. Primero arma una tabla Proveedor | Criterio | Puntaje 1–5 | Por qué ese puntaje. Después aplica los pesos que te doy y muestra el cálculo. Solo al final da la recomendación. Si te falta algún dato para puntuar un criterio, dilo en vez de estimarlo.</div>
+      <div class="step">
+        <div class="mat-h"><span class="pill">Insumo 13 · mensaje-cliente-molesto.txt</span> Tres mensajes del mismo cliente.</div>
+        <div class="mat">[Día 1 · 8:14 a. m.]
+
+Buenos días. Desde anoche no tengo internet en la casa. Ya reinicié el módem
+tres veces y desconecté todo como me dijo el chat automático. Las luces quedan
+en rojo. Les agradezco si me pueden ayudar hoy porque trabajo desde la casa.
+
+[Día 3 · 7:02 p. m.]
+
+Buenas tardes. Escribí hace dos días y nadie me ha respondido. Me llegó un
+mensaje de texto que decía que el caso estaba "en gestión" y nada más. Llamé al
+call center, esperé 40 minutos y se cayó la llamada. Sigo sin servicio. Soy
+Hernán Duarte, cédula 79.412.588, del contrato de la calle 127. Por favor
+díganme algo.
+
+[Día 4 · 9:48 a. m.]
+
+Ya van CUATRO DÍAS sin internet y esta es la tercera vez que escribo. He perdido
+dos reuniones y ayer tuve que irme a trabajar a un café. Mientras tanto la
+factura me llegó completa, como si el servicio estuviera funcionando
+perfectamente.
+
+Necesito que me digan HOY a qué hora exacta queda arreglado. No quiero otro
+"estamos trabajando en ello". Si nadie me da una hora me voy para la
+Superintendencia y cancelo el contrato, que para eso sí contestan rápido.</div>
+        <p class="check">Al terminar: ¿la respuesta promete alguna hora o fecha? ¿Menciona la factura? ¿Y hacía falta pegar la cédula del cliente para redactarla?</p>
       </div>
     </div>
-    <p class="meta step" style="margin-top:.9rem">Se comparan las dos salidas: casi siempre no cambia solo la presentación, cambia el proveedor elegido. <span class="pill">Insumo 06 · proveedores.md</span></p>
-    <div class="why step" style="margin-top:.8rem;max-width:74ch">
-      <strong>Técnica · <span class="tech">paso a paso</span></strong>
-      Obligarlo a producir las etapas intermedias antes de la conclusión cambia el resultado, no solo el formato: cuando responde de una, elige lo que “suena” a mejor opción —normalmente la más barata o la primera de la lista— y después justifica. Además deja el razonamiento auditable: si el puntaje de un criterio está mal, se ve cuál y se corrige el prompt, en lugar de descartar toda la respuesta. Sirve para cálculos, comparaciones y cualquier decisión con varios criterios.
+  </section>
+
+  <!-- 10 · técnica 04 · dato vs. interpretación -->
+  <section class="slide">
+    <div class="kicker step">Técnica 04 · <span class="tech">dato vs. interpretación</span></div>
+    <h2 class="step">Dónde termina el dato y empieza la suposición</h2>
+    <p class="meta step">Un informe que no distingue las dos cosas llega a gerencia con una suposición disfrazada de hallazgo.</p>
+    <div class="lab">
+      <div class="step">
+        <div class="card fcard">
+          <span class="tag w">El prompt flojo</span>
+          <div class="bad">hazme un informe de ventas</div>
+          <div class="fix">
+            <div class="good">Eres analista comercial. Con los datos que pego (ventas mensuales por sucursal, enero–agosto) escribe un informe de una página para gerencia con esta estructura: qué pasó (3 viñetas con cifras), por qué puede estar pasando (2 hipótesis marcadas como hipótesis), qué recomiendo (2 acciones con responsable sugerido). Usa solo los números que te doy y señala cualquier dato faltante.</div>
+            <div class="why"><strong>Por qué así · <span class="tech">dato vs. interpretación</span></strong>La estructura «qué pasó / por qué puede estar pasando / qué recomiendo» obliga al modelo a marcar dónde termina el dato y empieza la inferencia. Pedir que las causas vayan rotuladas como hipótesis evita que una suposición llegue a gerencia con apariencia de hallazgo.</div>
+          </div>
+          <div class="flipnote">clic para ver la versión de referencia</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="mat-h"><span class="pill">Insumo 03 · ventas-por-sucursal.md</span> Ventas en pesos, enero–agosto.</div>
+        <div class="mat">| Sucursal | Enero | Febrero | Marzo | Abril | Mayo | Junio | Julio | Agosto |
+|---|---|---|---|---|---|---|---|---|
+| Centro | 182.400.000 | 175.900.000 | 191.200.000 | 188.700.000 | 193.500.000 | 186.200.000 | 190.800.000 | 195.100.000 |
+| Norte | 143.700.000 | 139.800.000 | 151.600.000 | 148.200.000 | 112.400.000 | 87.300.000 | 79.600.000 | 74.100.000 |
+| Sur | 98.200.000 | 101.500.000 | 96.800.000 | 103.700.000 | 99.400.000 | 105.200.000 | 108.900.000 | 111.300.000 |
+| Occidente | 121.600.000 | 118.300.000 | 124.900.000 | | 127.800.000 | 131.400.000 | 129.700.000 | 134.600.000 |
+| Aeropuerto | 67.300.000 | 71.900.000 | 88.400.000 | 69.100.000 | 66.800.000 | 64.200.000 | 63.500.000 | 92.700.000 |
+
+Contexto opcional, por si quiere darle más material al modelo:
+- La meta mensual por sucursal es de $120.000.000, salvo Centro, que tiene meta de $180.000.000.
+- En marzo hubo una campaña nacional de descuentos.
+- La sucursal Aeropuerto depende del tráfico de viajeros.</div>
+        <p class="check">Al terminar: busque en el informe alguna cifra que no esté en la tabla. ¿Las causas vienen rotuladas como hipótesis o escritas como hechos?</p>
+      </div>
     </div>
   </section>
 
-  <!-- 8 -->
+  <!-- 11 · técnica 05 · criterios medibles -->
   <section class="slide">
-    <div class="kicker">Reto 5 · rotación por estaciones</div>
-    <h2>Rotación por técnicas</h2>
-    <div class="grid2 scroll" style="margin-top:.8rem">
-      <div class="card step">
-        <span class="tag a">Estación A · Dar ejemplos</span>
-        <h3 style="margin:.2rem 0 .5rem">Clasificar correos</h3>
-        <div class="good">Clasifica cada asunto de correo en una de estas categorías: URGENTE, RUTINA, INFORMATIVO, IGNORAR. Sigue mi criterio, guíate por estos ejemplos:
-“Servidor caído en sede norte” → URGENTE
-“Recordatorio: pago de nómina el 30” → RUTINA
-“Boletín mensual de la cámara” → INFORMATIVO
-“Promoción de hosting 50 % off” → IGNORAR
+    <div class="kicker step">Técnica 05 · <span class="tech">criterios medibles</span></div>
+    <h2 class="step">Un umbral que se pueda revisar</h2>
+    <p class="meta step">«Dame ideas» produce una lista que no se puede calificar. Un número sí.</p>
+    <div class="lab">
+      <div class="step">
+        <div class="card fcard">
+          <span class="tag w">El prompt flojo</span>
+          <div class="bad">dame ideas para una capacitación</div>
+          <div class="fix">
+            <div class="good">Actúa como diseñador instruccional. Necesito una capacitación de 2 horas, presencial, para 25 auxiliares administrativos que nunca han usado IA y son resistentes al cambio. Propón 3 opciones de agenda distintas en una tabla con columnas Momento | Actividad | Minutos | Material. Cada opción debe tener al menos 60 % del tiempo en práctica. Sin exposición magistral de más de 20 minutos seguidos.</div>
+            <div class="why"><strong>Por qué así · <span class="tech">criterios medibles</span></strong>Al fijar público, duración, resistencia al cambio y un umbral verificable (60 % de práctica), el prompt trae criterios de calidad incorporados: puedo revisar la propuesta contra ellos en vez de opinar.</div>
+          </div>
+          <div class="flipnote">clic para ver la versión de referencia</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="mat-h"><span class="pill">Insumo 01 · caso 05</span> El contexto del caso.</div>
+        <div class="mat">25 auxiliares administrativos, presencial, nunca han usado IA.
+El grupo viene de dos capacitaciones anteriores que salieron mal:
+pura diapositiva, cero práctica.
+Usted necesita poder comparar varias agendas y escoger,
+no recibir una sola propuesta.</div>
+        <p class="check">Al terminar: tome una de las tres agendas y sume los minutos marcados como práctica. ¿Llega de verdad al 60 %?</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 · técnica 06 · tarea en dos pasos -->
+  <section class="slide">
+    <div class="kicker step">Técnica 06 · <span class="tech">tarea en dos pasos</span></div>
+    <h2 class="step">Que corrija y además enseñe</h2>
+    <p class="meta step">El resultado y la explicación del resultado. Lo segundo es lo que hace que uno mejore.</p>
+    <div class="lab">
+      <div class="step">
+        <div class="card fcard">
+          <span class="tag w">El prompt flojo</span>
+          <div class="bad">corrige este texto</div>
+          <div class="fix">
+            <div class="good">Corrige el texto que pego abajo en dos pasos. Primero devuélvelo corregido en ortografía, puntuación y claridad, conservando mi voz y sin agregar ideas nuevas. Después lista en viñetas los 5 cambios más importantes que hiciste y por qué. Es un texto para el boletín interno de la empresa, público no técnico.</div>
+            <div class="why"><strong>Por qué así · <span class="tech">tarea en dos pasos</span></strong>Pedir el texto corregido y además la lista de cambios convierte la herramienta en algo que enseña: veo qué me corrigió y decido si acepto. «Conservando mi voz y sin agregar ideas nuevas» evita el efecto más común al corregir con IA, que el texto quede impecable pero deje de sonar mío.</div>
+          </div>
+          <div class="flipnote">clic para ver la versión de referencia</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="mat-h"><span class="pill">Insumo 14 · texto-para-corregir.txt</span> Borrador del boletín interno.</div>
+        <div class="mat">Como ya varios sabran, desde el proximo lunes arranca el nuevo horario de
+liberacion de pedidos y queremos contarles de que se trata y por que lo estamos
+haciendo, porque sabemos que a algunos les va a cambiar la rutina de la mañana y
+preferimos que se enteren por aqui y no por un rumor de pasillo, ademas porque
+la idea salio de ustedes mismos en el comité y nos parecio justo devolverles la
+respuesta.
+
+Lo que pasaba era que el corte se hacia muy tarde y los pedidos salian despues
+de las once, entonces no alcanzaban a llegar el mismo dia y el cliente los
+devolvia. La semana pasada se devolvieron como once pedidos, mas o menos un diez
+por ciento, que es bastante.
+
+A partir del lunes el corte queda a las 4 de la tarde del dia anterior. Lo que
+no alcance a liberarse a esa hora se despacha al dia siguiente. El cambio en el
+sistema ya quedo listo, TH y TI nos ayudaron con eso.
+
+Sabemos que esto implica que cartera tenga que revisar cupos mas temprano y que
+bodega aliste mas temprano tambien. Es un esfuerzo, pero creemos que vale la
+pena. Creemos que va a valer la pena y que en unas semanas vamos a ver la
+diferencia.
+
+Cualquier duda nos escriben.</div>
+        <p class="check">Al terminar: léalo en voz alta. ¿Sigue sonando a la persona que lo escribió, o ya suena a comunicado? Y de los 5 cambios que listó, ¿cuántos habría hecho usted?</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 · técnica 07 · few-shot -->
+  <section class="slide">
+    <div class="kicker step">Técnica 07 · <span class="tech">few-shot</span></div>
+    <h2 class="step">Enseñar con ejemplos, no con definiciones</h2>
+    <p class="meta step">Describir con palabras qué es «urgente para mí» es difícil. Mostrarlo con cuatro ejemplos es inmediato.</p>
+    <div class="lab">
+      <div class="step">
+        <span class="tag a">El prompt</span>
+        <div class="good" style="margin-top:.4rem">Clasifica cada asunto de correo en una de estas categorías: URGENTE, RUTINA, INFORMATIVO, IGNORAR. Sigue mi criterio, guíate por estos ejemplos:
+"Servidor caído en sede norte" → URGENTE
+"Recordatorio: pago de nómina el 30" → RUTINA
+"Boletín mensual de la cámara" → INFORMATIVO
+"Promoción de hosting 50 % off" → IGNORAR
 Devuelve una tabla Asunto | Categoría | Motivo (máx. 8 palabras) para los 20 asuntos que pego abajo.</div>
-        <div class="why"><strong>Técnica · <span class="tech">few-shot</span></strong>Describir con palabras qué es “urgente para mí” es difícil; mostrarlo con 4 ejemplos es inmediato. El modelo infiere la regla de clasificación a partir de los casos. Es la técnica más rentable cuando el criterio es propio y difícil de verbalizar: etiquetar, priorizar, imitar mi estilo de escritura.<br><span class="pill">Insumo 04 · asuntos-de-correo.txt</span></div>
+        <div class="why"><strong>Por qué funciona · <span class="tech">few-shot</span></strong>El modelo infiere la regla de clasificación a partir de los casos, sin que nadie tenga que enunciarla. Es la técnica más rentable cuando el criterio es propio y difícil de verbalizar: etiquetar, priorizar, imitar mi estilo de escritura.</div>
       </div>
-      <div class="card step">
-        <span class="tag a">Estación B · Prompt inverso</span>
-        <h3 style="margin:.2rem 0 .5rem">Plan de trabajo</h3>
-        <div class="good">Quiero un plan de trabajo para organizar el archivo físico de mi oficina en 6 semanas. No me des el plan todavía: hazme una pregunta a la vez, espera mi respuesta, y no pases a la siguiente hasta que responda. Cuando tengas lo necesario, dime “listo” y entrégame el plan en tabla Semana | Actividad | Entregable.</div>
-        <div class="why"><strong>Técnica · <span class="tech">prompt inverso</span></strong>Se invierten los papeles: la IA entrevista y yo respondo. Sirve cuando el problema está mal definido, porque las preguntas van sacando restricciones que yo no habría escrito (cuántas cajas, quién ayuda, si se puede cerrar la oficina). La instrucción “una pregunta a la vez” es clave; sin ella lanza quince juntas y se pierde el efecto.</div>
-      </div>
-      <div class="card step">
-        <span class="tag a">Estación C · Meta-prompt</span>
-        <h3 style="margin:.2rem 0 .5rem">Que mejore tu prompt</h3>
-        <div class="good">Este es mi prompt: “resume las respuestas de la encuesta de clima laboral”. No lo ejecutes. Actúa como experto en ingeniería de prompt: 1) dime qué información crítica le falta; 2) reescríbelo en versión corta y versión detallada; 3) explica en 3 viñetas qué cambiaste y por qué.</div>
-        <div class="why"><strong>Técnica · <span class="tech">meta-prompt</span></strong>El modelo conoce los patrones de un buen prompt porque fue entrenado con enormes cantidades de instrucciones y sus resultados. Pedirle que diagnostique el mío convierte la herramienta en tutor. El “no lo ejecutes” es indispensable: sin esa frase resuelve la tarea y se salta el análisis.</div>
-      </div>
-      <div class="card step">
-        <span class="tag a">Estación D · Salida estructurada</span>
-        <h3 style="margin:.2rem 0 .5rem">De desorden a tabla</h3>
-        <div class="good">Convierte estas notas de bodega en una tabla con columnas Producto | Cantidad | Unidad | Observación. Si un dato no está en el texto, escribe “sin dato”: no lo completes por lógica.
-“llegaron 12 cajas de papel carta ayer, una venía mojada. de tóner quedan 3 pero uno está vencido. pedir grapas urgente, no quedan. marcadores como 20, creo. sillas: llegaron 5 de las 8 que pedimos.”</div>
-        <div class="why"><strong>Técnica · <span class="tech">salida estructurada</span></strong>Definir columnas y valores permitidos convierte texto suelto en datos que sirven para un Excel o un proceso. El “no lo completes por lógica” trabaja contra la tendencia del modelo a rellenar vacíos: en las notas no dice cuántas grapas hay, y sin esa restricción escribiría un número razonable. Es la puerta de entrada a la automatización del módulo 3.<br><span class="pill">Insumo 05 · notas-de-bodega.txt</span></div>
+      <div class="step">
+        <div class="mat-h"><span class="pill">Insumo 04 · asuntos-de-correo.txt</span> Los 20 asuntos.</div>
+        <div class="mat">Servidor de facturación caído en sede norte
+Recordatorio: pago de nómina el 30
+Boletín mensual de la cámara de comercio
+Promoción de hosting 50% off solo hoy
+Auditoría pide evidencias del proceso de compras antes de las 4
+RV: RV: RV: ¿alguien sabe de quién es esta factura?
+Renovación de la póliza vence en 3 días — requiere firma
+Invitación: desayuno de networking el próximo jueves
+Cliente Ferretería La 30 amenaza con cancelar el contrato
+Actualización de la política de cookies de nuestro proveedor de correo
+Falta tu firma en el acta del comité de la semana pasada
+Encuesta de satisfacción del almuerzo corporativo
+URGENTE URGENTE leer antes de las 5 pm
+Certificado de retención en la fuente 2025 disponible
+Cambio de horario del parqueadero a partir del lunes
+Se cayó la plataforma de la DIAN, no podemos radicar
+Feliz cumpleaños a nuestros colaboradores de octubre
+Solicitud de vacaciones de Rubén Castaño pendiente de aprobación hace 8 días
+Webinar gratuito: inteligencia artificial para pymes
+El cliente respondió tu cotización — pregunta por el descuento</div>
+        <p class="check">Al terminar: compare su tabla con la de alguien más. Los asuntos en que no coincidan son los que decide su criterio, no el texto del asunto. Agregue un quinto ejemplo al prompt y vuelva a correrlo.</p>
       </div>
     </div>
   </section>
 
-  <!-- 9 -->
+  <!-- 14 · técnica 08 · paso a paso -->
   <section class="slide">
-    <div class="kicker step">Reto 6</div>
-    <h2 class="step">Conversar con mis propios documentos</h2>
-    <p class="lead step">Cada uno sube un manual, reglamento o informe de su trabajo (anonimizado) a NotebookLM o a su chat de IA y corre estos tres prompts en orden. Quien no traiga documento usa el reglamento de respaldo. <span class="pill">Insumo 09 · reglamento-de-respaldo.md</span></p>
-    <div class="grid3 step" style="margin-top:1.2rem">
-      <div class="card"><span class="tag a">1 · Resumen ejecutivo</span><div class="good" style="margin-top:.5rem">Resume este documento en 200 palabras para alguien que nunca lo ha leído y debe aplicarlo mañana. Cita la página o sección de donde sale cada afirmación.</div></div>
-      <div class="card"><span class="tag a">2 · Preguntas frecuentes</span><div class="good" style="margin-top:.5rem">Genera las 8 preguntas que más haría un empleado nuevo sobre este documento, con su respuesta y la sección que la respalda. Si el documento no responde una pregunta, dilo explícitamente.</div></div>
-      <div class="card"><span class="tag a">3 · Vacíos y choques</span><div class="good" style="margin-top:.5rem">Señala contradicciones, plazos ambiguos o pasos sin responsable asignado en este documento. Presenta una tabla Hallazgo | Sección | Por qué es un problema.</div></div>
-    </div>
-    <div class="step" style="margin-top:1.3rem">
-      <span class="pill">Regla de la casa: toda respuesta se abre en el documento y se comprueba</span>
-      <span class="pill">Si la IA no muestra de dónde lo saca, no se usa</span>
-    </div>
-    <div class="why step" style="margin-top:1rem;max-width:74ch">
-      <strong>Concepto · anclaje en fuente</strong>
-      Cuando la respuesta debe salir de un documento que yo aporto, el modelo deja de recordar y empieza a leer. Eso reduce mucho la invención, aunque no la elimina: puede seguir interpretando de más. Por eso los tres prompts exigen decir de qué sección sale cada afirmación y declarar lo que el documento no responde. <em>Herramientas como NotebookLM están hechas para esto; un chat común también sirve si el documento cabe en la conversación.</em>
+    <div class="kicker step">Técnica 08 · <span class="tech">paso a paso</span></div>
+    <h2 class="step">Que muestre el razonamiento</h2>
+    <p class="meta step">Mismo caso, dos prompts, dos conversaciones separadas. Se comparan las respuestas.</p>
+    <div class="lab">
+      <div class="step">
+        <span class="tag w">A · solo la respuesta</span>
+        <div class="prompt" style="margin-top:.35rem">Con los datos de los tres proveedores que pego abajo, dime cuál debo contratar.</div>
+        <span class="tag k" style="margin-top:.7rem">B · el razonamiento primero</span>
+        <div class="prompt" style="margin-top:.35rem">Con los datos de los tres proveedores que pego abajo, evalúa uno por uno cada criterio antes de concluir. Primero arma una tabla Proveedor | Criterio | Puntaje 1–5 | Por qué ese puntaje. Después aplica los pesos que te doy y muestra el cálculo. Solo al final da la recomendación. Si te falta algún dato para puntuar un criterio, dilo en vez de estimarlo.</div>
+        <div class="why"><strong>Por qué funciona · <span class="tech">paso a paso</span></strong>Obligarlo a producir las etapas intermedias cambia el resultado, no solo el formato: cuando responde de una, elige lo que «suena» a mejor opción y después justifica. Además deja el razonamiento auditable: si un puntaje está mal, se ve cuál.</div>
+      </div>
+      <div class="step">
+        <div class="mat-h"><span class="pill">Insumo 06 · proveedores.md</span> El caso, la tabla y los pesos.</div>
+        <div class="mat">Distribuidora Andina necesita un proveedor de empaque para el próximo año.
+El consumo estimado es de 240.000 unidades. Hay tres cotizaciones.
+
+| | Empaques del Valle | Cartonera Pacífico | Soluciones Embalar |
+|---|---|---|---|
+| Precio por unidad | $1.180 | $1.290 | $1.355 |
+| Plazo de entrega | 20 días | 12 días | 8 días |
+| Pedido mínimo | 50.000 unidades | 20.000 unidades | 10.000 unidades |
+| Garantía por defectos | Sin garantía escrita | Reposición en 30 días | Reposición en 15 días |
+| Años en el mercado | 3 | 14 | 9 |
+| Certificación de calidad | No tiene | ISO 9001 | ISO 9001 + FSC |
+| Clientes de referencia | 1, no contesta el teléfono | 3 verificadas | 2 verificadas |
+| Forma de pago | 100% anticipado | 50/50 | 30 días después de entrega |
+| Incumplimientos reportados | Sin información | 1 en los últimos 2 años | Sin información |
+
+Criterios y pesos:
+
+| Criterio | Peso |
+|---|---|
+| Costo total del año | 30 % |
+| Confiabilidad de entrega (plazo + incumplimientos) | 25 % |
+| Calidad y garantía | 20 % |
+| Flexibilidad (pedido mínimo + forma de pago) | 15 % |
+| Trayectoria y referencias | 10 % |</div>
+        <p class="check">Al terminar: ¿cambió el proveedor recomendado entre A y B, o cambió solo la explicación? ¿Aparece en algún lado el costo total del año? ¿Y qué hizo con las casillas que dicen «sin información»?</p>
+      </div>
     </div>
   </section>
 
-  <!-- 10 -->
+  <!-- 15 · técnica 09 · prompt inverso -->
   <section class="slide">
-    <div class="kicker step">Entrada por imagen</div>
-    <h2 class="step">Foto a dato</h2>
-    <p class="lead step">Cada uno fotografía algo que tenga a mano: un recibo, un tablero con una lluvia de ideas, una hoja escrita a mano, un pantallazo de un cronograma. Quien no tenga nada a mano fotografía la hoja de respaldo. <span class="pill">Insumo 10 · hoja-para-fotografiar.html</span></p>
-    <div class="grid2 step" style="margin-top:1.2rem">
-      <div><div class="prompt">Lee esta foto y extrae la información en una tabla con columnas Concepto | Valor | Fecha. No interpretes ni corrijas cifras; si algo no se alcanza a leer, escribe “ilegible”. Al final dime qué campos quedaron ilegibles.</div></div>
-      <div><div class="prompt">Esta foto es un tablero con notas de una reunión. Conviértelo en una lista de tareas con responsable y fecha cuando aparezcan. Lo que esté escrito como idea y no como tarea, ponlo en una sección aparte llamada “ideas sin dueño”.</div></div>
+    <div class="kicker step">Técnica 09 · <span class="tech">prompt inverso</span></div>
+    <h2 class="step">Que pregunte antes de responder</h2>
+    <p class="meta step">Se invierten los papeles: la IA entrevista y usted responde. Sirve cuando el problema todavía está mal definido.</p>
+    <div class="lab solo">
+      <div class="step">
+        <span class="tag a">El prompt</span>
+        <div class="good" style="margin-top:.4rem">Quiero un plan de trabajo para organizar el archivo físico de mi oficina en 6 semanas. No me des el plan todavía: hazme una pregunta a la vez, espera mi respuesta, y no pases a la siguiente hasta que responda. Cuando tengas lo necesario, dime "listo" y entrégame el plan en tabla Semana | Actividad | Entregable.</div>
+        <p class="mini">Después de hacerlo con este caso, repítalo con una tarea suya de verdad: basta cambiar la primera frase.</p>
+        <div class="why"><strong>Por qué funciona · <span class="tech">prompt inverso</span></strong>Las preguntas van sacando restricciones que yo no habría escrito —cuántas cajas, quién ayuda, si se puede cerrar la oficina—. La instrucción «una pregunta a la vez» es clave: sin ella lanza quince juntas y se pierde el efecto.</div>
+        <p class="check">Al terminar: ¿cuál de sus preguntas no se le había ocurrido a usted? Esa es la que le faltaba al prompt original.</p>
+      </div>
     </div>
-    <div class="why step" style="margin-top:1.1rem;max-width:74ch">
-      <strong>Concepto · multimodalidad</strong>
-      Estos modelos reciben imagen, no solo texto, y a diferencia de un OCR clásico no se limitan a transcribir: interpretan lo que ven. Esa es la ventaja y el riesgo. Si un dígito está borroso, un OCR lo marca; el modelo tiende a proponer el valor más plausible. De ahí el “no interpretes ni corrijas cifras” y el reporte de campos ilegibles: sin eso, el error se vuelve invisible.
-    </div>
-    <p class="meta step" style="margin-top:1rem">Conversación de cierre: ¿qué de lo que hacemos a mano cada semana podría entrar así?</p>
   </section>
 
-  <!-- 11 -->
+  <!-- 16 · técnica 10 · meta-prompt -->
   <section class="slide">
-    <div class="kicker step">Reto 7 · modo voz</div>
-    <h2 class="step">Simulador de conversaciones difíciles</h2>
-    <p class="lead step">Se practica hablando con la IA en modo voz. Ella hace el papel, el participante sostiene la conversación hasta que el tema se agote y luego pide retroalimentación.</p>
-    <div class="grid3 step" style="margin-top:1.2rem">
-      <div class="card"><span class="tag w">Cliente difícil</span><div class="good" style="margin-top:.5rem">Actúa como un cliente que pidió un domicilio hace 90 minutos y no llega. Estás molesto pero no grosero. No aceptes la primera disculpa: insiste dos veces antes de ceder. Yo soy el asesor. Empieza tú y mantén el personaje hasta que diga “fin”.</div></div>
+    <div class="kicker step">Técnica 10 · <span class="tech">meta-prompt</span></div>
+    <h2 class="step">Que mejore su propio prompt</h2>
+    <p class="meta step">La herramienta como tutor: no resuelve la tarea, diagnostica la instrucción.</p>
+    <div class="lab solo">
+      <div class="step">
+        <span class="tag a">El prompt</span>
+        <div class="good" style="margin-top:.4rem">Este es mi prompt: "resume las respuestas de la encuesta de clima laboral". No lo ejecutes. Actúa como experto en ingeniería de prompt: 1) dime qué información crítica le falta; 2) reescríbelo en versión corta y versión detallada; 3) explica en 3 viñetas qué cambiaste y por qué.</div>
+        <p class="mini">Segunda vuelta, la que importa: reemplace el prompt de ejemplo por uno suyo, de una tarea que vaya a hacer esta semana.</p>
+        <div class="why"><strong>Por qué funciona · <span class="tech">meta-prompt</span></strong>El modelo conoce los patrones de un buen prompt porque fue entrenado con enormes cantidades de instrucciones y sus resultados. El «no lo ejecutes» es indispensable: sin esa frase resuelve la tarea y se salta el análisis.</div>
+        <p class="check">Al terminar: de lo que le señaló como «información crítica que falta», ¿cuánto de eso solo lo sabe usted? Eso es exactamente lo que ningún prompt genérico va a traer.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 17 · técnica 11 · anclaje en fuente -->
+  <section class="slide">
+    <div class="kicker step">Técnica 11 · <span class="tech">anclaje en fuente</span></div>
+    <h2 class="step">Conversar con un documento</h2>
+    <p class="meta step">Suba su propio manual, reglamento o informe (anonimizado) a NotebookLM o al chat. Quien no traiga documento usa el de al lado. Los tres prompts van en orden.</p>
+    <div class="lab">
+      <div class="step">
+        <span class="tag a">1 · Resumen ejecutivo</span>
+        <div class="good" style="margin-top:.3rem">Resume este documento en 200 palabras para alguien que nunca lo ha leído y debe aplicarlo mañana. Cita la página o sección de donde sale cada afirmación.</div>
+        <span class="tag a" style="margin-top:.6rem">2 · Preguntas frecuentes</span>
+        <div class="good" style="margin-top:.3rem">Genera las 8 preguntas que más haría un empleado nuevo sobre este documento, con su respuesta y la sección que la respalda. Si el documento no responde una pregunta, dilo explícitamente.</div>
+        <span class="tag a" style="margin-top:.6rem">3 · Vacíos y choques</span>
+        <div class="good" style="margin-top:.3rem">Señala contradicciones, plazos ambiguos o pasos sin responsable asignado en este documento. Presenta una tabla Hallazgo | Sección | Por qué es un problema.</div>
+        <div class="why"><strong>Por qué funciona · <span class="tech">anclaje en fuente</span></strong>Cuando la respuesta debe salir de un documento que yo aporto, el modelo deja de recordar y empieza a leer. Eso reduce mucho la invención, aunque no la elimina: puede seguir interpretando de más. Por eso los tres prompts exigen decir de qué sección sale cada afirmación. <em>Si no muestra de dónde lo saca, no se usa.</em></div>
+      </div>
+      <div class="step">
+        <div class="mat-h"><span class="pill">Insumo 09 · reglamento-de-respaldo.md</span> Documento ficticio, para quien no traiga el suyo.</div>
+        <div class="mat">REGLAMENTO INTERNO DE TRABAJO EN CASA, PERMISOS Y AUSENCIAS
+Distribuidora Andina S.A.S.
+Versión 3 · Aprobado por el Comité Directivo · Vigente desde el 1.º de febrero
+
+CAPÍTULO I — OBJETO Y ALCANCE
+
+Artículo 1. El presente reglamento regula las modalidades de trabajo en casa,
+los permisos remunerados y no remunerados, y el trámite de ausencias del personal
+administrativo y operativo de la compañía.
+
+Artículo 2. Aplica a todos los colaboradores vinculados mediante contrato a
+término indefinido o fijo. El personal en misión a través de empresa temporal se
+rige por el reglamento de la empresa de servicios temporales, salvo en lo
+relativo a horarios de ingreso a las instalaciones.
+
+Artículo 3. El incumplimiento de lo dispuesto aquí dará lugar a las medidas
+disciplinarias previstas en el Reglamento Interno de Trabajo general.
+
+CAPÍTULO II — TRABAJO EN CASA
+
+Artículo 4. El trabajo en casa es una modalidad ocasional y transitoria. No
+constituye teletrabajo ni modifica las condiciones pactadas en el contrato.
+
+Artículo 5. Podrán acogerse a esta modalidad los colaboradores de las áreas
+administrativas cuyas funciones no requieran presencia física permanente. Las
+áreas de bodega, despacho y servicio al cliente presencial quedan excluidas.
+
+Artículo 6. El máximo autorizado es de dos días por semana, que no podrán ser
+lunes ni viernes, salvo autorización expresa del jefe de área.
+
+Artículo 7. La solicitud se presenta al jefe inmediato con tres días hábiles de
+anticipación, mediante el formato FT-TH-14 disponible en la intranet.
+
+Artículo 8. El jefe inmediato responderá la solicitud oportunamente. En caso de
+negarla, deberá indicar la razón por escrito.
+
+Artículo 9. Durante la jornada en casa el colaborador deberá permanecer
+disponible en los canales oficiales de la compañía dentro del horario laboral
+habitual, y conectarse a la reunión diaria de su área.
+
+Artículo 10. Los costos de conectividad e insumos de oficina en el domicilio
+corren por cuenta del colaborador, salvo los equipos de cómputo, que son
+suministrados por la compañía y deben ser devueltos al terminar el vínculo.
+
+CAPÍTULO III — PERMISOS REMUNERADOS
+
+Artículo 11. Se concederán permisos remunerados en los siguientes casos:
+a) Calamidad doméstica comprobada: hasta tres días.
+b) Fallecimiento de familiar hasta segundo grado de consanguinidad: cinco días.
+c) Diligencias judiciales o citaciones de autoridad: el tiempo que indique la
+   citación.
+d) Cita médica propia o de hijo menor de edad: hasta medio día por cita.
+e) Grado académico propio, de hijos o de cónyuge: un día.
+
+Artículo 12. La solicitud de permiso remunerado se radica ante el jefe inmediato
+con cinco días hábiles de anticipación, salvo los casos de los literales a) y c)
+del artículo anterior, que por su naturaleza se informan tan pronto se conozca el
+hecho.
+
+Artículo 13. Todo permiso remunerado deberá soportarse con el documento que lo
+acredite dentro de los tres días hábiles siguientes al reintegro. Si no se
+presenta el soporte, el permiso se descontará de nómina.
+
+CAPÍTULO IV — PERMISOS NO REMUNERADOS Y COMPENSACIÓN DE TIEMPO
+
+Artículo 14. Los permisos no remunerados requieren aprobación del jefe de área y
+concepto favorable de Talento Humano.
+
+Artículo 15. El colaborador podrá compensar el tiempo de un permiso no remunerado
+trabajando horas adicionales dentro del mismo mes calendario, previo acuerdo
+escrito. La compensación no genera recargo alguno.
+
+Artículo 16. No se concederán permisos no remunerados durante los períodos de
+cierre contable (últimos cinco días hábiles de cada mes) ni durante la temporada
+de alta demanda comprendida entre el 15 de noviembre y el 15 de enero.
+
+CAPÍTULO V — AUSENCIAS E INCAPACIDADES
+
+Artículo 17. El colaborador que no pueda asistir deberá informar a su jefe
+inmediato antes del inicio de su jornada, por el canal oficial del área.
+
+Artículo 18. Las incapacidades médicas deben radicarse en Talento Humano dentro
+de los dos días hábiles siguientes a su expedición.
+
+Artículo 19. Tres ausencias injustificadas en un período de treinta días
+calendario constituyen falta grave.
+
+Artículo 20. El seguimiento de las ausencias reiteradas se realizará de manera
+mensual y se dejará constancia en el expediente del colaborador.
+
+CAPÍTULO VI — DISPOSICIONES FINALES
+
+Artículo 21. Las solicitudes de trabajo en casa deberán presentarse con dos días
+hábiles de anticipación ante el jefe inmediato, quien las tramitará según la
+disponibilidad del área.
+
+Artículo 22. Lo no previsto en este reglamento será resuelto por el Comité
+Directivo.
+
+Artículo 23. El presente reglamento deroga la versión 2 y todas las circulares
+que le sean contrarias.</div>
+        <p class="check">Al terminar: abra el documento y compruebe una por una las afirmaciones del resumen. De los hallazgos del prompt 3, ¿cuántos resisten la lectura?</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 18 · técnica 12 · multimodal -->
+  <section class="slide">
+    <div class="kicker step">Técnica 12 · <span class="tech">multimodal</span></div>
+    <h2 class="step">De la foto al dato</h2>
+    <p class="meta step">Fotografíe con el celular lo que tenga a mano —un recibo, un tablero, una hoja escrita— o fotografíe esta pantalla. Suba la foto, no el texto.</p>
+    <div class="lab">
+      <div class="step">
+        <span class="tag a">1 · Para el recibo</span>
+        <div class="prompt" style="margin-top:.35rem">Lee esta foto y extrae la información en una tabla con columnas Concepto | Valor | Fecha. No interpretes ni corrijas cifras; si algo no se alcanza a leer, escribe "ilegible". Al final dime qué campos quedaron ilegibles.</div>
+        <span class="tag a" style="margin-top:.7rem">2 · Para el tablero</span>
+        <div class="prompt" style="margin-top:.35rem">Esta foto es un tablero con notas de una reunión. Conviértelo en una lista de tareas con responsable y fecha cuando aparezcan. Lo que esté escrito como idea y no como tarea, ponlo en una sección aparte llamada "ideas sin dueño".</div>
+        <div class="why"><strong>Por qué funciona · <span class="tech">multimodal</span></strong>A diferencia de un OCR clásico, el modelo no transcribe: interpreta lo que ve. Esa es la ventaja y el riesgo. Si un dígito está borroso, un OCR lo marca; el modelo tiende a proponer el valor más plausible. De ahí el «no interpretes ni corrijas cifras».</div>
+        <p class="check">Al terminar: ¿reportó algún campo ilegible, o los llenó todos? ¿Dónde clasificó la nota que es una pregunta y no una tarea?</p>
+      </div>
+      <div class="step scroll">
+        <div class="mat-h"><span class="pill">Insumo 10 · hoja-para-fotografiar.html</span> Para imprimir; o fotografíe aquí mismo.</div>
+        <div class="recibo">
+          <div class="head">
+            <b>FERRETERÍA LA 30</b><br>
+            NIT 900.118.4<span class="blur">2</span>7-3<br>
+            Cra 30 # 12-4<span class="blur">5</span> · Tel 604 44<span class="faint">2 18 90</span>
+          </div>
+          <div class="sep"></div>
+          <div class="row"><span>Factura N.º</span><span>FV-<span class="blur">20 8 4</span>1</span></div>
+          <div class="row"><span>Fecha</span><span>14/03/2026</span></div>
+          <div class="row"><span>Vence</span><span>1<span class="blur">3</span>/04/2026</span></div>
+          <div class="row"><span>Cliente</span><span>Distrib. Andina</span></div>
+          <div class="sep"></div>
+          <div class="row"><span>2 x Guante carnaza</span><span>38.400</span></div>
+          <div class="row"><span>1 x Taladro perc.</span><span>4<span class="smudge">29.900</span></span></div>
+          <div class="row"><span>6 x Broca 3/8</span><span>27.600</span></div>
+          <div class="row"><span>1 x Extensión 10 m</span><span>5<span class="blur">6</span>.800</span></div>
+          <div class="row"><span>4 x Candado 40 mm</span><span>72.000</span></div>
+          <div class="row"><span>3 x Silicona trans.</span><span>21.300</span></div>
+          <div class="sep"></div>
+          <div class="row"><span>Subtotal</span><span>646.000</span></div>
+          <div class="row"><span>IVA 19%</span><span>122.740</span></div>
+          <div class="row tot"><span>TOTAL</span><span>768.740</span></div>
+          <div class="sep"></div>
+          <div class="row"><span>Forma de pago</span><span class="blur">Crédito 30 d</span></div>
+          <div class="row"><span>Recibió</span><span class="faint">R. Castaño</span></div>
+        </div>
+        <div class="board" style="margin-top:.8rem">
+          <div class="note n-y r1">Camilo: cambiar hora del proceso a las 4 pm — jueves</div>
+          <div class="note n-b r2">¿Y si hacemos las entregas de la norte en dos turnos?</div>
+          <div class="note n-p r3">Paola — pedir 2 temporales antes del 25 de oct</div>
+          <div class="note n-g r4">Rubén: medir devoluciones semana siguiente</div>
+          <div class="note n-y r5">Mirar lo del costo de parada de planta</div>
+          <div class="note n-b r6">Ojalá tuviéramos alertas automáticas de stock</div>
+          <div class="note n-p r2">Llamar al proveedor del sistema — acuerdo de actualizaciones</div>
+          <div class="note n-g r1">Centro de costo de los temporales: ¿cuál?</div>
+          <div class="note n-y r3">Traer cotización de empaque a comité — Édgar</div>
+          <div class="note n-b r4">Idea: tablero de indicadores en la entrada de bodega</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 19 · técnica 13 · rol persistente -->
+  <section class="slide">
+    <div class="kicker step">Técnica 13 · <span class="tech">rol persistente</span></div>
+    <h2 class="step">Ensayar una conversación difícil</h2>
+    <p class="meta step">En modo voz, con audífonos. La IA hace el papel; usted sostiene la conversación hasta que el tema se agote y después pide la evaluación.</p>
+    <div class="grid3 step" style="margin-top:1rem">
+      <div class="card"><span class="tag w">Cliente difícil</span><div class="good" style="margin-top:.5rem">Actúa como un cliente que pidió un domicilio hace 90 minutos y no llega. Estás molesto pero no grosero. No aceptes la primera disculpa: insiste dos veces antes de ceder. Yo soy el asesor. Empieza tú y mantén el personaje hasta que diga "fin".</div></div>
       <div class="card"><span class="tag w">Negociación salarial</span><div class="good" style="margin-top:.5rem">Actúa como mi jefe en una reunión donde pido aumento. Eres razonable pero tienes presupuesto limitado y me pedirás justificar con resultados concretos. No cedas sin datos. Yo empiezo.</div></div>
       <div class="card"><span class="tag w">Entrevista</span><div class="good" style="margin-top:.5rem">Actúa como entrevistador para un cargo de coordinador administrativo. Hazme 6 preguntas, una por turno, incluyendo dos incómodas sobre vacíos en mi experiencia. No me evalúes hasta el final.</div></div>
     </div>
-    <div class="prompt step" style="margin-top:1.1rem">Sal del personaje. Evalúa mi desempeño en esta conversación: 3 cosas que hice bien, 3 por mejorar y la frase exacta que debí decir en el momento más flojo.</div>
-    <div class="why step" style="margin-top:.9rem;max-width:74ch">
-      <strong>Concepto · rol persistente y ensayo seguro</strong>
-      Asignar un personaje con una motivación concreta (“no aceptes la primera disculpa”) hace que el modelo sostenga una postura en vez de complacer, que es su comportamiento natural. Sin esa instrucción cede en el primer turno y el ensayo no sirve. El valor pedagógico está en que permite equivocarse sin costo frente al cliente o el jefe real, y en que la herramienta pasa de redactar textos a entrenar una habilidad.
+    <div class="step" style="margin-top:.9rem">
+      <span class="tag k">Al final, sin excepción</span>
+      <div class="prompt" style="margin-top:.35rem">Sal del personaje. Evalúa mi desempeño en esta conversación: 3 cosas que hice bien, 3 por mejorar y la frase exacta que debí decir en el momento más flojo.</div>
+    </div>
+    <div class="lab solo step" style="margin-top:.7rem">
+      <div>
+        <div class="why"><strong>Por qué funciona · <span class="tech">rol persistente</span></strong>Asignar un personaje con una motivación concreta («no aceptes la primera disculpa») hace que el modelo sostenga una postura en vez de complacer, que es su comportamiento natural. Sin esa instrucción cede en el primer turno y el ensayo no sirve. El valor está en poder equivocarse sin costo frente al cliente o el jefe real.</div>
+        <p class="check">Al terminar: ¿en qué turno cedió usted? Ahí es donde hay que practicar, no en el guion.</p>
+      </div>
     </div>
   </section>
 
-  <!-- 12 -->
+  <!-- 20 · técnica 14 · verificación -->
   <section class="slide">
-    <div class="kicker">Proyecto final</div>
+    <div class="kicker step">Técnica 14 · <span class="tech">verificación</span></div>
+    <h2 class="step">¿Quién miente?</h2>
+    <p class="meta step">Primero corra el prompt en su sector y busque cada dato. Después aplique el procedimiento a las cinco afirmaciones de la derecha.</p>
+    <div class="lab">
+      <div class="step">
+        <div class="prompt">Dame 5 datos con cifra y fuente sobre <b>[mi sector: logística / educación / salud / retail]</b> en Colombia en los últimos 2 años. Incluye el nombre de la entidad, el año y el enlace.</div>
+        <ul class="plain" style="margin-top:.6rem">
+          <li><b>1.</b> Subraye lo verificable: cifras, años, citas, artículos de normas, enlaces y nombres propios. La redacción y el tono no se verifican.</li>
+          <li><b>2.</b> Abra cada enlace. Si no abre, no existe.</li>
+          <li><b>3.</b> Busque la cifra en la fuente primaria, no en un resumen de segunda mano.</li>
+          <li><b>4.</b> Compruebe que el año coincida. La falla típica no es inventar la cifra: es traerla de otro año.</li>
+          <li><b>5.</b> Lo que no se pudo verificar se borra o se marca. «Sin confirmar» es una respuesta profesional.</li>
+        </ul>
+        <div class="why"><strong>Concepto · <span class="tech">alucinación</span></strong>Una respuesta fluida, plausible y falsa. No es un fallo ocasional: el modelo construye la secuencia más verosímil, y un informe inventado con nombre de entidad real es altamente verosímil. Suena igual de seguro cuando acierta que cuando inventa, así que no sirve «verificar lo que suene raro» —nada suena raro—: se verifica por tipo de afirmación.</div>
+      </div>
+      <div class="step">
+        <div class="mat-h"><span class="pill">Insumo 08 · verificacion.md</span> Salida sin editar de una IA. Marque ✅ ⚠️ ❌</div>
+        <div class="mat">1. Según el Observatorio Nacional de Logística y Competitividad, el costo
+   logístico de las empresas colombianas representó el 17,4 % de sus ventas en
+   2024. Fuente: https://www.onlc.gov.co/informes/costo-logistico-2024.pdf
+
+2. El DANE reportó que el transporte de carga por carretera movilizó
+   312 millones de toneladas en 2023, un 8 % más que el año anterior, cuando se
+   movilizaron 301 millones de toneladas.
+
+3. Colombia ocupó el puesto 58 entre 139 países en el Índice de Desempeño
+   Logístico del Banco Mundial de 2023.
+
+4. La Encuesta Nacional Logística del Ministerio de Transporte, edición 2022,
+   encontró que el 62 % de las empresas encuestadas no mide sus costos
+   logísticos de forma separada.
+
+5. De acuerdo con el estudio "Logística 4.0 en Latinoamérica" de la consultora
+   Deloitte Colombia (2025), el 44 % de los operadores logísticos del país ya
+   utiliza algún sistema de ruteo automatizado.</div>
+        <p class="check">Al terminar: ¿cuál le costó más trabajo descartar y por qué? Ojo: una de las cinco se cae sin abrir internet, solo leyéndola con cuidado.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 21 · técnica 15 · iteración -->
+  <section class="slide">
+    <div class="kicker step">Técnica 15 · <span class="tech">iteración</span></div>
+    <h2 class="step">Iterar, no repetir</h2>
+    <p class="meta step">Tome una tarea real suya y trabájela en 5 turnos, en el mismo chat. Prohibido borrar y empezar de nuevo.</p>
+    <div class="lab">
+      <div class="step">
+        <ol class="turns">
+          <li>Pegue su prompt mejorado de cualquiera de las técnicas anteriores.<span>Punto de partida.</span></li>
+          <li>Pídale que pregunte.<span>La IA revela lo que usted asumió.</span></li>
+          <li>Responda sus preguntas y pida la versión final.<span>Aquí suele aparecer el salto de calidad.</span></li>
+          <li>Recórtelo.<span>Ajuste de forma.</span></li>
+          <li>Pida dos versiones.<span>Sale con opciones, no con un solo texto.</span></li>
+        </ol>
+      </div>
+      <div class="step">
+        <div class="mat-h">Los turnos 2, 4 y 5, para copiar</div>
+        <div class="prompt">Antes de responder, hazme las 3 preguntas que más te faltan para hacerlo bien.</div>
+        <div class="prompt" style="margin-top:.5rem">Recórtalo un 30 % sin perder ninguna idea.</div>
+        <div class="prompt" style="margin-top:.5rem">Dame dos versiones: una más formal y una más directa.</div>
+        <div class="why"><strong>Por qué funciona · <span class="tech">la conversación es el contexto</span></strong>Cada turno se suma a lo anterior, así que corregir sobre la marcha es más eficiente que volver a empezar: el modelo ya tiene el caso cargado. Abrir un chat nuevo por cada intento equivale a explicarlo todo desde cero.</div>
+        <p class="check">Al terminar: guarde el resultado. Es la primera entrada de su kit.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 22 · técnica 16 · plantilla con variables -->
+  <section class="slide">
+    <div class="kicker">Técnica 16 · <span class="tech">plantilla con variables</span></div>
     <h2>Kit de prompts de mi cargo</h2>
-    <p class="meta" style="margin-bottom:.9rem">Cinco plantillas con variables entre corchetes, probadas cada una con 2 casos distintos. Este es el entregable del módulo. <span class="pill">Insumo 12 · kit-entregable.md</span></p>
+    <p class="meta" style="margin-bottom:.8rem">Cinco plantillas con variables entre corchetes, cada una probada con 2 casos distintos. Es el entregable del módulo. <span class="pill">Insumo 12 · kit-entregable.md</span></p>
     <div class="grid2 scroll">
       <div class="card step"><span class="tag k">Plantilla 1 · Responder</span><div class="good">Actúa como <b>[mi cargo]</b>. Responde este mensaje de <b>[remitente]</b> en máximo <b>[n]</b> palabras, tono <b>[tono]</b>, con un solo objetivo: <b>[qué quiero lograr]</b>. No prometas <b>[lo que no puedo garantizar]</b>. Mensaje: <b>[pegar]</b></div></div>
       <div class="card step"><span class="tag k">Plantilla 2 · Resumir para alguien</span><div class="good">Resume el texto de abajo para <b>[quién lo va a leer]</b>, que necesita decidir sobre <b>[decisión]</b>. Estructura: qué dice, qué implica para nosotros, qué requiere de <b>[esa persona]</b>. Máximo <b>[n]</b> palabras, sin tecnicismos. Texto: <b>[pegar]</b></div></div>
-      <div class="card step"><span class="tag k">Plantilla 3 · Ordenar datos</span><div class="good">Convierte el contenido de abajo en una tabla con columnas <b>[col1] | [col2] | [col3]</b>. Escribe “sin dato” donde falte información y no completes por deducción. Al final lista los registros dudosos. Contenido: <b>[pegar]</b></div></div>
+      <div class="card step"><span class="tag k">Plantilla 3 · Ordenar datos</span><div class="good">Convierte el contenido de abajo en una tabla con columnas <b>[col1] | [col2] | [col3]</b>. Escribe "sin dato" donde falte información y no completes por deducción. Al final lista los registros dudosos. Contenido: <b>[pegar]</b></div></div>
       <div class="card step"><span class="tag k">Plantilla 4 · Revisar antes de enviar</span><div class="good">Revisa este <b>[documento / correo / informe]</b> como haría <b>[el más exigente de mis revisores]</b>. Señala errores, afirmaciones sin respaldo y puntos que generarían preguntas incómodas. No lo reescribas: dame una lista priorizada. Texto: <b>[pegar]</b></div></div>
       <div class="card step"><span class="tag k">Plantilla 5 · Planear</span><div class="good">Necesito <b>[resultado]</b> antes de <b>[fecha]</b> con <b>[recursos disponibles]</b>. Hazme primero las preguntas que te falten, una a la vez. Luego entrégame el plan en tabla Etapa | Actividad | Responsable | Fecha y marca los 2 riesgos más probables.</div></div>
-      <div class="card step"><span class="tag a">Prueba cruzada</span><h3 style="margin:.2rem 0 .4rem">El examen real</h3><p class="meta">Intercambia tu kit con un compañero. Él usa tus plantillas sin que le expliques nada. Si obtiene un resultado usable, la plantilla está bien escrita. Si pregunta “y aquí qué pongo”, falta precisión.</p></div>
+      <div class="card step">
+        <span class="tag a">Qué más pide el formato</span>
+        <p class="meta" style="margin-top:.4rem">Su regla personal de verificación, la lista concreta de datos que nunca sube a una IA, y por cada plantilla: dos casos probados y <b>qué le ajustó después</b>. Si tras dos pruebas la plantilla quedó idéntica, o no la probó de verdad, o los dos casos eran el mismo caso.</p>
+        <p class="check" style="margin-top:.4rem">Prueba cruzada: un compañero usa su kit sin que usted le explique nada. Si pregunta «y aquí qué pongo», falta precisión.</p>
+      </div>
     </div>
-    <div class="why step" style="margin-top:1rem">
-      <strong>Concepto · de prompt a plantilla parametrizada</strong>
+    <div class="why step" style="margin-top:.8rem">
+      <strong>Por qué funciona · <span class="tech">plantilla con variables</span></strong>
       Un prompt resuelve un caso; una plantilla resuelve un tipo de caso. Los corchetes marcan lo único que cambia entre una semana y otra, y todo lo demás —rol, formato, restricciones— queda fijo porque ya se probó. Esa separación entre parte estable y parte variable es exactamente lo que después se automatiza: un agente no es más que una plantilla a la que alguien más le llena los corchetes.
     </div>
   </section>
 
-  <!-- 12b · conceptual -->
+  <!-- 23 · cierre conceptual -->
   <section class="slide">
     <div class="kicker step">Cierre conceptual</div>
     <h2 class="step">Glosario del módulo</h2>
@@ -560,7 +1114,7 @@ Devuelve una tabla Asunto | Categoría | Motivo (máx. 8 palabras) para los 20 a
     </div>
   </section>
 
-  <!-- 13 -->
+  <!-- 24 · cierre del módulo -->
   <section class="slide">
     <div class="kicker step">Cierre del módulo</div>
     <h2 class="step">Cómo se evalúa</h2>
@@ -611,7 +1165,6 @@ Devuelve una tabla Asunto | Categoría | Motivo (máx. 8 palabras) para los 20 a
     if(k<steps.length){
       const e=steps[k];
       e.classList.add('on');
-      if(e.classList.contains('fcard')) setTimeout(()=>e.classList.add('open'),420);
       k++;
       return true;
     }
@@ -619,8 +1172,11 @@ Devuelve una tabla Asunto | Categoría | Motivo (máx. 8 palabras) para los 20 a
   }
 
   function fwd(){
-    // primero recorre todas las interacciones de la diapositiva
-    const closed=[...slides[si].querySelectorAll('.fcard.on:not(.open)')];
+    /* Primero se recorren las interacciones de la lámina. Las tarjetas que
+       esconden la versión de referencia se abren de a una y solo cuando ya
+       se mostró todo lo demás: el reto es reescribir el prompt antes de ver
+       la respuesta, así que no se pueden abrir solas al avanzar. */
+    const closed=[...slides[si].querySelectorAll('.fcard:not(.open)')];
     if(closed.length && k>=steps.length){ closed[0].classList.add('open'); return; }
     if(next()) return;
     if(si<slides.length-1){ si++; render('fwd'); }
@@ -632,6 +1188,9 @@ Devuelve una tabla Asunto | Categoría | Motivo (máx. 8 palabras) para los 20 a
   document.addEventListener('click',e=>{
     const c=e.target.closest('.fcard');
     if(c){ c.classList.toggle('open'); return; }
+    /* dentro del material del ejercicio se selecciona y se hace scroll:
+       ahí el clic no debe pasar de lámina */
+    if(e.target.closest('.mat')) return;
     if(e.target.closest('.scroll') && e.detail===0) return;
     fwd();
   });
@@ -688,7 +1247,7 @@ Devuelve una tabla Asunto | Categoría | Motivo (máx. 8 palabras) para los 20 a
     return ok;
   }
 
-  document.querySelectorAll('.prompt, .good, .bad').forEach(bloque=>{
+  document.querySelectorAll('.prompt, .good, .bad, .mat').forEach(bloque=>{
     const txt = textoDe(bloque);
     if(!txt) return;
 

@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Módulo 2 · Laboratorio de Ingeniería de Prompt</title>
+<style>
+  :root{
+    --ink:#111317;
+    --muted:#6b7280;
+    --line:#e6e8eb;
+    --accent:#2563eb;
+    --accent-soft:#eef4ff;
+    --warn:#b45309;
+    --warn-soft:#fff7ed;
+    --ok:#047857;
+    --ok-soft:#ecfdf5;
+    --bg:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+    cursor:pointer;
+  }
+  #stage{position:relative;height:100vh;width:100vw}
+  .slide{
+    position:absolute;inset:0;
+    display:none;
+    flex-direction:column;
+    justify-content:center;
+    padding:5vh 7vw;
+    opacity:0;
+    transform:translateY(28px) scale(.99);
+    transition:opacity .55s cubic-bezier(.16,1,.3,1),transform .65s cubic-bezier(.16,1,.3,1);
+  }
+  .slide.live{display:flex}
+  .slide.show{opacity:1;transform:none}
+
+  .kicker{
+    font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--accent);font-weight:700;margin-bottom:.9rem;
+  }
+  h1{font-size:clamp(2.1rem,4.6vw,3.6rem);line-height:1.04;letter-spacing:-.025em;font-weight:800}
+  h2{font-size:clamp(1.5rem,2.9vw,2.3rem);line-height:1.12;letter-spacing:-.02em;font-weight:750;margin-bottom:.4rem}
+  h3{font-size:1rem;font-weight:700;letter-spacing:-.01em}
+  .lead{font-size:clamp(1rem,1.5vw,1.22rem);color:var(--muted);max-width:60ch;line-height:1.5;margin-top:1rem}
+  .meta{font-size:.82rem;color:var(--muted);margin-top:.5rem}
+  .rule{height:1px;background:var(--line);margin:1.4rem 0}
+
+  .step{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .6s cubic-bezier(.16,1,.3,1)}
+  .step.on{opacity:1;transform:none}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem}
+
+  .card{
+    border:1px solid var(--line);border-radius:14px;padding:1rem 1.1rem;background:#fff;
+    transition:transform .4s cubic-bezier(.16,1,.3,1),box-shadow .4s ease,border-color .3s ease;
+  }
+  .card:hover{transform:translateY(-3px);box-shadow:0 12px 30px -18px rgba(17,19,23,.35);border-color:#cfd4da}
+  .tag{
+    display:inline-block;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;font-weight:750;
+    padding:.25rem .5rem;border-radius:999px;margin-bottom:.55rem;
+  }
+  .tag.a{background:var(--accent-soft);color:var(--accent)}
+  .tag.w{background:var(--warn-soft);color:var(--warn)}
+  .tag.k{background:var(--ok-soft);color:var(--ok)}
+
+  .bad{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86rem;color:var(--warn);background:var(--warn-soft);
+       border-radius:8px;padding:.6rem .7rem;line-height:1.45}
+  .good{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;line-height:1.5;
+        background:#f7f8fa;border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:.7rem .8rem;color:#1f2430}
+  .fix{max-height:0;overflow:hidden;opacity:0;transition:max-height .6s cubic-bezier(.16,1,.3,1),opacity .4s ease,margin-top .4s ease;margin-top:0}
+  .card.open .fix{max-height:420px;opacity:1;margin-top:.7rem}
+  .flipnote{font-size:.7rem;color:#9aa1ab;margin-top:.55rem;letter-spacing:.04em}
+  .card.open .flipnote{display:none}
+
+  .prompt{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86rem;line-height:1.6;
+    background:#f7f8fa;border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:0 10px 10px 0;padding:1rem 1.1rem;color:#1f2430;white-space:pre-wrap;
+  }
+  .prompt b{color:var(--accent);font-weight:700}
+
+  /* --- botón Copiar · misma convención que modulo1 y modulo41 ---
+     Va después de .bad/.good/.prompt para que su padding-right gane
+     sobre el atajo padding de esas tres reglas. */
+  .copyable{position:relative;padding-right:4.6rem}
+  .copy-btn{
+    position:absolute;top:.42rem;right:.45rem;z-index:4;
+    padding:4px 9px;border-radius:99px;border:1px solid var(--line);background:#fff;
+    color:var(--muted);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+    font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+    line-height:1;cursor:pointer;opacity:.4;
+    transition:opacity .2s ease,color .2s ease,border-color .2s ease,background .2s ease;
+  }
+  .copyable:hover .copy-btn{opacity:1}
+  .copy-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+  .copy-btn.done{opacity:1;background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+  .copy-btn.fail{opacity:1;background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+
+  .why{
+    margin-top:.6rem;padding:.6rem .75rem;background:#fbfbfc;border:1px dashed #d8dce2;border-radius:10px;
+    font-size:.79rem;line-height:1.5;color:#3c424c;
+  }
+  .why strong{
+    display:block;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);
+    font-weight:750;margin-bottom:.25rem;
+  }
+  .why em{color:#6b7280;font-style:normal}
+  .tech{
+    display:inline-block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.7rem;
+    background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:.15rem .4rem;font-weight:600;
+  }
+
+  table{width:100%;border-collapse:collapse;font-size:.85rem}
+  th,td{text-align:left;padding:.55rem .6rem;border-bottom:1px solid var(--line)}
+  th{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  td.n{color:var(--muted);width:3.2rem}
+
+  ol.turns{list-style:none;counter-reset:t}
+  ol.turns li{
+    counter-increment:t;position:relative;padding:.55rem 0 .55rem 2.6rem;border-bottom:1px solid var(--line);
+    font-size:.95rem;
+  }
+  ol.turns li::before{
+    content:counter(t);position:absolute;left:0;top:.5rem;width:1.7rem;height:1.7rem;border-radius:999px;
+    background:var(--accent-soft);color:var(--accent);font-size:.8rem;font-weight:750;
+    display:grid;place-items:center;
+  }
+  ol.turns li span{display:block;color:var(--muted);font-size:.8rem;margin-top:.15rem}
+
+  ul.plain{list-style:none}
+  ul.plain li{padding:.35rem 0 .35rem 1.1rem;position:relative;font-size:.92rem;line-height:1.45}
+  ul.plain li::before{content:"";position:absolute;left:0;top:.82rem;width:5px;height:5px;border-radius:999px;background:var(--accent)}
+
+  .pill{display:inline-flex;gap:.45rem;align-items:center;font-size:.78rem;color:var(--muted);
+        border:1px solid var(--line);border-radius:999px;padding:.32rem .7rem;margin:.2rem .3rem .2rem 0}
+
+  #num{position:fixed;right:1.5rem;bottom:1.1rem;font-size:.75rem;color:#b9bfc7;font-variant-numeric:tabular-nums;letter-spacing:.08em}
+  .big{font-size:clamp(1.05rem,1.7vw,1.35rem);line-height:1.45;font-weight:600;max-width:52ch}
+  .cols{display:grid;grid-template-columns:.9fr 1.1fr;gap:2rem;align-items:start}
+  .scroll{overflow:auto;max-height:78vh;padding-right:.3rem}
+  .scroll::-webkit-scrollbar{width:6px}
+  .scroll::-webkit-scrollbar-thumb{background:#e3e6ea;border-radius:99px}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- 1 -->
+  <section class="slide">
+    <div class="kicker step">Diplomado · Inteligencia Artificial para el Trabajo</div>
+    <h1 class="step">Módulo 2<br>Ingeniería de prompt<br>y comunicación con IA</h1>
+    <p class="lead step">Laboratorio práctico: todo lo que verás aquí se escribe, se prueba y se ajusta en vivo, en la herramienta de IA de cada participante.</p>
+    <div class="step meta" style="margin-top:1.6rem">
+      <span class="pill">Traer 2 tareas reales del trabajo</span>
+      <span class="pill">Cuentas activas en 2 herramientas de IA</span>
+      <span class="pill">Sin datos confidenciales</span>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide">
+    <div class="kicker step">Punto de partida</div>
+    <h2 class="step">El prompt flojo</h2>
+    <p class="lead step">Todos escriben exactamente esto en su herramienta, sin agregar nada más:</p>
+    <div class="prompt step" style="margin-top:1.2rem">hazme un correo para mi jefe</div>
+    <div class="grid3 step" style="margin-top:1.4rem">
+      <div class="card"><h3>¿Se parecen?</h3><p class="meta">Comparamos 4 o 5 resultados en voz alta.</p></div>
+      <div class="card"><h3>¿Sirve tal cual?</h3><p class="meta">¿Lo enviarías sin editar una sola línea?</p></div>
+      <div class="card"><h3>¿Qué le faltó?</h3><p class="meta">La lista que salga aquí es el temario del módulo.</p></div>
+    </div>
+    <div class="why step" style="margin-top:1.3rem;max-width:72ch">
+      <strong>Concepto · prompt de disparo cero (zero-shot)</strong>
+      Es pedir una tarea sin ejemplos, sin contexto y sin formato. El modelo no falla por falta de capacidad: completa lo más probable en promedio, y el promedio de “un correo para el jefe” es un texto genérico. <em>La calidad de la respuesta está limitada por la cantidad de decisiones que dejaste sin tomar.</em>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="slide">
+    <div class="kicker step">El marco</div>
+    <h2 class="step">Las 6 piezas de un prompt que funciona</h2>
+    <div class="grid3 step" style="margin-top:1.3rem">
+      <div class="card"><span class="tag a">Rol</span><p class="meta">Quién debe ser la IA. <em>“Actúa como secretario técnico de comité.”</em></p></div>
+      <div class="card"><span class="tag a">Contexto</span><p class="meta">Lo que la IA no puede adivinar: cargo, situación, historia, público.</p></div>
+      <div class="card"><span class="tag a">Tarea</span><p class="meta">Un verbo concreto: redacta, clasifica, compara, extrae.</p></div>
+      <div class="card"><span class="tag a">Formato</span><p class="meta">Tabla, viñetas, correo, 120 palabras, columnas exactas.</p></div>
+      <div class="card"><span class="tag a">Restricciones</span><p class="meta">Lo prohibido: no inventar datos, no exclamaciones, no tecnicismos.</p></div>
+      <div class="card"><span class="tag a">Ejemplo</span><p class="meta">Una muestra de la salida que esperas. La pieza que más resultado da.</p></div>
+    </div>
+    <p class="lead step">Regla de bolsillo: si el prompt cabe en un renglón, seguramente le falta contexto.</p>
+  </section>
+
+  <!-- 3b · conceptual -->
+  <section class="slide">
+    <div class="kicker step">Mapa de técnicas</div>
+    <h2 class="step">Mapa de técnicas del módulo</h2>
+    <p class="meta step" style="margin-bottom:.6rem">Cada reto práctico entrena una de estas técnicas. Este mapa es la referencia a la que volvemos todo el módulo.</p>
+    <div class="step scroll">
+      <table>
+        <tr><th>Técnica</th><th>En qué consiste</th><th>Cuándo la uso</th></tr>
+        <tr><td><span class="tech">zero-shot</span></td><td>Pedir la tarea sin ejemplos</td><td>Tareas simples y desechables</td></tr>
+        <tr><td><span class="tech">rol + contexto</span></td><td>Asignar un oficio y dar la situación real</td><td>Cuando el tono y el criterio importan</td></tr>
+        <tr><td><span class="tech">few-shot</span></td><td>Mostrar 2–5 ejemplos de entrada y salida deseada</td><td>Clasificar, etiquetar, imitar un estilo propio</td></tr>
+        <tr><td><span class="tech">paso a paso</span></td><td>Pedir que razone por etapas antes de concluir</td><td>Cálculos, comparaciones, decisiones con criterios</td></tr>
+        <tr><td><span class="tech">prompt inverso</span></td><td>Que la IA pregunte antes de responder</td><td>Cuando yo mismo no tengo claro lo que quiero</td></tr>
+        <tr><td><span class="tech">meta-prompt</span></td><td>Pedirle que escriba o mejore el prompt</td><td>Tareas nuevas o repetitivas que voy a plantillar</td></tr>
+        <tr><td><span class="tech">salida estructurada</span></td><td>Exigir tabla, columnas y valores permitidos</td><td>Cuando el resultado alimenta un Excel o un proceso</td></tr>
+        <tr><td><span class="tech">anclaje en fuente</span></td><td>Restringir la respuesta a un documento mío</td><td>Reglamentos, manuales, informes: reduce invención</td></tr>
+        <tr><td><span class="tech">multimodal</span></td><td>Entrada por imagen o voz, no solo texto</td><td>Papel, tableros, recibos, práctica de conversación</td></tr>
+        <tr><td><span class="tech">plantilla con variables</span></td><td>Prompt fijo con campos entre corchetes</td><td>Tareas que repito cada semana</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 3c · conceptual -->
+  <section class="slide">
+    <div class="kicker step">Cómo funciona por dentro</div>
+    <h2 class="step">Tres ideas que explican casi todo</h2>
+    <div class="grid3 step" style="margin-top:1.2rem">
+      <div class="card">
+        <span class="tag a">1 · Predice, no consulta</span>
+        <p class="meta">El modelo genera la palabra siguiente más probable a partir de patrones del lenguaje. No busca en una base de datos ni verifica. De ahí que redacte excelente y a la vez invente una cifra con total seguridad.</p>
+      </div>
+      <div class="card">
+        <span class="tag a">2 · Solo sabe lo que está en la conversación</span>
+        <p class="meta">Su “memoria” útil es la ventana de contexto: lo que le escribiste y lo que ya respondió. No conoce tu cargo, tu jefe ni tu proceso si no se lo cuentas. El contexto no es adorno, es materia prima.</p>
+      </div>
+      <div class="card">
+        <span class="tag a">3 · No es determinista</span>
+        <p class="meta">El mismo prompt puede dar respuestas distintas, y dos herramientas distintas dan resultados distintos. Por eso se evalúa con criterios y se itera, en lugar de buscar “el prompt perfecto”.</p>
+      </div>
+    </div>
+    <div class="why step" style="margin-top:1.3rem;max-width:74ch">
+      <strong>Consecuencia práctica</strong>
+      Ingeniería de prompt no es memorizar frases mágicas: es reducir la ambigüedad que el modelo llenaría por su cuenta. Todo lo que dejas sin especificar —público, extensión, tono, formato, prohibiciones— lo decide él por ti.
+    </div>
+  </section>
+
+  <!-- 3d · privacidad -->
+  <section class="slide">
+    <div class="kicker step">Antes de pegar nada</div>
+    <h2 class="step">Qué no se sube a la IA</h2>
+    <p class="meta step" style="margin-bottom:.4rem">A partir de aquí todos los retos se hacen con material real del trabajo. Esta es la regla que se aplica desde el primero.</p>
+    <div class="grid3 step" style="margin-top:1.1rem">
+      <div class="card">
+        <span class="tag w">Nunca sube</span>
+        <p class="meta">Cédulas y datos de identificación, historia clínica, nómina individual, datos de clientes que permitan reconocerlos, usuarios y contraseñas, contratos firmados, todo lo cubierto por un acuerdo de confidencialidad.</p>
+      </div>
+      <div class="card">
+        <span class="tag a">Sube anonimizado</span>
+        <p class="meta">Correos, actas, informes, reglamentos y bases de datos: se sustituyen nombres, cédulas, NIT, direcciones y cifras exactas por equivalentes. La estructura del texto se conserva; los identificadores no.</p>
+      </div>
+      <div class="card">
+        <span class="tag k">Sube sin problema</span>
+        <p class="meta">Textos ya públicos, borradores propios, documentos que usted mismo escribió y aún no ha compartido, datos agregados que no apuntan a una persona.</p>
+      </div>
+    </div>
+    <div class="why step" style="margin-top:1.2rem;max-width:74ch">
+      <strong>Concepto · lo que pasa con lo que pegas</strong>
+      Lo que se escribe en el chat sale de la organización y queda en el servidor de un tercero. Según el plan, puede además usarse para entrenar versiones futuras: las cuentas personales y gratuitas suelen permitirlo por defecto, las empresariales normalmente no. La diferencia no está en la herramienta sino en la cuenta con la que entró. <em>Regla de bolsillo: si no lo diría en voz alta en un ascensor lleno, no lo pega.</em>
+    </div>
+    <div class="step" style="margin-top:.9rem">
+      <span class="pill">Insumo 07 · anonimizar.md</span>
+      <span class="pill">Ejercicio: anonimizar un párrafo y volver a pegarlo</span>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="slide">
+    <div class="kicker">Reto 1 · en parejas</div>
+    <h2>Rescate de prompts</h2>
+    <p class="meta" style="margin-bottom:1rem">Cada pareja recibe estos 6 prompts flojos y los reescribe. Después se descubre una versión de referencia. <span class="pill">Insumo 01 · rescate-de-prompts.md</span></p>
+    <div class="grid2 scroll">
+      <div class="card fcard step">
+        <span class="tag w">01 · Correo</span>
+        <div class="bad">hazme un correo para mi jefe</div>
+        <div class="fix"><div class="good">Actúa como mi asistente de comunicación interna. Soy analista de compras. Llevo 3 días esperando la aprobación de una orden por $12 millones que vence el viernes. Escribe un correo de máximo 120 palabras a mi jefe pidiendo la aprobación: tono respetuoso, urgencia clara sin reclamo, y cierra con una pregunta concreta sobre la fecha. Sin signos de exclamación.</div>
+        <div class="why"><strong>Por qué así · <span class="tech">rol + contexto</span></strong>Lo que cambia el resultado no es pedir “un buen correo”, sino entregar el dato que solo yo tengo: el monto, los días de espera y la fecha límite. La restricción de las exclamaciones evita el tono efusivo que estos modelos usan por defecto.</div></div>
+        <div class="flipnote">clic para ver la versión reescrita</div>
+      </div>
+      <div class="card fcard step">
+        <span class="tag w">02 · Acta</span>
+        <div class="bad">resume esta reunión</div>
+        <div class="fix"><div class="good">Eres secretario técnico de un comité. Con la transcripción que pego abajo entrega: 1) 5 puntos clave en viñetas; 2) una tabla con columnas Compromiso | Responsable | Fecha; 3) los temas que quedaron sin decisión. Máximo 300 palabras. No inventes responsables: si no aparece el nombre, escribe “sin asignar”.</div>
+        <div class="why"><strong>Por qué así · <span class="tech">salida estructurada</span></strong>Un resumen libre obliga a releerlo todo; una tabla de compromisos se puede usar. La frase “si no aparece, escribe sin asignar” es una válvula anti-invención: le da al modelo una salida legítima cuando el dato no existe, en vez de dejarlo completar con lo más probable.<br><span class="pill">Insumo 02 · transcripcion-reunion.txt</span></div></div>
+        <div class="flipnote">clic para ver la versión reescrita</div>
+      </div>
+      <div class="card fcard step">
+        <span class="tag w">03 · Cliente molesto</span>
+        <div class="bad">responde a este cliente que está furioso</div>
+        <div class="fix"><div class="good">Actúa como asesor de servicio al cliente de una empresa de internet hogar. El cliente lleva 4 días sin servicio y ya escribió dos veces. Responde en máximo 100 palabras: reconoce la falla, no prometas fechas que no puedo garantizar, ofrece dos opciones reales (visita técnica el sábado o descuento proporcional) y pide un solo dato para escalar el caso. Tono humano, sin plantillas corporativas.</div>
+        <div class="why"><strong>Por qué así · <span class="tech">restricciones</span></strong>Aquí lo decisivo es lo prohibido. Sin el “no prometas fechas que no puedo garantizar”, el modelo ofrece soluciones que la empresa no puede cumplir, porque su objetivo es sonar satisfactorio. Definir las dos opciones reales lo mantiene dentro de lo que sí puedo entregar.</div></div>
+        <div class="flipnote">clic para ver la versión reescrita</div>
+      </div>
+      <div class="card fcard step">
+        <span class="tag w">04 · Informe</span>
+        <div class="bad">hazme un informe de ventas</div>
+        <div class="fix"><div class="good">Eres analista comercial. Con los datos que pego (ventas mensuales por sucursal, enero–agosto) escribe un informe de una página para gerencia con esta estructura: qué pasó (3 viñetas con cifras), por qué puede estar pasando (2 hipótesis marcadas como hipótesis), qué recomiendo (2 acciones con responsable sugerido). Usa solo los números que te doy y señala cualquier dato faltante.</div>
+        <div class="why"><strong>Por qué así · <span class="tech">separar dato de interpretación</span></strong>La estructura “qué pasó / por qué puede estar pasando / qué recomiendo” obliga al modelo a marcar dónde termina el dato y empieza la inferencia. Pedir que las causas vayan rotuladas como hipótesis evita que una suposición llegue a gerencia con apariencia de hallazgo.<br><span class="pill">Insumo 03 · ventas-por-sucursal.md</span></div></div>
+        <div class="flipnote">clic para ver la versión reescrita</div>
+      </div>
+      <div class="card fcard step">
+        <span class="tag w">05 · Capacitación</span>
+        <div class="bad">dame ideas para una capacitación</div>
+        <div class="fix"><div class="good">Actúa como diseñador instruccional. Necesito una capacitación de 2 horas, presencial, para 25 auxiliares administrativos que nunca han usado IA y son resistentes al cambio. Propón 3 opciones de agenda distintas en una tabla con columnas Momento | Actividad | Minutos | Material. Cada opción debe tener al menos 60 % del tiempo en práctica. Sin exposición magistral de más de 20 minutos seguidos.</div>
+        <div class="why"><strong>Por qué así · <span class="tech">criterios medibles</span></strong>“Dame ideas” produce una lista que no se puede juzgar. Al fijar público, duración, resistencia al cambio y un umbral verificable (60 % de práctica), el prompt trae criterios de calidad incorporados: puedo revisar la propuesta contra ellos en vez de opinar.</div></div>
+        <div class="flipnote">clic para ver la versión reescrita</div>
+      </div>
+      <div class="card fcard step">
+        <span class="tag w">06 · Corrección</span>
+        <div class="bad">corrige este texto</div>
+        <div class="fix"><div class="good">Corrige el texto que pego abajo en dos pasos. Primero devuélvelo corregido en ortografía, puntuación y claridad, conservando mi voz y sin agregar ideas nuevas. Después lista en viñetas los 5 cambios más importantes que hiciste y por qué. Es un texto para el boletín interno de la empresa, público no técnico.</div>
+        <div class="why"><strong>Por qué así · <span class="tech">tarea en dos pasos</span></strong>Pedir el texto corregido y además la lista de cambios convierte la herramienta en algo que enseña: veo qué me corrigió y decido si acepto. “Conservando mi voz y sin agregar ideas nuevas” evita el efecto más común al corregir con IA, que el texto quede impecable pero deje de sonar mío.</div></div>
+        <div class="flipnote">clic para ver la versión reescrita</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="slide">
+    <div class="kicker step">Reto 2</div>
+    <h2 class="step">Duelo de IAs</h2>
+    <p class="lead step">El mismo prompt, tres herramientas distintas. Cada participante califica y descubre que las IAs tienen “personalidad”.</p>
+    <div class="cols step" style="margin-top:1.2rem">
+      <div>
+        <div class="prompt">Actúa como jefe de talento humano. Redacta el anuncio interno de un cambio de horario: la jornada del viernes pasa de 5:00 p.m. a 3:00 p.m., pero de lunes a jueves se extiende 30 minutos. Máximo 150 palabras, tono cercano, anticipa las dos molestias más probables del equipo y responde a ambas dentro del texto.</div>
+        <p class="meta" style="margin-top:.7rem">Se pega igual en ChatGPT, Gemini y Claude (o Copilot).</p>
+        <p class="meta" style="margin-top:.4rem"><span class="pill">Insumo 11 · duelo-de-ias-planilla.md</span></p>
+      </div>
+      <div>
+        <table>
+          <tr><th>Criterio</th><th>Qué se observa</th><th>1–5</th></tr>
+          <tr><td>Precisión</td><td>Cumple lo pedido sin inventar</td><td class="n">☐</td></tr>
+          <tr><td>Tono</td><td>Suena a la organización, no a robot</td><td class="n">☐</td></tr>
+          <tr><td>Formato</td><td>Longitud y estructura respetadas</td><td class="n">☐</td></tr>
+          <tr><td>Utilidad</td><td>¿Lo publicarías con menos de 3 ediciones?</td><td class="n">☐</td></tr>
+        </table>
+        <div class="why" style="margin-top:.8rem"><strong>Para qué sirve este ejercicio</strong>El prompt está diseñado con una exigencia que separa modelos: “anticipa las dos molestias más probables y respóndelas dentro del texto”. Eso no es redacción, es inferencia sobre personas. Cada herramienta fue entrenada y ajustada distinto, así que difieren en concisión, tono y obediencia al formato. <em>Conclusión del bloque: no existe la mejor IA, existe la más adecuada para cada tipo de tarea, y eso se descubre probando.</em></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="slide">
+    <div class="kicker step">Reto 3</div>
+    <h2 class="step">Iterar, no repetir</h2>
+    <p class="lead step">Toman una tarea real propia y la trabajan en 5 turnos. Prohibido borrar el chat y empezar de nuevo.</p>
+    <ol class="turns step" style="margin-top:1.1rem">
+      <li>Pega tu prompt mejorado del reto 1.<span>Punto de partida.</span></li>
+      <li>“Antes de responder, hazme las 3 preguntas que más te faltan para hacerlo bien.”<span>La IA revela lo que asumiste.</span></li>
+      <li>Responde sus preguntas y pide la versión final.<span>Aquí suele aparecer el salto de calidad.</span></li>
+      <li>“Recórtalo un 30 % sin perder ninguna idea.”<span>Ajuste de forma.</span></li>
+      <li>“Dame dos versiones: una más formal y una más directa.”<span>Sales con opciones, no con un solo texto.</span></li>
+    </ol>
+    <div class="why step" style="margin-top:1rem;max-width:74ch">
+      <strong>Concepto · la conversación es el contexto</strong>
+      Cada turno se suma a lo anterior, así que corregir sobre la marcha es más eficiente que volver a empezar: el modelo ya tiene el caso cargado. Abrir un chat nuevo por cada intento equivale a explicarlo todo desde cero. Y el turno 2 —pedirle que pregunte— es el que hace visibles los supuestos que uno ni siquiera sabía que estaba dejando al azar.
+    </div>
+    <p class="lead step">Al terminar, cada uno guarda su primer prompt “pro” en un documento personal que se irá llenando durante el módulo.</p>
+  </section>
+
+  <!-- 7 -->
+  <section class="slide">
+    <div class="kicker step">Lo que puede salir mal</div>
+    <h2 class="step">¿Quién miente?</h2>
+    <p class="lead step">Antes de confiar, verificar. Cada participante corre este prompt en su sector y busca cada dato en Google.</p>
+    <div class="prompt step" style="margin-top:1.1rem">Dame 5 datos con cifra y fuente sobre <b>[mi sector: logística / educación / salud / retail]</b> en Colombia en los últimos 2 años. Incluye el nombre de la entidad, el año y el enlace.</div>
+    <div class="grid3 step" style="margin-top:1.3rem">
+      <div class="card"><span class="tag w">Se cae</span><p class="meta">Enlaces que no existen, informes con nombre creíble pero inventado, cifras mezcladas de años distintos.</p></div>
+      <div class="card"><span class="tag a">Por qué pasa</span><p class="meta">El modelo completa texto probable, no consulta una base de datos. Suena seguro incluso cuando falla.</p></div>
+      <div class="card"><span class="tag k">Qué hacer</span><p class="meta">Usarla para redactar y estructurar; verificar toda cifra, cita, norma y nombre propio antes de publicar.</p></div>
+    </div>
+    <div class="why step" style="margin-top:1.3rem;max-width:74ch">
+      <strong>Concepto · alucinación</strong>
+      Se llama alucinación a una respuesta fluida y plausible pero falsa. No es un error ocasional del sistema, es una consecuencia de cómo funciona: el modelo construye la secuencia más verosímil, y un informe inventado con nombre de entidad real es altamente verosímil. Aparece más en cifras, citas bibliográficas, artículos de normas, enlaces y nombres propios. <em>De ahí la división de trabajo del resto del módulo: la IA redacta y organiza; la verificación es humana y no se delega.</em>
+    </div>
+  </section>
+
+  <!-- 7b · verificación -->
+  <section class="slide">
+    <div class="kicker step">Verificar</div>
+    <h2 class="step">Verificar no se delega</h2>
+    <p class="lead step">El módulo repite que la verificación es humana. Este es el procedimiento, en el orden en que se hace.</p>
+    <ol class="turns step" style="margin-top:1rem">
+      <li>Subraya todo lo verificable.<span>Cifras, años, citas, artículos de normas, enlaces y nombres propios. Lo demás —redacción, estructura, tono— no necesita verificación.</span></li>
+      <li>Abre cada enlace.<span>Si no abre, no existe. Es el error más rápido de detectar y el más frecuente.</span></li>
+      <li>Busca la cifra en la fuente primaria.<span>La entidad que produjo el dato, no un resumen de segunda mano que puede venir del mismo error.</span></li>
+      <li>Comprueba que el año coincida.<span>La falla típica no es inventar la cifra: es traer una cifra real y atribuirla a otro año o a otra entidad.</span></li>
+      <li>Lo que no se pudo verificar, se borra o se marca.<span>“Sin confirmar” es una respuesta profesional. Una cifra inventada con fuente inventada, no.</span></li>
+    </ol>
+    <div class="why step" style="margin-top:1rem;max-width:74ch">
+      <strong>Por qué este orden</strong>
+      El modelo suena exactamente igual de seguro cuando acierta que cuando inventa: no hay señal en el texto que distinga un dato real de uno construido. Por eso no sirve “verificar lo que suene raro” —nada suena raro— sino verificar por tipo de afirmación. Y se hace antes de que el texto salga de su pantalla: una vez enviado el correo o publicado el informe, el error ya es suyo, no de la herramienta.
+    </div>
+    <div class="step" style="margin-top:.8rem">
+      <span class="pill">Insumo 08 · verificacion.md</span>
+      <span class="pill">5 afirmaciones, 3 son falsas</span>
+    </div>
+  </section>
+
+  <!-- 7c · reto 4 · paso a paso -->
+  <section class="slide">
+    <div class="kicker step">Reto 4</div>
+    <h2 class="step">Que muestre el razonamiento</h2>
+    <p class="lead step">Hay que elegir un proveedor entre tres. Se corre el mismo caso con dos prompts y se comparan las respuestas.</p>
+    <div class="grid2 step" style="margin-top:1.1rem">
+      <div>
+        <span class="tag w">A · solo la respuesta</span>
+        <div class="prompt" style="margin-top:.4rem">Con los datos de los tres proveedores que pego abajo, dime cuál debo contratar.</div>
+      </div>
+      <div>
+        <span class="tag k">B · el razonamiento primero</span>
+        <div class="prompt" style="margin-top:.4rem">Con los datos de los tres proveedores que pego abajo, evalúa uno por uno cada criterio antes de concluir. Primero arma una tabla Proveedor | Criterio | Puntaje 1–5 | Por qué ese puntaje. Después aplica los pesos que te doy y muestra el cálculo. Solo al final da la recomendación. Si te falta algún dato para puntuar un criterio, dilo en vez de estimarlo.</div>
+      </div>
+    </div>
+    <p class="meta step" style="margin-top:.9rem">Se comparan las dos salidas: casi siempre no cambia solo la presentación, cambia el proveedor elegido. <span class="pill">Insumo 06 · proveedores.md</span></p>
+    <div class="why step" style="margin-top:.8rem;max-width:74ch">
+      <strong>Técnica · <span class="tech">paso a paso</span></strong>
+      Obligarlo a producir las etapas intermedias antes de la conclusión cambia el resultado, no solo el formato: cuando responde de una, elige lo que “suena” a mejor opción —normalmente la más barata o la primera de la lista— y después justifica. Además deja el razonamiento auditable: si el puntaje de un criterio está mal, se ve cuál y se corrige el prompt, en lugar de descartar toda la respuesta. Sirve para cálculos, comparaciones y cualquier decisión con varios criterios.
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section class="slide">
+    <div class="kicker">Reto 5 · rotación por estaciones</div>
+    <h2>Rotación por técnicas</h2>
+    <div class="grid2 scroll" style="margin-top:.8rem">
+      <div class="card step">
+        <span class="tag a">Estación A · Dar ejemplos</span>
+        <h3 style="margin:.2rem 0 .5rem">Clasificar correos</h3>
+        <div class="good">Clasifica cada asunto de correo en una de estas categorías: URGENTE, RUTINA, INFORMATIVO, IGNORAR. Sigue mi criterio, guíate por estos ejemplos:
+“Servidor caído en sede norte” → URGENTE
+“Recordatorio: pago de nómina el 30” → RUTINA
+“Boletín mensual de la cámara” → INFORMATIVO
+“Promoción de hosting 50 % off” → IGNORAR
+Devuelve una tabla Asunto | Categoría | Motivo (máx. 8 palabras) para los 20 asuntos que pego abajo.</div>
+        <div class="why"><strong>Técnica · <span class="tech">few-shot</span></strong>Describir con palabras qué es “urgente para mí” es difícil; mostrarlo con 4 ejemplos es inmediato. El modelo infiere la regla de clasificación a partir de los casos. Es la técnica más rentable cuando el criterio es propio y difícil de verbalizar: etiquetar, priorizar, imitar mi estilo de escritura.<br><span class="pill">Insumo 04 · asuntos-de-correo.txt</span></div>
+      </div>
+      <div class="card step">
+        <span class="tag a">Estación B · Prompt inverso</span>
+        <h3 style="margin:.2rem 0 .5rem">Plan de trabajo</h3>
+        <div class="good">Quiero un plan de trabajo para organizar el archivo físico de mi oficina en 6 semanas. No me des el plan todavía: hazme una pregunta a la vez, espera mi respuesta, y no pases a la siguiente hasta que responda. Cuando tengas lo necesario, dime “listo” y entrégame el plan en tabla Semana | Actividad | Entregable.</div>
+        <div class="why"><strong>Técnica · <span class="tech">prompt inverso</span></strong>Se invierten los papeles: la IA entrevista y yo respondo. Sirve cuando el problema está mal definido, porque las preguntas van sacando restricciones que yo no habría escrito (cuántas cajas, quién ayuda, si se puede cerrar la oficina). La instrucción “una pregunta a la vez” es clave; sin ella lanza quince juntas y se pierde el efecto.</div>
+      </div>
+      <div class="card step">
+        <span class="tag a">Estación C · Meta-prompt</span>
+        <h3 style="margin:.2rem 0 .5rem">Que mejore tu prompt</h3>
+        <div class="good">Este es mi prompt: “resume las respuestas de la encuesta de clima laboral”. No lo ejecutes. Actúa como experto en ingeniería de prompt: 1) dime qué información crítica le falta; 2) reescríbelo en versión corta y versión detallada; 3) explica en 3 viñetas qué cambiaste y por qué.</div>
+        <div class="why"><strong>Técnica · <span class="tech">meta-prompt</span></strong>El modelo conoce los patrones de un buen prompt porque fue entrenado con enormes cantidades de instrucciones y sus resultados. Pedirle que diagnostique el mío convierte la herramienta en tutor. El “no lo ejecutes” es indispensable: sin esa frase resuelve la tarea y se salta el análisis.</div>
+      </div>
+      <div class="card step">
+        <span class="tag a">Estación D · Salida estructurada</span>
+        <h3 style="margin:.2rem 0 .5rem">De desorden a tabla</h3>
+        <div class="good">Convierte estas notas de bodega en una tabla con columnas Producto | Cantidad | Unidad | Observación. Si un dato no está en el texto, escribe “sin dato”: no lo completes por lógica.
+“llegaron 12 cajas de papel carta ayer, una venía mojada. de tóner quedan 3 pero uno está vencido. pedir grapas urgente, no quedan. marcadores como 20, creo. sillas: llegaron 5 de las 8 que pedimos.”</div>
+        <div class="why"><strong>Técnica · <span class="tech">salida estructurada</span></strong>Definir columnas y valores permitidos convierte texto suelto en datos que sirven para un Excel o un proceso. El “no lo completes por lógica” trabaja contra la tendencia del modelo a rellenar vacíos: en las notas no dice cuántas grapas hay, y sin esa restricción escribiría un número razonable. Es la puerta de entrada a la automatización del módulo 3.<br><span class="pill">Insumo 05 · notas-de-bodega.txt</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 -->
+  <section class="slide">
+    <div class="kicker step">Reto 6</div>
+    <h2 class="step">Conversar con mis propios documentos</h2>
+    <p class="lead step">Cada uno sube un manual, reglamento o informe de su trabajo (anonimizado) a NotebookLM o a su chat de IA y corre estos tres prompts en orden. Quien no traiga documento usa el reglamento de respaldo. <span class="pill">Insumo 09 · reglamento-de-respaldo.md</span></p>
+    <div class="grid3 step" style="margin-top:1.2rem">
+      <div class="card"><span class="tag a">1 · Resumen ejecutivo</span><div class="good" style="margin-top:.5rem">Resume este documento en 200 palabras para alguien que nunca lo ha leído y debe aplicarlo mañana. Cita la página o sección de donde sale cada afirmación.</div></div>
+      <div class="card"><span class="tag a">2 · Preguntas frecuentes</span><div class="good" style="margin-top:.5rem">Genera las 8 preguntas que más haría un empleado nuevo sobre este documento, con su respuesta y la sección que la respalda. Si el documento no responde una pregunta, dilo explícitamente.</div></div>
+      <div class="card"><span class="tag a">3 · Vacíos y choques</span><div class="good" style="margin-top:.5rem">Señala contradicciones, plazos ambiguos o pasos sin responsable asignado en este documento. Presenta una tabla Hallazgo | Sección | Por qué es un problema.</div></div>
+    </div>
+    <div class="step" style="margin-top:1.3rem">
+      <span class="pill">Regla de la casa: toda respuesta se abre en el documento y se comprueba</span>
+      <span class="pill">Si la IA no muestra de dónde lo saca, no se usa</span>
+    </div>
+    <div class="why step" style="margin-top:1rem;max-width:74ch">
+      <strong>Concepto · anclaje en fuente</strong>
+      Cuando la respuesta debe salir de un documento que yo aporto, el modelo deja de recordar y empieza a leer. Eso reduce mucho la invención, aunque no la elimina: puede seguir interpretando de más. Por eso los tres prompts exigen decir de qué sección sale cada afirmación y declarar lo que el documento no responde. <em>Herramientas como NotebookLM están hechas para esto; un chat común también sirve si el documento cabe en la conversación.</em>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section class="slide">
+    <div class="kicker step">Entrada por imagen</div>
+    <h2 class="step">Foto a dato</h2>
+    <p class="lead step">Cada uno fotografía algo que tenga a mano: un recibo, un tablero con una lluvia de ideas, una hoja escrita a mano, un pantallazo de un cronograma. Quien no tenga nada a mano fotografía la hoja de respaldo. <span class="pill">Insumo 10 · hoja-para-fotografiar.html</span></p>
+    <div class="grid2 step" style="margin-top:1.2rem">
+      <div><div class="prompt">Lee esta foto y extrae la información en una tabla con columnas Concepto | Valor | Fecha. No interpretes ni corrijas cifras; si algo no se alcanza a leer, escribe “ilegible”. Al final dime qué campos quedaron ilegibles.</div></div>
+      <div><div class="prompt">Esta foto es un tablero con notas de una reunión. Conviértelo en una lista de tareas con responsable y fecha cuando aparezcan. Lo que esté escrito como idea y no como tarea, ponlo en una sección aparte llamada “ideas sin dueño”.</div></div>
+    </div>
+    <div class="why step" style="margin-top:1.1rem;max-width:74ch">
+      <strong>Concepto · multimodalidad</strong>
+      Estos modelos reciben imagen, no solo texto, y a diferencia de un OCR clásico no se limitan a transcribir: interpretan lo que ven. Esa es la ventaja y el riesgo. Si un dígito está borroso, un OCR lo marca; el modelo tiende a proponer el valor más plausible. De ahí el “no interpretes ni corrijas cifras” y el reporte de campos ilegibles: sin eso, el error se vuelve invisible.
+    </div>
+    <p class="meta step" style="margin-top:1rem">Conversación de cierre: ¿qué de lo que hacemos a mano cada semana podría entrar así?</p>
+  </section>
+
+  <!-- 11 -->
+  <section class="slide">
+    <div class="kicker step">Reto 7 · modo voz</div>
+    <h2 class="step">Simulador de conversaciones difíciles</h2>
+    <p class="lead step">Se practica hablando con la IA en modo voz. Ella hace el papel, el participante sostiene la conversación hasta que el tema se agote y luego pide retroalimentación.</p>
+    <div class="grid3 step" style="margin-top:1.2rem">
+      <div class="card"><span class="tag w">Cliente difícil</span><div class="good" style="margin-top:.5rem">Actúa como un cliente que pidió un domicilio hace 90 minutos y no llega. Estás molesto pero no grosero. No aceptes la primera disculpa: insiste dos veces antes de ceder. Yo soy el asesor. Empieza tú y mantén el personaje hasta que diga “fin”.</div></div>
+      <div class="card"><span class="tag w">Negociación salarial</span><div class="good" style="margin-top:.5rem">Actúa como mi jefe en una reunión donde pido aumento. Eres razonable pero tienes presupuesto limitado y me pedirás justificar con resultados concretos. No cedas sin datos. Yo empiezo.</div></div>
+      <div class="card"><span class="tag w">Entrevista</span><div class="good" style="margin-top:.5rem">Actúa como entrevistador para un cargo de coordinador administrativo. Hazme 6 preguntas, una por turno, incluyendo dos incómodas sobre vacíos en mi experiencia. No me evalúes hasta el final.</div></div>
+    </div>
+    <div class="prompt step" style="margin-top:1.1rem">Sal del personaje. Evalúa mi desempeño en esta conversación: 3 cosas que hice bien, 3 por mejorar y la frase exacta que debí decir en el momento más flojo.</div>
+    <div class="why step" style="margin-top:.9rem;max-width:74ch">
+      <strong>Concepto · rol persistente y ensayo seguro</strong>
+      Asignar un personaje con una motivación concreta (“no aceptes la primera disculpa”) hace que el modelo sostenga una postura en vez de complacer, que es su comportamiento natural. Sin esa instrucción cede en el primer turno y el ensayo no sirve. El valor pedagógico está en que permite equivocarse sin costo frente al cliente o el jefe real, y en que la herramienta pasa de redactar textos a entrenar una habilidad.
+    </div>
+  </section>
+
+  <!-- 12 -->
+  <section class="slide">
+    <div class="kicker">Proyecto final</div>
+    <h2>Kit de prompts de mi cargo</h2>
+    <p class="meta" style="margin-bottom:.9rem">Cinco plantillas con variables entre corchetes, probadas cada una con 2 casos distintos. Este es el entregable del módulo. <span class="pill">Insumo 12 · kit-entregable.md</span></p>
+    <div class="grid2 scroll">
+      <div class="card step"><span class="tag k">Plantilla 1 · Responder</span><div class="good">Actúa como <b>[mi cargo]</b>. Responde este mensaje de <b>[remitente]</b> en máximo <b>[n]</b> palabras, tono <b>[tono]</b>, con un solo objetivo: <b>[qué quiero lograr]</b>. No prometas <b>[lo que no puedo garantizar]</b>. Mensaje: <b>[pegar]</b></div></div>
+      <div class="card step"><span class="tag k">Plantilla 2 · Resumir para alguien</span><div class="good">Resume el texto de abajo para <b>[quién lo va a leer]</b>, que necesita decidir sobre <b>[decisión]</b>. Estructura: qué dice, qué implica para nosotros, qué requiere de <b>[esa persona]</b>. Máximo <b>[n]</b> palabras, sin tecnicismos. Texto: <b>[pegar]</b></div></div>
+      <div class="card step"><span class="tag k">Plantilla 3 · Ordenar datos</span><div class="good">Convierte el contenido de abajo en una tabla con columnas <b>[col1] | [col2] | [col3]</b>. Escribe “sin dato” donde falte información y no completes por deducción. Al final lista los registros dudosos. Contenido: <b>[pegar]</b></div></div>
+      <div class="card step"><span class="tag k">Plantilla 4 · Revisar antes de enviar</span><div class="good">Revisa este <b>[documento / correo / informe]</b> como haría <b>[el más exigente de mis revisores]</b>. Señala errores, afirmaciones sin respaldo y puntos que generarían preguntas incómodas. No lo reescribas: dame una lista priorizada. Texto: <b>[pegar]</b></div></div>
+      <div class="card step"><span class="tag k">Plantilla 5 · Planear</span><div class="good">Necesito <b>[resultado]</b> antes de <b>[fecha]</b> con <b>[recursos disponibles]</b>. Hazme primero las preguntas que te falten, una a la vez. Luego entrégame el plan en tabla Etapa | Actividad | Responsable | Fecha y marca los 2 riesgos más probables.</div></div>
+      <div class="card step"><span class="tag a">Prueba cruzada</span><h3 style="margin:.2rem 0 .4rem">El examen real</h3><p class="meta">Intercambia tu kit con un compañero. Él usa tus plantillas sin que le expliques nada. Si obtiene un resultado usable, la plantilla está bien escrita. Si pregunta “y aquí qué pongo”, falta precisión.</p></div>
+    </div>
+    <div class="why step" style="margin-top:1rem">
+      <strong>Concepto · de prompt a plantilla parametrizada</strong>
+      Un prompt resuelve un caso; una plantilla resuelve un tipo de caso. Los corchetes marcan lo único que cambia entre una semana y otra, y todo lo demás —rol, formato, restricciones— queda fijo porque ya se probó. Esa separación entre parte estable y parte variable es exactamente lo que después se automatiza: un agente no es más que una plantilla a la que alguien más le llena los corchetes.
+    </div>
+  </section>
+
+  <!-- 12b · conceptual -->
+  <section class="slide">
+    <div class="kicker step">Cierre conceptual</div>
+    <h2 class="step">Glosario del módulo</h2>
+    <p class="meta step" style="margin-bottom:.6rem">Diez términos para hablar con propiedad de esto en el trabajo.</p>
+    <div class="step scroll">
+      <table>
+        <tr><th>Término</th><th>Qué significa en la práctica</th></tr>
+        <tr><td><strong>Prompt</strong></td><td>La instrucción que le doy al modelo. No es una pregunta: es un encargo de trabajo.</td></tr>
+        <tr><td><strong>Modelo de lenguaje</strong></td><td>El sistema que genera texto prediciendo la continuación más probable. ChatGPT, Gemini, Claude o Copilot son productos que usan uno detrás.</td></tr>
+        <tr><td><strong>Token</strong></td><td>La unidad en que el modelo parte el texto (trozos de palabra). Explica por qué hay límites de longitud y por qué el uso por API se cobra así.</td></tr>
+        <tr><td><strong>Ventana de contexto</strong></td><td>Cuánto alcanza a “tener presente” en una conversación. Cuando se llena, empieza a perder lo del principio.</td></tr>
+        <tr><td><strong>Alucinación</strong></td><td>Respuesta convincente pero falsa. Frecuente en cifras, citas, artículos de normas y enlaces.</td></tr>
+        <tr><td><strong>Few-shot</strong></td><td>Incluir ejemplos de entrada y salida en el prompt para que copie el criterio.</td></tr>
+        <tr><td><strong>Temperatura</strong></td><td>Qué tan arriesgadas son sus elecciones de palabra. Alta: más creativa y más imprecisa. Baja: más literal y repetitiva.</td></tr>
+        <tr><td><strong>Multimodal</strong></td><td>Que acepta imagen, audio o documentos además de texto.</td></tr>
+        <tr><td><strong>Anclaje en fuente</strong></td><td>Obligarlo a responder solo con base en documentos que yo aporto.</td></tr>
+        <tr><td><strong>Agente</strong></td><td>Una IA que además de responder ejecuta pasos y usa herramientas. El tema del módulo siguiente.</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 13 -->
+  <section class="slide">
+    <div class="kicker step">Cierre del módulo</div>
+    <h2 class="step">Cómo se evalúa</h2>
+    <div class="step" style="margin-top:1rem;max-width:70ch">
+      <table>
+        <tr><th>Criterio</th><th>Qué se mira en el kit</th><th>%</th></tr>
+        <tr><td>Estructura</td><td>Presencia de rol, contexto, tarea, formato y restricciones</td><td class="n">30</td></tr>
+        <tr><td>Reutilización</td><td>Variables bien definidas: sirve para varios casos, no para uno</td><td class="n">25</td></tr>
+        <tr><td>Evidencia de prueba</td><td>Cada plantilla probada con 2 casos y ajustada después</td><td class="n">25</td></tr>
+        <tr><td>Criterio propio</td><td>Regla personal de verificación y datos que no sube a la IA</td><td class="n">20</td></tr>
+      </table>
+    </div>
+    <p class="lead step">Lo que sigue en el módulo 3: estas plantillas dejan de copiarse y pegarse a mano, y se convierten en asistentes y agentes que las ejecutan solos.</p>
+    <div class="step big" style="margin-top:1.5rem">Un prompt bien escrito no es una frase con suerte.<br>Es una instrucción de trabajo.</div>
+  </section>
+
+</div>
+<div id="num">1</div>
+
+<script>
+(function(){
+  const slides=[...document.querySelectorAll('.slide')];
+  let si=0, steps=[], k=0;
+
+  function stepsOf(s){return [...s.querySelectorAll('.step')];}
+
+  function render(dir){
+    slides.forEach((s,i)=>{
+      if(i===si){
+        s.classList.add('live');
+        requestAnimationFrame(()=>s.classList.add('show'));
+      }else{
+        s.classList.remove('show');
+        setTimeout(()=>{ if(si!==i) s.classList.remove('live'); },400);
+      }
+    });
+    steps=stepsOf(slides[si]);
+    if(dir==='back'){ k=steps.length; steps.forEach(e=>e.classList.add('on'));
+      slides[si].querySelectorAll('.fcard').forEach(e=>e.classList.add('open'));
+    }else{ k=0; steps.forEach(e=>e.classList.remove('on'));
+      slides[si].querySelectorAll('.fcard').forEach(e=>e.classList.remove('open'));
+      setTimeout(next,260);
+    }
+    document.getElementById('num').textContent=si+1;
+  }
+
+  function next(){
+    if(k<steps.length){
+      const e=steps[k];
+      e.classList.add('on');
+      if(e.classList.contains('fcard')) setTimeout(()=>e.classList.add('open'),420);
+      k++;
+      return true;
+    }
+    return false;
+  }
+
+  function fwd(){
+    // primero recorre todas las interacciones de la diapositiva
+    const closed=[...slides[si].querySelectorAll('.fcard.on:not(.open)')];
+    if(closed.length && k>=steps.length){ closed[0].classList.add('open'); return; }
+    if(next()) return;
+    if(si<slides.length-1){ si++; render('fwd'); }
+  }
+  function back(){
+    if(si>0){ si--; render('back'); }
+  }
+
+  document.addEventListener('click',e=>{
+    const c=e.target.closest('.fcard');
+    if(c){ c.classList.toggle('open'); return; }
+    if(e.target.closest('.scroll') && e.detail===0) return;
+    fwd();
+  });
+  document.addEventListener('keydown',e=>{
+    if(['ArrowRight',' ','PageDown','Enter'].includes(e.key)){e.preventDefault();fwd();}
+    if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();back();}
+    if(e.key==='ArrowDown'){e.preventDefault(); if(si<slides.length-1){si++;render('fwd');}}
+    if(e.key==='ArrowUp'){e.preventDefault();back();}
+  });
+
+  render('fwd');
+})();
+
+/* ================================================================
+   BOTONES "COPIAR" · uno por cada bloque de prompt
+   Se inyectan por JS para no tocar el marcado de los ~30 bloques.
+   Con respaldo por execCommand: al abrir el archivo con file://
+   el portapapeles moderno no siempre está disponible.
+   ================================================================ */
+(function(){
+  /* El texto se lee ANTES de meter el botón: si no, "Copiar" se cuela
+     en lo copiado. Se usa textContent y no innerText porque .good no
+     tiene white-space:pre-wrap y innerText aplastaría los saltos de
+     línea de los ejemplos few-shot, que sí importan al pegarlos. */
+  function textoDe(el){
+    const lineas = el.textContent.replace(/\r/g,'').split('\n');
+    const resto = lineas.slice(1).filter(l=>l.trim());
+    const sangria = resto.length
+      ? Math.min(...resto.map(l=>l.match(/^[ \t]*/)[0].length))
+      : 0;
+    return [lineas[0], ...lineas.slice(1).map(l=>l.slice(sangria))]
+      .join('\n').replace(/[ \t]+$/gm,'').trim();
+  }
+
+  async function copiar(txt){
+    /* Ojo: si la pestaña no está visible, navigator.clipboard.writeText
+       deja la promesa colgada para siempre —ni resuelve ni rechaza— y el
+       botón se quedaría mudo. Por eso se corre contra un temporizador y
+       se cae al respaldo en vez de esperar. */
+    let ok = false;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      ok = await Promise.race([
+        navigator.clipboard.writeText(txt).then(()=>true, ()=>false),
+        new Promise(r=>setTimeout(()=>r(false), 600))
+      ]);
+    }
+    if(ok) return true;
+
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ ok = document.execCommand('copy'); }catch(e){ ok = false; }
+    ta.remove();
+    return ok;
+  }
+
+  document.querySelectorAll('.prompt, .good, .bad').forEach(bloque=>{
+    const txt = textoDe(bloque);
+    if(!txt) return;
+
+    bloque.classList.add('copyable');
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copiar';
+    /* fuera del recorrido con Tab: el deck usa Enter y Espacio para
+       avanzar, y un botón enfocado se activaría a la vez que la lámina */
+    btn.tabIndex = -1;
+
+    btn.addEventListener('click', async e=>{
+      /* imprescindible: el listener global de click avanza la lámina,
+         y en el reto 1 estos botones viven dentro de un .fcard que
+         se abre y se cierra al hacer clic */
+      e.preventDefault();
+      e.stopPropagation();
+
+      const ok = await copiar(txt);
+      btn.textContent = ok ? '✓ Copiado' : 'Selecciónalo';
+      btn.classList.toggle('done', ok);
+      btn.classList.toggle('fail', !ok);
+      btn.blur();
+      setTimeout(()=>{
+        btn.textContent = 'Copiar';
+        btn.classList.remove('done','fail');
+      }, 1800);
+    });
+
+    bloque.appendChild(btn);
+  });
+})();
+</script>
+</body>
+</html>

@@ -21,9 +21,16 @@ dicta**: revela dónde está plantado el defecto de cada insumo.
 | 10 | `10-hoja-para-fotografiar.html` | Lámina «Foto a dato» | Proyectado o impreso, para fotografiar con el celular |
 | 11 | `11-duelo-de-ias-planilla.md` | Reto 2 · Duelo de IAs | Impreso, **una por participante** |
 | 12 | `12-kit-entregable.md` | Proyecto final | Digital, es el formato del entregable |
+| 13 | `13-mensaje-cliente-molesto.txt` | Lámina «restricciones» (cliente molesto) | Digital, para pegar en el chat |
+| 14 | `14-texto-para-corregir.txt` | Lámina «tarea en dos pasos» (corrección) | Digital, para pegar en el chat |
 
 **Lo único que hay que imprimir:** 01, 11 y, si quiere, 10. Todo lo demás se
 comparte por el canal del diplomado.
+
+> **Nota sobre el deck.** Desde la lámina 7, `modulo2.html` lleva el texto de cada
+> insumo **dentro de la propia lámina**, con botón «Copiar». Los archivos de esta
+> carpeta siguen siendo la versión imprimible y la que se comparte por el canal,
+> pero en clase no hace falta abrirlos: basta con proyectar la lámina.
 
 ---
 
@@ -91,6 +98,24 @@ mejor demostración posible de por qué se verifica.
 dos, para lo mismo, separados por catorce artículos). Plazo ambiguo en el
 artículo 8 («oportunamente»). Paso sin responsable en el artículo 20. Y un vacío:
 qué pasa con los permisos e incapacidades del personal temporal.
+
+**13 · Mensaje del cliente.** Son tres mensajes del mismo cliente y el tono sube en
+cada uno. El tercero exige **una hora exacta de restablecimiento**, que es justo lo
+que el prompt prohíbe prometer: ahí se ve si la restricción funcionó o si el modelo
+cedió para sonar satisfactorio. Además, en el segundo mensaje el cliente da su
+cédula sin que nadie se la pida: sirve para volver sobre la lámina de privacidad
+—ese dato no hace falta para redactar la respuesta y no debería viajar al chat—.
+Y la factura llegó completa: casi nadie lo menciona en la respuesta, aunque es el
+reclamo más concreto de los tres.
+
+**14 · Texto para corregir.** Defectos reales y de distinto tipo: tildes faltantes
+en todo el texto, una primera frase de seis líneas sin un solo punto, dos siglas sin
+explicar (TH y TI) que en el comité fueron talento humano y sistemas —o sea que una
+está mal—, una cifra vaga («como once pedidos, más o menos un diez por ciento») y un
+cierre que repite la misma idea dos veces («creemos que vale la pena / creemos que va
+a valer la pena»). El prompt pide conservar la voz del autor: el texto es
+deliberadamente cercano y hablado, así que si vuelve convertido en comunicado
+corporativo impecable, la instrucción se perdió. Esa es la discusión.
 
 **10 · Hoja para fotografiar.** En el recibo, el valor borroso de la extensión se
 puede **deducir por resta** porque el subtotal sí cuadra: es la inferencia

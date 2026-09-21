@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Uso y tipos de uso de chatbots de IA</title>
+<meta name="description" content="Cuánta gente usa chatbots de IA y para qué los usa, con datos del NBER, Eurostat y el DANE.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+/* ══════════════════════════════════════════════════════════════
+   PRESENTACIÓN DE DATOS · negro, minimalista, una gráfica por
+   pantalla. El sistema visual está documentado en
+   references/identidad-visual.md — aquí solo se aplica.
+   ══════════════════════════════════════════════════════════════ */
+
+:root{
+  --bg:#000000;
+
+  /* rueda categórica · orden fijo, nunca ciclada */
+  --c1:#22D3EE; --c2:#EAB308; --c3:#E879F9; --c4:#4ADE80;
+  --c5:#60A5FA; --c6:#FB923C; --c7:#A78BFA; --c8:#FB7185;
+
+  /* rampa secuencial · magnitud */
+  --s1:#07313D; --s2:#0B5566; --s3:#0E7C91;
+  --s4:#14A3BB; --s5:#22D3EE; --s6:#7DE9FB;
+
+  /* rampa divergente · polaridad (neutro gris en el centro) */
+  --d1:#FB7185; --d2:#C4626F; --d0:#6E6A74; --d4:#3A8FA3; --d5:#22B8D4;
+
+  /* ── EL ACENTO DEL ACTO ──────────────────────────────────────
+     La tinta que lleva el cromo de la diapositiva: el <em> del
+     titular, la barra del respiro, la cifra grande, el filete de
+     la nota y el destacado de la gráfica. Se cambia por acto con
+     data-acento="c2" en la <section>, y así el mazo no se lee
+     entero en cian. NUNCA toca la rueda categórica: ahí el color
+     sigue a la entidad. Reglas en references/identidad-visual.md */
+  --acento:var(--c1);
+
+  /* tintas de texto */
+  --ink:#F2F4F8; --ink2:#C8CBD2; --muted:#8B909B; --dim:#5A5E68;
+  --line:rgba(255,255,255,.10);
+  --sombra:rgba(255,255,255,.05);
+
+  --sans:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+
+  /* ── EL MANDO DEL RITMO ──────────────────────────────────────
+     Sube o baja este número y cambia TODO a la vez: el dibujado de
+     la gráfica, la cascada de barras, el fundido entre diapositivas
+     y la entrada del titular y del pie. El motor también lo lee.
+       1 = rápido · 2 = el doble de lento · 3 = el triple
+     A 2, la barra más larga termina de crecer justo cuando se acaba
+     de leer el titular. */
+  --ritmo:2;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--ink);
+  font-family:var(--sans);-webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums}
+
+/* ── escena ────────────────────────────────────────────────── */
+#escena{position:relative;width:100vw;height:100vh;height:100dvh;overflow:hidden}
+
+/* Las inactivas siguen ocupando el marco entero: ECharts necesita medir el
+   contenedor para dibujar, y con display:none mediría cero. */
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;
+  padding:6vh 5vw 5.4vh;opacity:0;pointer-events:none;visibility:hidden;
+  transition:opacity calc(.31s * var(--ritmo)) ease,
+             visibility 0s linear calc(.31s * var(--ritmo))}
+.slide.activa{opacity:1;pointer-events:auto;visibility:visible;
+  transition:opacity calc(.31s * var(--ritmo)) ease, visibility 0s}
+
+/* El acento del acto. Se declara con data-acento="c3" en la <section> y desde
+   ahí lo heredan el titular, la barra, la cifra y la nota. El motor lee el
+   mismo atributo para pintar el "destacar" de la gráfica. */
+.slide[data-acento="c1"]{--acento:var(--c1)}
+.slide[data-acento="c2"]{--acento:var(--c2)}
+.slide[data-acento="c3"]{--acento:var(--c3)}
+.slide[data-acento="c4"]{--acento:var(--c4)}
+.slide[data-acento="c5"]{--acento:var(--c5)}
+.slide[data-acento="c6"]{--acento:var(--c6)}
+.slide[data-acento="c7"]{--acento:var(--c7)}
+.slide[data-acento="c8"]{--acento:var(--c8)}
+
+/* ── portada ───────────────────────────────────────────────── */
+.portada{justify-content:center;align-items:flex-start;gap:0}
+.portada-titulo{font-size:clamp(40px,5.6vw,88px);font-weight:800;line-height:1.02;
+  letter-spacing:-.03em;max-width:17ch}
+.portada-titulo em{font-style:normal;color:var(--acento)}
+.portada .firma{margin-top:clamp(28px,5vh,54px);display:flex;flex-direction:column;gap:9px}
+.portada .docente{font-size:clamp(15px,1.7vw,21px);font-weight:500;color:var(--ink2)}
+.portada .fecha{font-family:var(--mono);font-size:12.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--muted)}
+.portada::after{content:"";position:absolute;left:5vw;bottom:5.4vh;width:clamp(60px,9vw,130px);
+  height:3px;background:var(--acento)}
+
+/* ══════════════════════════════════════════════════════════════
+   LAS MAQUETAS
+   Seis. Se declaran como clase sobre .slide, igual que .portada.
+   Sin modificador sale la «tendida», que es la de toda la vida.
+   Cuál usa qué contenido está en references/identidad-visual.md
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── tendida · la de por defecto ───────────────────────────── */
+.titular{font-size:clamp(26px,3.2vw,50px);font-weight:600;line-height:1.12;
+  letter-spacing:-.022em;max-width:26ch}
+.titular em{font-style:normal;color:var(--acento)}
+.apunte{margin-top:10px;font-size:clamp(13px,1.3vw,17px);line-height:1.5;
+  color:var(--muted);max-width:74ch}
+
+/* El lienzo se come todo lo que sobra: la gráfica manda. Sin marco, sin
+   tarjeta, sin sombra. */
+.lienzo{flex:1;min-height:0;width:100%;margin-top:clamp(14px,2.4vh,28px)}
+
+/* ── partida · texto en columna, gráfica al lado ───────────── */
+/* El titular baja de cuerpo porque la columna es estrecha, y ese cambio de
+   escala es la mitad del efecto: la lámina ya no se parece a la anterior. */
+.slide.partida{display:grid;grid-template-columns:minmax(240px,34%) 1fr;
+  grid-template-rows:1fr auto;column-gap:clamp(28px,4vw,64px)}
+.slide.partida .columna{display:flex;flex-direction:column;justify-content:center;
+  min-height:0;min-width:0}
+.slide.partida .titular{font-size:clamp(22px,2.4vw,36px);max-width:none}
+.slide.partida .apunte{max-width:none}
+.slide.partida .lienzo{margin-top:0;min-width:0}
+.slide.partida .fuentes{grid-column:1/-1}
+
+/* ── sangre · la gráfica de borde a borde ──────────────────── */
+/* La option de esa gráfica TIENE que llevar grid.top >= '34%' o los datos
+   quedan debajo del titular. Solo se ve en la captura. */
+.slide.sangre{padding:0}
+.slide.sangre .lienzo{position:absolute;inset:0;margin:0;width:auto;z-index:1}
+.slide.sangre .titular{position:relative;z-index:2;margin:6vh 5vw 0;
+  max-width:18ch;font-size:clamp(28px,4vw,62px)}
+.slide.sangre .apunte{position:relative;z-index:2;margin:10px 5vw 0;max-width:52ch}
+.slide.sangre .fuentes{position:relative;z-index:2;margin:auto 5vw 5.4vh;border-top:none}
+
+/* ── duo · dos gráficas que se comparan ────────────────────── */
+/* Las dos comparten tipo de marca y escala, y el max del eje de magnitud se
+   fija igual en las dos: si cada una autoescala, el par miente. */
+.slide.duo .lienzos{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;
+  column-gap:clamp(22px,3.2vw,52px);margin-top:clamp(14px,2.4vh,28px)}
+.slide.duo .lienzos>figure{display:flex;flex-direction:column;min-height:0;min-width:0}
+.slide.duo .rotulo{font-family:var(--mono);font-size:12px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);padding-bottom:9px;
+  border-bottom:1px solid var(--line)}
+.slide.duo .lienzo{margin-top:6px}
+
+/* ── cifra · el dato solo, sin gráfica ─────────────────────── */
+.slide.cifra .lienzo{display:flex;flex-direction:column;justify-content:center;
+  gap:clamp(10px,1.6vh,18px)}
+/* padding-bottom: con line-height .88 la coma de «46,5» se sale de su caja y
+   se mete en el glosado. Solo se ve en la captura. */
+.slide.cifra .n{font-size:clamp(84px,15vw,240px);font-weight:800;line-height:.88;
+  padding-bottom:.09em;letter-spacing:-.045em;color:var(--acento)}
+.slide.cifra .l{font-size:clamp(14px,1.6vw,21px);line-height:1.45;
+  color:var(--muted);max-width:44ch}
+/* La chispa es opcional: un sparkline que da contexto sin convertir la lámina
+   en una gráfica. Lleva su propio data-g y su propia entrada en GRAFICAS. */
+.slide.cifra .chispa{height:clamp(44px,7vh,74px);width:min(100%,520px);margin-top:4px}
+
+/* ── respiro · el divisor de acto ──────────────────────────── */
+/* Sin gráfica, sin lienzo y sin pie: no hay dato que citar. Peso 300 a cuerpo
+   enorme — el contraste con el 600 de los titulares es lo que hace que la
+   lámina se lea como aire y no como contenido. */
+.slide.respiro{justify-content:center;align-items:flex-start}
+.slide.respiro .acto-n{font-family:var(--mono);font-size:12.5px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--acento);margin-bottom:clamp(16px,2.6vh,30px)}
+.respiro-txt{font-size:clamp(38px,6.4vw,104px);font-weight:300;line-height:1.03;
+  letter-spacing:-.02em;max-width:15ch;color:var(--ink)}
+.respiro-txt em{font-style:normal;font-weight:600;color:var(--acento)}
+.slide.respiro::after{content:"";position:absolute;left:5vw;bottom:5.4vh;
+  width:clamp(60px,9vw,130px);height:3px;background:var(--acento)}
+
+/* ── la nota · lo que hay que mirar ────────────────────────── */
+/* En columna, dentro de una .partida. */
+.nota{position:relative;margin-top:clamp(16px,2.4vh,26px);padding-left:13px;
+  font-size:clamp(12.5px,1.15vw,15px);line-height:1.5;color:var(--ink2);max-width:40ch}
+.nota::before{content:"";position:absolute;left:0;top:.3em;bottom:.3em;width:2px;
+  background:var(--acento)}
+/* Sobre el lienzo, apuntando al dato del que habla el titular. Se coloca con
+   --x y --y en porcentaje de la pantalla, a ojo contra la captura.
+   pointer-events:none NO ES OPCIONAL: sin eso mata los tooltips. */
+.nota-lienzo{position:absolute;left:var(--x,50%);top:var(--y,50%);z-index:3;
+  transform:translate(-50%,-50%);pointer-events:none;padding-left:11px;max-width:26ch;
+  font-size:clamp(12px,1.05vw,14px);line-height:1.45;color:var(--ink2)}
+.nota-lienzo::before{content:"";position:absolute;left:0;top:.2em;bottom:.2em;
+  width:2px;background:var(--acento)}
+
+/* ── pie de fuentes ────────────────────────────────────────── */
+.fuentes{margin-top:clamp(10px,1.8vh,20px);padding-top:11px;border-top:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:6px 22px;font-size:12.5px;line-height:1.45;
+  color:var(--muted);max-width:92%}
+.fuentes .f{display:inline-flex;align-items:baseline;gap:7px}
+.fuentes .n{font-family:var(--mono);font-size:11px;color:var(--acento);flex-shrink:0}
+.fuentes a{color:var(--muted);text-decoration:none;border-bottom:1px solid rgba(255,255,255,.18)}
+.fuentes a:hover{color:var(--ink);border-bottom-color:var(--acento)}
+.fuentes a:focus-visible{outline:2px solid var(--acento);outline-offset:3px;border-radius:2px}
+.fuentes .meta{color:var(--dim)}
+
+/* ── contador · el único cromo en pantalla ─────────────────── */
+#contador{position:fixed;right:5vw;bottom:5.4vh;z-index:20;font-family:var(--mono);
+  font-size:12px;letter-spacing:.18em;color:var(--dim);pointer-events:none}
+#contador b{color:var(--ink2);font-weight:500}
+
+/* ── vuelta al mazo ────────────────────────────────────────────
+   Arriba a la derecha, tan callado como el contador —referencia
+   para quien proyecta, no interfaz para el público— pero pulsable.
+   El motor ya deja pasar los clics que caen sobre un <a> sin
+   adelantar la diapositiva. */
+#volver{position:fixed;top:2.2vh;right:5vw;z-index:21;display:inline-flex;
+  align-items:center;gap:7px;font-family:var(--sans);font-size:12px;font-weight:600;
+  letter-spacing:.01em;color:var(--dim);text-decoration:none;
+  padding:6px 12px;border-radius:99px;border:1px solid transparent;
+  transition:color .25s,background .25s,border-color .25s}
+#volver svg{width:13px;height:13px;flex:none}
+#volver:hover,#volver:focus-visible{color:var(--c1);background:rgba(34,211,238,.08);
+  border-color:rgba(34,211,238,.35)}
+@media(max-width:820px){
+  #volver{top:1.2vh;right:6vw;font-size:11px;padding:5px 10px}
+}
+
+/* ── entradas ──────────────────────────────────────────────── */
+/* Cada maqueta entra distinto, y todas cuelgan de --ritmo: no se reparten
+   duraciones a mano por ahí. */
+@keyframes surgir{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes entrar-izq{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+@keyframes crecer{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}
+@keyframes asentar{from{opacity:0;letter-spacing:.06em}to{opacity:1;letter-spacing:-.02em}}
+@keyframes aparecer{from{opacity:0}to{opacity:1}}
+
+.slide.activa .titular,
+.slide.activa .apunte,
+.slide.activa .fuentes,
+.slide.activa .portada-titulo,
+.slide.activa .firma{animation:surgir calc(.375s * var(--ritmo)) both}
+.slide.activa .apunte{animation-delay:calc(.055s * var(--ritmo))}
+.slide.activa .firma{animation-delay:calc(.085s * var(--ritmo))}
+.slide.activa .fuentes{animation-delay:calc(.11s * var(--ritmo))}
+
+/* partida · entra la columna entera, no sus piezas por separado */
+.slide.partida.activa .columna{animation:entrar-izq calc(.42s * var(--ritmo)) both}
+.slide.partida.activa .titular,
+.slide.partida.activa .apunte{animation:none}
+/* sangre · la gráfica se asienta desde dentro */
+.slide.sangre.activa .lienzo{animation:crecer calc(.5s * var(--ritmo)) both}
+/* duo · la derecha entra detrás de la izquierda */
+.slide.duo.activa .lienzos>figure{animation:surgir calc(.375s * var(--ritmo)) both}
+.slide.duo.activa .lienzos>figure:last-child{animation-delay:calc(.12s * var(--ritmo))}
+/* cifra · el número lo cuenta el motor; aquí solo el glosado */
+.slide.cifra.activa .l{animation:surgir calc(.375s * var(--ritmo)) both;
+  animation-delay:calc(.14s * var(--ritmo))}
+/* respiro · la palabra asienta el espaciado */
+.slide.respiro.activa .respiro-txt{animation:asentar calc(.6s * var(--ritmo)) both}
+.slide.respiro.activa .acto-n{animation:surgir calc(.375s * var(--ritmo)) both}
+/* la nota llega tarde, cuando la gráfica ya está dibujada. Su keyframe no
+   toca transform: se lo come el translate que la centra. */
+.slide.activa .nota-lienzo{animation:aparecer calc(.4s * var(--ritmo)) both;
+  animation-delay:calc(.55s * var(--ritmo))}
+
+@media(max-width:820px){
+  .slide{padding:5vh 6vw 6vh}
+  .titular{font-size:clamp(21px,5.4vw,30px);max-width:none}
+  .fuentes{font-size:11.5px;max-width:100%}
+  #contador{right:6vw;bottom:2.4vh}
+  /* Las maquetas de dos columnas se apilan; la de sangre recupera el margen,
+     que a este ancho el titular encima de la gráfica no se lee. */
+  .slide.partida{display:flex;flex-direction:column}
+  .slide.partida .titular{font-size:clamp(21px,5.4vw,30px)}
+  .slide.partida .lienzo{margin-top:clamp(14px,2.4vh,28px)}
+  .slide.duo .lienzos{grid-template-columns:1fr;grid-template-rows:1fr 1fr;row-gap:20px}
+  .slide.sangre{padding:5vh 6vw 6vh}
+  .slide.sangre .lienzo{position:relative;inset:auto;width:100%;
+    margin-top:clamp(14px,2.4vh,28px)}
+  .slide.sangre .titular{margin:0;font-size:clamp(21px,5.4vw,30px);max-width:none}
+  .slide.sangre .apunte{margin:10px 0 0}
+  .slide.sangre .fuentes{margin:clamp(10px,1.8vh,20px) 0 0;
+    border-top:1px solid var(--line)}
+  .respiro-txt{font-size:clamp(30px,8.4vw,46px);max-width:none}
+  .slide.cifra .n{font-size:clamp(64px,20vw,110px)}
+  .nota-lienzo{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .slide,.slide *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<div id="escena">
+<!-- ══════════════════════════════════════════════════════════════
+     LAS DIAPOSITIVAS
+     Una <section class="slide"> por diapositiva, numeradas por el
+     orden del DOM. La primera es siempre la portada.
+
+     Cada una declara:
+       · su MAQUETA, como clase — partida, sangre, duo, cifra,
+         respiro, o ninguna, que es la «tendida»;
+       · su ÁNGULO, con data-angulo, de los ocho de
+         references/investigacion.md. Las de datos, todas;
+       · su ACENTO, con data-acento="c1".."c8", que cambia por acto.
+
+     data-g VA EN EL LIENZO, no en la <section>: así una .duo puede
+     llevar dos gráficas y una .cifra puede llevar su chispa.
+     EL PIE NO SE ESCRIBE: lo rellena el motor juntando las fuentes
+     de todos los lienzos de la lámina. Una gráfica sin fuente no se
+     puede dibujar.
+
+     Las siete de abajo están para enseñar las maquetas. SE BORRAN.
+     ══════════════════════════════════════════════════════════════ -->
+
+  <!-- ══ ACTO 1 · cuánta gente · acento c1 ══════════════════════ -->
+
+  <section class="slide portada activa" data-acento="c1">
+    <h1 class="portada-titulo">Uso y tipos de uso de los <em>chatbots</em> de IA</h1>
+    <div class="firma">
+      <p class="docente">Docente: Oscar Iván Vargas Pineda</p>
+      <p class="fecha">21 de septiembre de 2026</p>
+    </div>
+  </section>
+
+  <!-- De qué chatbots estamos hablando, antes de hablar de su uso. No existe
+       un equivalente mundial por marca, así que el alcance va en el titular y
+       no escondido en el apunte. -->
+  <section class="slide" data-angulo="comparacion" data-acento="c1">
+    <h2 class="titular">En seis países, ningún otro chatbot pasa del 11 %</h2>
+    <p class="apunte">Porcentaje que dice haber usado cada sistema en la última semana,
+      2025. Encuesta a unas 12.000 personas en Argentina, Dinamarca, Francia, Japón,
+      Reino Unido y Estados Unidos. No es cuota de mercado: mide cuánta gente declara
+      usar cada sistema, y una misma persona puede usar varios.</p>
+    <div class="lienzo" data-g="g02"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide cifra" data-angulo="magnitud" data-acento="c1">
+    <h2 class="titular">Uno de cada diez adultos del mundo usa ChatGPT cada semana</h2>
+    <div class="lienzo" data-g="g03">
+      <span class="n" data-cifra="700" data-sufijo=" millones">700 millones</span>
+      <span class="l">de usuarios semanales en julio de 2025, alrededor del 10 % de la
+        población adulta del planeta. Abajo, los mensajes diarios de junio a junio.</span>
+      <div class="chispa" data-g="g03b"></div>
+    </div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide" data-angulo="tendencia" data-acento="c1">
+    <h2 class="titular">Crece todo, pero el uso personal ya es el 73 % de los mensajes</h2>
+    <p class="apunte">Mensajes diarios en los planes de consumo, en millones. Promedio de
+      siete días terminado el 26 de junio de cada año.</p>
+    <div class="lienzo" data-g="g04"></div>
+    <p class="nota-lienzo" style="--x:50%;--y:48%">De 238 a 1.911 millones: el uso ajeno
+      al trabajo se multiplicó por ocho.</p>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide" data-angulo="brecha" data-acento="c1">
+    <h2 class="titular">Dos de cada tres jóvenes la usan; uno de cada quince mayores</h2>
+    <p class="apunte">Personas de 16 a 74 años de la Unión Europea que usaron herramientas
+      de IA generativa en los tres meses anteriores a la encuesta, 2025.</p>
+    <div class="lienzo" data-g="g05"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide partida" data-angulo="comparacion" data-acento="c1">
+    <div class="columna">
+      <h2 class="titular">Nigeria dobla a Estados Unidos en uso de IA</h2>
+      <p class="apunte">Adultos que dicen haber usado IA generativa en los últimos doce
+        meses, 2025.</p>
+      <p class="nota">La línea punteada es el total de los 21 países, 62 %.
+        Encuesta de Ipsos a unas 21.000 personas, encargada por Google. El orden no
+        sigue a la renta: los que más la usan no son los más ricos.</p>
+    </div>
+    <div class="lienzo" data-g="g06"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <!-- ══ ACTO 2 · para qué · acento c2 ══════════════════════════ -->
+
+  <section class="slide respiro" data-acento="c2">
+    <p class="acto-n">02</p>
+    <h2 class="respiro-txt">¿Y para <em>qué</em> la usan?</h2>
+  </section>
+
+  <section class="slide" data-angulo="tendencia" data-acento="c2">
+    <h2 class="titular">Escribir cae del 36 % al 24 %, pero buscar información sube</h2>
+    <p class="apunte">Porcentaje de conversaciones de consumo por tema, julio de 2024
+      frente a julio de 2025.</p>
+    <div class="lienzo" data-g="g08"></div>
+    <p class="nota-lienzo" style="--x:42%;--y:54%">Los dos temas se cruzan: 24 % cada uno
+      en julio de 2025.</p>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide duo" data-angulo="comparacion" data-acento="c2">
+    <h2 class="titular">Fuera del trabajo se pregunta, pero en el trabajo se encarga</h2>
+    <p class="apunte">Porcentaje de mensajes por tipo de intención, sobre una muestra de
+      1,1 millones de conversaciones de mayo de 2024 a junio de 2025.</p>
+    <div class="lienzos">
+      <figure>
+        <figcaption class="rotulo">Todos los mensajes</figcaption>
+        <div class="lienzo" data-g="g09a"></div>
+      </figure>
+      <figure>
+        <figcaption class="rotulo">Solo los mensajes de trabajo</figcaption>
+        <div class="lienzo" data-g="g09b"></div>
+      </figure>
+    </div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide" data-angulo="composicion" data-acento="c2">
+    <h2 class="titular">¿Terapia y compañía? Apenas el 2,4 % de los mensajes</h2>
+    <p class="apunte">Porcentaje sobre el total de mensajes clasificados. El informe cifra
+      el tema de autoexpresión completo en 2,4 %.</p>
+    <div class="lienzo" data-g="g10"></div>
+    <p class="nota-lienzo" style="--x:60%;--y:70%">Relaciones, reflexión personal, juegos
+      y rol: las dos barras encendidas.</p>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide sangre" data-angulo="trabajo" data-acento="c2">
+    <h2 class="titular">Siete actividades concentran el 77 % de lo que se le pide</h2>
+    <p class="apunte">Siete de las 41 actividades generales del O*NET. Juntas suman el
+      76,9 % de los mensajes clasificados.</p>
+    <div class="lienzo" data-g="g11"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <!-- ══ ACTO 3 · Colombia · acento c3 ══════════════════════════ -->
+
+  <section class="slide respiro" data-acento="c3">
+    <p class="acto-n">03</p>
+    <h2 class="respiro-txt">Y ahora, <em>Colombia</em></h2>
+  </section>
+
+  <section class="slide" data-angulo="composicion" data-acento="c3">
+    <h2 class="titular">Nueve de cada diez usuarios colombianos la usan para preguntar</h2>
+    <p class="apunte">Base: personas de 5 años y más que usaron internet y herramientas de
+      IA, 2024. Las opciones no son excluyentes y no suman 100 %.</p>
+    <div class="lienzo" data-g="g13"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide duo" data-angulo="brecha" data-acento="c3">
+    <h2 class="titular">La ciudad y el campo la usan igual, pero no para programar</h2>
+    <p class="apunte">Mismas cuatro actividades que la lámina anterior, partidas por zona.
+      Las opciones no son excluyentes y no suman 100 %.</p>
+    <div class="lienzos">
+      <figure>
+        <figcaption class="rotulo">Cabecera</figcaption>
+        <div class="lienzo" data-g="g14a"></div>
+      </figure>
+      <figure>
+        <figcaption class="rotulo">Centros poblados y rural disperso</figcaption>
+        <div class="lienzo" data-g="g14b"></div>
+      </figure>
+    </div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide" data-angulo="consecuencia" data-acento="c3">
+    <h2 class="titular">La mitad la usa por una sola razón: ahorrar tiempo</h2>
+    <p class="apunte">Razón principal declarada por quienes usaron herramientas de IA en
+      Colombia, 2024. Esta sí es una distribución y suma 100 %.</p>
+    <div class="lienzo" data-g="g15"></div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide cifra" data-angulo="brecha" data-acento="c3">
+    <h2 class="titular">¿Por qué no la usan? Casi la mitad no sabe qué es</h2>
+    <div class="lienzo" data-g="g16">
+      <span class="n" data-cifra="46.5" data-decimales="1" data-sufijo=" %">46,5 %</span>
+      <span class="l">de quienes usaron internet y no usaron herramientas de IA responde
+        que no sabe qué es. Otro 32,0 % no la considera necesaria y el 16,2 % no sabe
+        usarla.</span>
+    </div>
+    <footer class="fuentes"></footer>
+  </section>
+
+  <section class="slide respiro" data-acento="c4">
+    <p class="acto-n">Cierre</p>
+    <h2 class="respiro-txt">Se <em>pregunta</em> más de lo que se encarga</h2>
+  </section>
+
+</div>
+
+<a id="volver" href="modulo1.html#t=Qui%C3%A9n%20hace%20la%20IA"
+   title="Volver a la diapositiva (Esc)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+  Volver a la diapositiva
+</a>
+
+<div id="contador"><b id="cActual">1</b> / <span id="cTotal">1</span></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   1 · EL CUADERNO DE FUENTES
+   Una entrada por documento consultado. La clave es corta y
+   memorizable; se usa desde GRAFICAS. Reglas en
+   references/datos-y-fuentes.md
+
+     org        quién publica (la sigla o el nombre corto)
+     titulo     el documento, tal como se llama
+     url        enlace PROFUNDO a la página donde se lee la cifra,
+                nunca la portada del sitio
+     consultado AAAA-MM-DD en que se verificó
+
+   Si una entrada no se usa en ninguna gráfica, sobra: el
+   verificador la marca.
+   ══════════════════════════════════════════════════════════════ */
+const FUENTES = {
+  /* Working paper de Chatterji, Cunningham, Deming, Hitzig, Ong, Shan y Wadman.
+     Clasifica 1,1 millones de conversaciones reales de ChatGPT; no es una
+     encuesta. Cifras leídas en las páginas 3, 4, 14, 16, 17 y 20 del PDF. */
+  nber_chatgpt: {
+    org: "NBER",
+    titulo: "How People Use ChatGPT — Working Paper 34255",
+    url: "https://www.nber.org/system/files/working_papers/w34255/w34255.pdf",
+    consultado: "2026-09-21"
+  },
+  /* Encuesta en seis países, no censo: el titular tiene que decir «dice usar».
+     Las cifras por marca están en la figura 5 del PDF, página 18. */
+  reuters_genai2025: {
+    org: "Reuters Institute",
+    titulo: "Generative AI and News Report 2025 — figura 5",
+    url: "https://reutersinstitute.politics.ox.ac.uk/sites/default/files/2025-10/Gen_AI_and_News_Report_2025.pdf",
+    consultado: "2026-09-21"
+  },
+  /* Encuesta encargada por Google y ejecutada por Ipsos, que publica el topline
+     con las tablas por país. El patrocinador se nombra en el título y en la
+     nota de la lámina: es quien paga, y eso el aula tiene que verlo.
+     Cifras de la pregunta 4, página 2 del topline. */
+  ipsos_google2025: {
+    org: "Ipsos",
+    titulo: "Google / Ipsos Our Life With AI 2025 — topline, pregunta 4",
+    url: "https://www.ipsos.com/sites/default/files/ct/news/documents/2026-01/Google%20Ipsos%20Our%20Life%20With%20AI%202025%20Topline.pdf",
+    consultado: "2026-09-21"
+  },
+  /* Serie descargada de la API de diseminación de Eurostat, no de la nota de
+     prensa: el navegador de datos muestra exactamente estos valores. */
+  eurostat_ai2025: {
+    org: "Eurostat",
+    titulo: "Individuals — use of generative AI tools (isoc_ai_iaiu), 2025",
+    url: "https://ec.europa.eu/eurostat/databrowser/view/isoc_ai_iaiu/default/table",
+    consultado: "2026-09-21"
+  },
+  /* Boletín técnico del 1 de agosto de 2025. Gráficos 1, 25, 26, 27 y 28. */
+  dane_entic2024: {
+    org: "DANE",
+    titulo: "ENTIC Hogares 2024 — boletín técnico",
+    url: "https://www.dane.gov.co/files/operaciones/ENTIC/bol-ENTICHogares-2024.pdf",
+    consultado: "2026-09-21"
+  }
+};
+
+/* ══════════════════════════════════════════════════════════════
+   2 · LAS GRÁFICAS
+   Una entrada por LIENZO, con la clave que aparece en su data-g.
+   Una lámina puede tener varios: una .duo tiene dos, y una .cifra
+   con chispa también.
+
+     fuentes  array de claves de FUENTES. Obligatorio y no vacío.
+     option   la opción de ECharts. El tema ya pone color,
+              tipografía, ejes y tooltip: aquí van los datos y lo
+              que sea propio de esta gráfica.
+
+     color    cómo se reparte el color dentro de una gráfica de UNA
+              sola serie. Sin esto saldría toda del mismo tono,
+              porque ECharts asigna la paleta por serie, no por dato:
+
+                "categoria"  una tinta de la rueda por dato, en el
+                             orden escrito aquí. Hasta 8 datos.
+                "escala"     rampa de cian según el valor. Para
+                             rankings largos.
+                "destacar"   la categoría de `destacar:[…]` en --c1
+                             y el resto en gris. Cuando el titular
+                             habla de una sola.
+
+              Si no se declara, el motor usa "categoria" con 8 datos
+              o menos y "escala" con más. Reglas en
+              references/identidad-visual.md
+
+   Cuando una LÁMINA consolida VARIAS fuentes, cada serie declara
+   su clave en `fuente:` y el motor le cuelga ①②③ al nombre, que
+   aparece en la leyenda y en el tooltip. La numeración es la de la
+   lámina entera, no la de la gráfica: en una .duo el ① de la
+   izquierda y el ① del pie son el mismo documento.
+
+   Catálogo de tipos en references/catalogo-graficas.md
+   ══════════════════════════════════════════════════════════════ */
+/* Las cifras se escriben tal como las publica la fuente; estas dos funciones
+   solo las imprimen a la española —coma decimal, punto de millar— porque el
+   formato por defecto de ECharts es el inglés y «10.2 %» se lee mal en el aula. */
+const pct = v => Number(v).toLocaleString("es-CO",
+  { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " %";
+const mil = v => Number(v).toLocaleString("es-CO");
+
+const GRAFICAS = {
+
+  /* 02 · el ranking de sistemas. Trece categorías: más de ocho, así que
+     "escala". Los valores son los enteros que publica la figura 5, sin
+     decimales añadidos, y seis sistemas empatan en 1 % — ese empate es el
+     dato. You.com y Manus AI no se preguntaron en 2024; aquí solo se muestra
+     2025, así que no hay hueco que explicar. */
+  g02: {
+    fuentes: ["reuters_genai2025"],
+    color: "escala",
+    option: {
+      grid: { left: 24, right: 56, top: 8, bottom: 0, containLabel: true },
+      xAxis: { type: "value", max: 24, axisLabel: { show: false },
+               splitLine: { show: false }, axisLine: { show: false } },
+      yAxis: { type: "category", inverse: true,
+               data: ["ChatGPT", "Google Gemini", "Meta AI", "Microsoft Copilot",
+                      "Grok", "Snapchat My AI", "DeepSeek", "Midjourney", "Mistral",
+                      "Perplexity.ai", "Claude", "You.com", "Manus AI"] },
+      series: [{
+        type: "bar", barWidth: "58%",
+        itemStyle: { borderRadius: [0, 4, 4, 0] },
+        data: [22, 11, 9, 6, 2, 2, 2, 1, 1, 1, 1, 1, 1],
+        label: { show: true, position: "right", formatter: p => p.value + " %",
+                 color: "#C8CBD2", fontFamily: "JetBrains Mono", fontSize: 12.5 }
+      }]
+    }
+  },
+
+  /* 03 · la cifra sola. SIN `option`: no hay nada que dibujar, pero la entrada
+     existe porque de aquí sale el pie. NBER w34255, pág. 3. */
+  g03: {
+    fuentes: ["nber_chatgpt"]
+  },
+
+  /* 03b · la chispa. Dos puntos, que son los dos que publica la Tabla 1: no se
+     interpola nada entre medias. */
+  g03b: {
+    fuentes: ["nber_chatgpt"],
+    option: {
+      grid: { left: 2, right: 2, top: 6, bottom: 6 },
+      xAxis: { type: "category", show: false, boundaryGap: false,
+               data: ["Junio de 2024", "Junio de 2025"] },
+      yAxis: { type: "value", show: false, min: 0 },
+      tooltip: { show: false },
+      series: [{ type: "line", symbol: "none", data: [451, 2627],
+                 areaStyle: { opacity: .18 } }]
+    }
+  },
+
+  /* 04 · barras apiladas. Tabla 1 del working paper: mensajes diarios en
+     millones. El segmento de abajo no lleva radio o los escalones quedan
+     mordidos; solo lo lleva el último de la pila. */
+  g04: {
+    fuentes: ["nber_chatgpt"],
+    option: {
+      grid: { left: 24, right: 40, top: 52, bottom: 0, containLabel: true },
+      xAxis: { type: "category", data: ["Junio de 2024", "Junio de 2025"] },
+      yAxis: { type: "value", axisLabel: { formatter: mil } },
+      series: [
+        /* El radio solo lo lleva el último de la pila; en el de abajo los
+           escalones quedarían mordidos. barMaxWidth pisa el 64 del tema: con
+           dos categorías en toda la pantalla, dos barras finas se pierden. */
+        { name: "Relacionado con el trabajo", type: "bar", stack: "t",
+          barWidth: "30%", barMaxWidth: 160,
+          itemStyle: { borderRadius: 0 }, data: [213, 716] },
+        { name: "No relacionado con el trabajo", type: "bar", stack: "t",
+          barWidth: "30%", barMaxWidth: 160, data: [238, 1911],
+          label: { show: true, position: "insideTop", distance: 8,
+                   formatter: p => mil(p.value) + " M",
+                   color: "#050505", fontFamily: "JetBrains Mono", fontSize: 13 } }
+      ]
+    }
+  },
+
+  /* 05 · el gradiente de edad. "escala" y no "categoria": lo que dice la
+     gráfica es la magnitud, y la rampa refuerza el descenso. */
+  g05: {
+    fuentes: ["eurostat_ai2025"],
+    color: "escala",
+    option: {
+      grid: { left: 24, right: 24, top: 28, bottom: 0, containLabel: true },
+      xAxis: { type: "category",
+               data: ["16 a 24", "25 a 34", "35 a 44", "45 a 54", "55 a 64", "65 a 74"] },
+      yAxis: { type: "value", max: 70, axisLabel: { formatter: v => v + " %" } },
+      series: [{
+        type: "bar", barWidth: "46%",
+        data: [63.8, 50.6, 39.0, 28.4, 16.5, 6.5],
+        label: { show: true, position: "top", formatter: p => pct(p.value),
+                 color: "#C8CBD2", fontFamily: "JetBrains Mono", fontSize: 13 }
+      }]
+    }
+  },
+
+  /* 06 · ranking de países, los 21 del topline y no una selección: quitar
+     países de un ranking es editorializar. Son enteros publicados, así que la
+     etiqueta no añade decimales. Veintiuna categorías: "escala". La markLine va
+     SIN rótulo porque en vertical ECharts gira el texto sobre las barras; lo
+     que significa lo dice la nota de la columna. */
+  g06: {
+    fuentes: ["ipsos_google2025"],
+    color: "escala",
+    option: {
+      grid: { left: 24, right: 52, top: 4, bottom: 0, containLabel: true },
+      xAxis: { type: "value", max: 92, axisLabel: { show: false },
+               splitLine: { show: false }, axisLine: { show: false } },
+      yAxis: { type: "category", inverse: true,
+               axisLabel: { fontSize: 11.5 },
+               data: ["Emiratos", "Nigeria", "India", "Brasil", "Singapur", "Sudáfrica",
+                      "México", "Argentina", "España", "Corea del Sur", "Polonia",
+                      "Irlanda", "Italia", "Bélgica", "Reino Unido", "Australia",
+                      "Canadá", "Francia", "Alemania", "Japón", "Estados Unidos"] },
+      series: [{
+        type: "bar", barWidth: "62%",
+        itemStyle: { borderRadius: [0, 4, 4, 0] },
+        /* Italia acaba en 59 y la línea del total está en 62: a la distancia
+           normal su etiqueta cae justo encima. Se aparta solo esa, no todas.
+           Se ve únicamente en la captura. */
+        data: [85, 84, 83, 74, 71, 70, 66, 65, 64, 64, 62, 62,
+               { value: 59, label: { distance: 46 } },
+               56, 56, 56, 52, 51, 47, 42, 40],
+        label: { show: true, position: "right", distance: 9,
+                 formatter: p => p.value + " %",
+                 color: "#C8CBD2", fontFamily: "JetBrains Mono", fontSize: 11.5 },
+        markLine: {
+          silent: true, symbol: "none", label: { show: false },
+          lineStyle: { color: "#EAB308", type: "dashed", width: 2 },
+          data: [{ xAxis: 62 }]
+        }
+      }]
+    }
+  },
+
+  /* 08 · pendiente. Dos momentos, cinco temas. Sin endLabel: Escritura y
+     Buscar información terminan las dos en 24 y las etiquetas se pisarían;
+     los nombra la leyenda y el cruce lo señala la nota sobre el lienzo. */
+  g08: {
+    fuentes: ["nber_chatgpt"],
+    option: {
+      grid: { left: 24, right: 40, top: 56, bottom: 0, containLabel: true },
+      xAxis: { type: "category", boundaryGap: false,
+               data: ["Julio de 2024", "Julio de 2025"],
+               axisLine: { show: false } },
+      yAxis: { type: "value", max: 40, axisLabel: { formatter: v => v + " %" } },
+      series: [
+        { name: "Escritura",          type: "line", symbolSize: 9, data: [36, 24] },
+        { name: "Consejos prácticos", type: "line", symbolSize: 9, data: [29, 29] },
+        { name: "Buscar información", type: "line", symbolSize: 9, data: [14, 24] },
+        { name: "Ayuda técnica",      type: "line", symbolSize: 9, data: [12, 5] },
+        { name: "Multimedia",         type: "line", symbolSize: 9, data: [2, 7] }
+      ]
+    }
+  },
+
+  /* 09 · las dos mitades de la .duo. Mismo tipo de marca, mismo yAxis.max
+     escrito a mano y el mismo orden de categorías, para que Preguntar sea la
+     misma tinta en las dos. */
+  g09a: {
+    fuentes: ["nber_chatgpt"],
+    color: "categoria",
+    option: {
+      grid: { left: 24, right: 16, top: 28, bottom: 0, containLabel: true },
+      xAxis: { type: "category", data: ["Preguntar", "Encargar", "Expresar"] },
+      yAxis: { type: "value", max: 60, axisLabel: { formatter: v => v + " %" } },
+      series: [{
+        type: "bar", barWidth: "46%", data: [49, 40, 11],
+        label: { show: true, position: "top", formatter: p => p.value + " %",
+                 color: "#C8CBD2", fontFamily: "JetBrains Mono", fontSize: 13 }
+      }]
+    }
+  },
+  g09b: {
+    fuentes: ["nber_chatgpt"],
+    color: "categoria",
+    option: {
+      grid: { left: 24, right: 16, top: 28, bottom: 0, containLabel: true },
+      xAxis: { type: "category", data: ["Preguntar", "Encargar", "Expresar"] },
+      yAxis: { type: "value", max: 60, axisLabel: { formatter: v => v + " %" } },
+      series: [{
+        type: "bar", barWidth: "46%", data: [35, 56, 9],
+        label: { show: true, position: "top", formatter: p => p.value + " %",
+                 color: "#C8CBD2", fontFamily: "JetBrains Mono", fontSize: 13 }
+      }]
+    }
+  },
+
+  /* 10 · "destacar": el titular habla de la autoexpresión, así que esas dos
+     barras van en el acento del acto y el resto en gris. El gris no significa
+     «vale menos», significa «no es de lo que estamos hablando». */
+  g10: {
+    fuentes: ["nber_chatgpt"],
+    color: "destacar",
+    destacar: ["Relaciones y reflexión personal", "Juegos y rol"],
+    option: {
+      grid: { left: 24, right: 56, top: 8, bottom: 0, containLabel: true },
+      xAxis: { type: "value", max: 12, axisLabel: { show: false },
+               splitLine: { show: false }, axisLine: { show: false } },
+      yAxis: { type: "category", inverse: true,
+               data: ["Tutoría o enseñanza", "Consejos de cómo hacer algo",
+                      "Programación", "Cálculo matemático",
+                      "Relaciones y reflexión personal", "Análisis de datos",
+                      "Juegos y rol"] },
+      series: [{
+        type: "bar", barWidth: "54%",
+        itemStyle: { borderRadius: [0, 4, 4, 0] },
+        data: [10.2, 8.5, 4.2, 3.0, 1.9, 0.4, 0.4],
+        label: { show: true, position: "right", formatter: p => pct(p.value),
+                 color: "#C8CBD2", fontFamily: "JetBrains Mono", fontSize: 13 }
+      }]
+    }
+  },
+
+  /* 11 · la lámina a sangre. Un treemap no usa `grid`: los márgenes van en la
+     propia serie, y `top` tiene que dejar sitio al titular, que va encima del
+     lienzo. En porcentaje y no en píxeles, porque esa diapositiva no tiene
+     padding. */
+  g11: {
+    fuentes: ["nber_chatgpt"],
+    color: "categoria",
+    option: {
+      series: [{
+        type: "treemap", roam: false, nodeClick: false,
+        top: "36%", left: "5%", right: "5%", bottom: "9%",
+        breadcrumb: { show: false },
+        itemStyle: { borderColor: "#000000", borderWidth: 2, gapWidth: 2 },
+        /* width + overflow: sin esto «Decidir y resolver problemas» sale
+           cortado con puntos suspensivos en la celda estrecha. */
+        label: { color: "#050505", fontSize: 14.5, fontWeight: 500,
+                 lineHeight: 19, width: 180, overflow: "break",
+                 formatter: p => p.name + "\n" + pct(p.value) },
+        data: [
+          { name: "Obtener información", value: 19.3 },
+          { name: "Interpretar información para otros", value: 13.1 },
+          { name: "Documentar y registrar información", value: 12.8 },
+          { name: "Asesorar y dar consulta", value: 9.2 },
+          { name: "Pensar creativamente", value: 9.1 },
+          { name: "Decidir y resolver problemas", value: 8.5 },
+          { name: "Trabajar con computadores", value: 4.9 }
+        ]
+      }]
+    }
+  },
+
+  /* 13 · Colombia, para qué. Las opciones no son excluyentes, así que esto NO
+     es una composición de un total: son cuatro preguntas de sí o no y por eso
+     van en barras y no en dona. */
+  g13: {
+    fuentes: ["dane_entic2024"],
+    color: "categoria",
+    option: {
+      grid: { left: 24, right: 64, top: 8, bottom: 0, containLabel: true },
+      xAxis: { type: "value", max: 100, axisLabel: { show: false },
+               splitLine: { show: false }, axisLine: { show: false } },
+      yAxis: { type: "category", inverse: true,
+               data: ["Comunicarse o consultar (chatbot, traducción)",
+                      "Tareas académicas, profesionales o laborales",
+                      "Generar imágenes, audios o videos",
+                      "Desarrollar software o aplicaciones"] },
+      series: [{
+        type: "bar", barWidth: "50%",
+        itemStyle: { borderRadius: [0, 4, 4, 0] },
+        data: [90.4, 80.7, 43.9, 14.9],
+        label: { show: true, position: "right", formatter: p => pct(p.value),
+                 color: "#C8CBD2", fontFamily: "JetBrains Mono", fontSize: 13 }
+      }]
+    }
+  },
+
+  /* 14 · las dos mitades de la segunda .duo. `containLabel:false` y el mismo
+     `grid.left` en las dos: así el área de dibujo mide igual a un lado y al
+     otro y una barra del mismo largo vale lo mismo. Los rótulos del eje solo
+     van en la izquierda; la derecha los hereda visualmente. */
+  g14a: {
+    fuentes: ["dane_entic2024"],
+    color: "categoria",
+    option: {
+      grid: { left: 168, right: 52, top: 10, bottom: 10, containLabel: false },
+      xAxis: { type: "value", max: 100, axisLabel: { show: false },
+               splitLine: { show: false }, axisLine: { show: false } },
+      yAxis: { type: "category", inverse: true,
+               axisLabel: { width: 156, overflow: "break", lineHeight: 15, fontSize: 12 },
+               data: ["Comunicarse o consultar", "Tareas académicas o laborales",
+                      "Imágenes, audios o videos", "Desarrollar software"] },
+      series: [{
+        type: "bar", barWidth: "50%",
+        itemStyle: { borderRadius: [0, 4, 4, 0] },
+        data: [90.9, 81.0, 44.5, 15.5],
+        label: { show: true, position: "right", formatter: p => pct(p.value),
+                 color: "#C8CBD2", fontFamily: "JetBrains Mono", fontSize: 12.5 }
+      }]
+    }
+  },
+  g14b: {
+    fuentes: ["dane_entic2024"],
+    color: "categoria",
+    option: {
+      grid: { left: 168, right: 52, top: 10, bottom: 10, containLabel: false },
+      xAxis: { type: "value", max: 100, axisLabel: { show: false },
+               splitLine: { show: false }, axisLine: { show: false } },
+      yAxis: { type: "category", inverse: true,
+               axisLabel: { show: false },
+               data: ["Comunicarse o consultar", "Tareas académicas o laborales",
+                      "Imágenes, audios o videos", "Desarrollar software"] },
+      series: [{
+        type: "bar", barWidth: "50%",
+        itemStyle: { borderRadius: [0, 4, 4, 0] },
+        data: [85.0, 77.2, 37.7, 7.7],
+        label: { show: true, position: "right", formatter: p => pct(p.value),
+                 color: "#C8CBD2", fontFamily: "JetBrains Mono", fontSize: 12.5 }
+      }]
+    }
+  },
+
+  /* 15 · la única dona del mazo, y la única cifra de Colombia que sí suma 100:
+     es una distribución de la razón principal, con una sola respuesta. */
+  g15: {
+    fuentes: ["dane_entic2024"],
+    color: "categoria",
+    option: {
+      /* Sin leyenda: cada porción lleva su nombre al lado y la leyenda solo
+         repetiría lo mismo cortado por la mitad. Y el porcentaje es `{c}`, el
+         publicado, no `{d}`: las cuatro razones suman 100,1 por redondeo de la
+         fuente y `{d}` las recalcularía a 49,45. */
+      legend: { show: false },
+      series: [{
+        type: "pie", radius: ["44%", "70%"], center: ["50%", "54%"],
+        label: { color: "#C8CBD2", fontSize: 13.5,
+                 formatter: p => p.name + "\n" + pct(p.value) },
+        labelLine: { lineStyle: { color: "rgba(255,255,255,.2)" } },
+        data: [
+          { name: "Ahorrar tiempo", value: 49.5 },
+          { name: "Reducir errores", value: 23.8 },
+          { name: "Apoyar la toma de decisiones", value: 17.5 },
+          { name: "Automatizar tareas repetitivas", value: 9.3 }
+        ]
+      }]
+    }
+  },
+
+  /* 16 · la segunda cifra sola. Sin `option`, igual que la primera. */
+  g16: {
+    fuentes: ["dane_entic2024"]
+  }
+
+};
+
+/* ══════════════════════════════════════════════════════════════
+   3 · MOTOR
+   A partir de aquí no hace falta tocar nada.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+"use strict";
+
+const raiz  = document.documentElement;
+const tk    = n => getComputedStyle(raiz).getPropertyValue(n).trim();
+const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches
+            || window.__ESTATICO === true;   // lo activa capturar.ps1
+
+/* El mando del ritmo vive en :root para que CSS y JavaScript usen el mismo. */
+const RITMO = parseFloat(tk("--ritmo")) || 1;
+
+/* ── tema · todo sale de los tokens, ni un color literal ───── */
+const PALETA = [1,2,3,4,5,6,7,8].map(i => tk("--c" + i));
+const RAMPA  = [1,2,3,4,5,6].map(i => tk("--s" + i));
+const INK    = tk("--ink"), INK2 = tk("--ink2");
+const MUTED  = tk("--muted"), LINE = tk("--line"), BG = tk("--bg");
+const DIM    = tk("--dim");
+
+const ejeBase = {
+  axisLine:  { lineStyle: { color: LINE } },
+  axisTick:  { show: false },
+  axisLabel: { color: MUTED, fontSize: 12 },
+  /* Los ejes NO llevan nombre: la unidad va en el apunte. ECharts coloca el
+     nombre al final del eje y se sale del lienzo en el horizontal, o pisa la
+     etiqueta más alta en el vertical. Si alguna vez hace falta, estos valores
+     lo ponen encima y a la izquierda, y el `grid.top` tiene que subir a 44. */
+  nameLocation: "end", nameGap: 26,
+  nameTextStyle: { color: "#5A5E68", fontSize: 11, fontFamily: "JetBrains Mono", align: "left" },
+  splitLine: { lineStyle: { color: LINE, type: "solid" } }
+};
+/* Las cifras van en monoespaciada y los nombres de categoría en Inter: una
+   lista de países en mono se lee como si fuera código. */
+const ejeCifras = Object.assign({}, ejeBase, {
+  axisLabel: { color: MUTED, fontSize: 12, fontFamily: "JetBrains Mono" }
+});
+
+echarts.registerTheme("datos", {
+  color: PALETA,
+  backgroundColor: "transparent",
+  textStyle: { fontFamily: "Inter, system-ui, sans-serif", color: INK2 },
+  /* El eje de categorías no lleva rejilla; el de magnitud sí. */
+  categoryAxis: Object.assign({}, ejeBase, { splitLine: { show: false } }),
+  valueAxis:    ejeCifras,
+  logAxis:      ejeCifras,
+  timeAxis:     ejeCifras,
+  legend: {
+    top: 0, right: 0, icon: "roundRect", itemWidth: 11, itemHeight: 11,
+    itemGap: 18, textStyle: { color: MUTED, fontSize: 13 },
+    inactiveColor: "#5A5E68"
+  },
+  tooltip: {
+    backgroundColor: "rgba(8,8,10,.94)",
+    borderColor: "rgba(255,255,255,.14)", borderWidth: 1,
+    padding: [10, 13], extraCssText: "backdrop-filter:blur(6px);border-radius:10px",
+    textStyle: { color: INK, fontSize: 13.5, fontFamily: "Inter" },
+    axisPointer: { lineStyle: { color: "rgba(255,255,255,.28)" },
+                   crossStyle: { color: "rgba(255,255,255,.28)" } }
+  },
+  bar:  { barMaxWidth: 64,
+          itemStyle: { borderColor: BG, borderWidth: 2, borderRadius: [4,4,0,0] } },
+  line: { lineStyle: { width: 2 }, symbolSize: 8, smooth: false },
+  pie:  { itemStyle: { borderColor: BG, borderWidth: 2 } }
+});
+
+/* ── defectos que el tema de ECharts no alcanza a poner ────── */
+const SUP = ["①","②","③","④","⑤","⑥"];
+
+/* Copia profunda que RESPETA las funciones. Con JSON.parse(JSON.stringify())
+   un `formatter(p){…}` desaparecería sin avisar y la gráfica saldría con las
+   etiquetas en blanco. */
+function clonar(v){
+  if (Array.isArray(v)) return v.map(clonar);
+  if (v && typeof v === "object") {
+    const o = {};
+    for (const k in v) o[k] = clonar(v[k]);
+    return o;
+  }
+  return v;
+}
+
+/* ══ color ═══════════════════════════════════════════════════
+   ECharts reparte la paleta POR SERIE, no por dato: sin esto,
+   cualquier gráfica de una sola serie —que son casi todas— sale
+   entera del mismo tono. Las reglas de cada estrategia están en
+   references/identidad-visual.md
+   ═══════════════════════════════════════════════════════════ */
+const COLOREABLE = /^(bar|pictorialBar|pie|scatter|effectScatter|funnel|treemap)$/;
+
+const aRGB  = h => [1,3,5].map(i => parseInt(h.slice(i, i + 2), 16));
+const aHex  = c => "#" + c.map(v => Math.round(v).toString(16).padStart(2, "0")).join("");
+/* t va de 0 a 1 y NO arranca en el primer escalón: el más oscuro de la rampa
+   se funde con el negro y la barra más pequeña desaparecería. */
+function enRampa(t){
+  const p = (0.34 + 0.66 * Math.max(0, Math.min(1, t))) * (RAMPA.length - 1);
+  const i = Math.min(Math.floor(p), RAMPA.length - 2);
+  const f = p - i;
+  const a = aRGB(RAMPA[i]), b = aRGB(RAMPA[i + 1]);
+  return aHex(a.map((v, k) => v + (b[k] - v) * f));
+}
+
+/* Un dato puede venir como número, como [x,y] o como {name,value}: estas tres
+   lo leen sin obligar a escribirlo de una forma concreta. */
+const valorDe = d =>
+  typeof d === "number" ? d
+  : Array.isArray(d) ? d[d.length - 1]
+  : d && typeof d === "object" ? (Array.isArray(d.value) ? d.value[d.value.length - 1] : d.value)
+  : 0;
+const nombreDe = (d, i, cats) =>
+  (d && typeof d === "object" && !Array.isArray(d) && d.name) ? d.name
+  : (cats && cats[i] !== undefined) ? cats[i] : String(i);
+/* Envuelve el dato para colgarle un itemStyle sin perder su forma original. */
+function conColor(d, color){
+  const base = (d && typeof d === "object" && !Array.isArray(d)) ? clonar(d) : { value: d };
+  base.itemStyle = Object.assign({}, base.itemStyle, { color });
+  return base;
+}
+
+/* El acento del acto, leído del atributo y no del CSS: data-acento="c3" se
+   traduce a la tercera tinta de la rueda. Así el «destacar» de la gráfica es
+   el mismo color que el <em> del titular de esa lámina. */
+function acentoDe(sec){
+  const m = /^c([1-8])$/.exec((sec && sec.dataset.acento) || "");
+  return m ? PALETA[+m[1] - 1] : PALETA[0];
+}
+
+function colorear(def, o, series, acento){
+  if (series.length !== 1) return;            // varias series: la rueda ya va por serie
+  const s = series[0];
+  if (!COLOREABLE.test(s.type || "")) return; // una línea no se pinta punto a punto
+  const datos = s.data || [];
+  if (!datos.length) return;
+
+  const cats = (o.xAxis && o.xAxis.type === "category" && o.xAxis.data)
+            || (o.yAxis && o.yAxis.type === "category" && o.yAxis.data)
+            || null;
+  const modo = def.color || (datos.length > PALETA.length ? "escala" : "categoria");
+
+  if (modo === "categoria") {
+    /* Una tinta por dato, en el orden en que están ESCRITOS en el archivo: así
+       el color sigue a la entidad y no al puesto en el ranking. */
+    s.data = datos.map((d, i) => conColor(d, PALETA[i % PALETA.length]));
+
+  } else if (modo === "escala") {
+    const vs = datos.map(valorDe);
+    const min = Math.min.apply(null, vs), max = Math.max.apply(null, vs);
+    const ancho = (max - min) || 1;
+    /* La raíz y no el valor crudo: en un ranking casi siempre hay un dato que
+       multiplica por veinte al resto, y con reparto lineal las once barras de
+       abajo salen del mismo tono. Sigue siendo monótona —a más valor, más
+       claro—, solo que reparte mejor la parte baja. */
+    s.data = datos.map((d, i) => conColor(d, enRampa(Math.sqrt((vs[i] - min) / ancho))));
+
+  } else if (modo === "destacar") {
+    /* La destacada va en el acento del acto, no en --c1 fijo: es la tinta que
+       ya lleva el <em> del titular que habla de ella. El resto en --dim, que
+       significa «de esto no estamos hablando», no «esto vale menos». */
+    const foco = def.destacar || [];
+    s.data = datos.map((d, i) =>
+      conColor(d, foco.indexOf(nombreDe(d, i, cats)) >= 0 ? (acento || PALETA[0]) : DIM));
+  }
+}
+
+/* `union` son las fuentes de la LÁMINA entera, en el orden en que las numera
+   el pie. Se pasa desde fuera para que en una .duo el ① de la leyenda de la
+   gráfica izquierda y el ① del pie sean el mismo documento. */
+function preparar(def, union, acento){
+  /* Se trabaja sobre una copia: si se mutara el original, las marcas ①②③ se
+     acumularían en cada visita a la diapositiva. */
+  const o = clonar(def.option);
+  const fuentes = union || def.fuentes || [];
+  const series  = [].concat(o.series || []);
+
+  /* Con varias fuentes, cada serie dice de cuál sale. La marca va en el
+     nombre porque así aparece en la leyenda Y en el tooltip, sin tener
+     que escribir un formatter por gráfica. */
+  if (fuentes.length > 1) {
+    series.forEach(s => {
+      const i = fuentes.indexOf(s.fuente);
+      if (i >= 0 && s.name && s.name.indexOf(SUP[i]) < 0) s.name = s.name + " " + SUP[i];
+    });
+  }
+
+  const hayVarias = series.length > 1;
+  const esPastel  = series.length === 1 && /^(pie|treemap|sunburst|funnel)$/.test(series[0].type || "");
+  const ejes      = !!(o.xAxis || o.yAxis || o.radiusAxis);
+
+  colorear(def, o, series, acento);
+
+  o.animation = !quieto;
+  o.animationEasing = "cubicOut";
+  o.animationDuration       = 800 * RITMO;
+  o.animationDurationUpdate = 500 * RITMO;
+  o.animationDelay          = i => i * 40 * RITMO;
+  o.animationDelayUpdate    = i => i * 20 * RITMO;
+
+  if (o.tooltip === undefined) {
+    o.tooltip = { trigger: ejes && !esPastel ? "axis" : "item" };
+  }
+  /* Resaltado al pasar el cursor: la serie señalada sube, el resto baja. */
+  series.forEach(s => {
+    s.emphasis = Object.assign({ focus: hayVarias ? "series" : "self" }, s.emphasis);
+    if (esPastel) s.emphasis.scaleSize = 8;
+  });
+
+  if (o.legend === undefined && hayVarias) o.legend = {};
+  if (o.legend === undefined && esPastel)  o.legend = { top: 0, right: 0, orient: "vertical" };
+  /* `left: 24` y no 0: containLabel reserva justo el ancho que mide y se queda
+     corto por un carácter — «00.000» en vez de «100.000». Ese margen es el
+     colchón. No se baja aunque parezca que sobra. */
+  if (o.grid === undefined && ejes) o.grid = { left: 24, right: 40, top: hayVarias ? 52 : 20, bottom: 0, containLabel: true };
+
+  o.series = series;
+  return o;
+}
+
+/* ── los lienzos de una lámina ─────────────────────────────── */
+/* data-g vive en el lienzo, no en la sección: una .duo lleva dos y una .cifra
+   con chispa también. Un respiro no lleva ninguno. */
+const hostsDe = sec => [...sec.querySelectorAll("[data-g]")];
+
+/* Las fuentes de la LÁMINA: la unión ordenada y sin repetir de las de todos
+   sus lienzos. Es la numeración que ve el público, y la que tiene que usar
+   también la leyenda de cada gráfica. */
+function fuentesDe(sec){
+  const union = [];
+  hostsDe(sec).forEach(el => {
+    const def = GRAFICAS[el.dataset.g];
+    ((def && def.fuentes) || []).forEach(k => {
+      if (union.indexOf(k) < 0) union.push(k);
+    });
+  });
+  return union;
+}
+
+/* ── pie de fuentes · se renderiza, no se escribe ──────────── */
+function pintarPie(sec){
+  const caja = sec.querySelector(".fuentes");
+  if (!caja) return;
+  const claves = fuentesDe(sec);
+  caja.innerHTML = claves.map((k, i) => {
+    const f = FUENTES[k];
+    if (!f) return `<span class="f">⚠ falta la fuente «${k}» en FUENTES</span>`;
+    const n = claves.length > 1 ? `<span class="n">${SUP[i]}</span>` : "";
+    return `${n}<span class="f"><a href="${f.url}" target="_blank" rel="noopener">`
+         + `${f.org} · ${f.titulo}</a><span class="meta">· consultado ${f.consultado}</span></span>`;
+  }).join("");
+}
+
+/* ── la cifra que se cuenta sola ───────────────────────────── */
+/* <span class="n" data-cifra="34" data-sufijo=" %">. Sube de cero a su valor
+   con el mismo cubicOut y el mismo --ritmo que la gráfica. Con `quieto` se
+   pinta el valor final y ya: si no, capturar.ps1 fotografiaría la cifra a
+   medio contar. */
+function contar(sec){
+  sec.querySelectorAll("[data-cifra]").forEach(el => {
+    const fin = parseFloat(el.dataset.cifra);
+    if (!isFinite(fin)) return;              // plantilla sin rellenar
+    const dec = parseInt(el.dataset.decimales || "0", 10) || 0;
+    const pre = el.dataset.prefijo || "", suf = el.dataset.sufijo || "";
+    const pinta = v => {
+      el.textContent = pre + v.toLocaleString("es-CO", {
+        minimumFractionDigits: dec, maximumFractionDigits: dec }) + suf;
+    };
+    if (quieto) { pinta(fin); return; }
+    pinta(0);
+    const dur = 800 * RITMO, t0 = performance.now();
+    /* Red de seguridad: si los fotogramas no corren —la pestaña en segundo
+       plano, un navegador que los estrangula— la cifra se quedaría en cero
+       delante de la clase. Peor animación, nunca dato equivocado. */
+    const red = setTimeout(() => pinta(fin), dur + 500);
+    requestAnimationFrame(function paso(t){
+      /* Se acota por ABAJO además de por arriba: el primer sello de tiempo que
+         entrega requestAnimationFrame es el del comienzo del fotograma, que
+         puede ser anterior al performance.now() de aquí. Con p negativo el
+         cubicOut se dispara al otro lado y la cifra arranca en negativo. */
+      const p = Math.max(0, Math.min(1, (t - t0) / dur));
+      /* Y el último fotograma pinta `fin` tal cual, no fin×0,99999: si no, una
+         cifra entera acaba enseñando un decimal de más. */
+      if (p >= 1) { clearTimeout(red); pinta(fin); return; }
+      pinta(fin * (1 - Math.pow(1 - p, 3)));
+      requestAnimationFrame(paso);
+    });
+  });
+}
+
+/* ── gráficas ──────────────────────────────────────────────── */
+const instancias = new Map();
+
+function dibujar(sec){
+  const union  = fuentesDe(sec);
+  const acento = acentoDe(sec);
+
+  hostsDe(sec).forEach(el => {
+    const clave = el.dataset.g;
+    const def   = GRAFICAS[clave];
+    if (!def) return;
+    /* El lienzo de una «cifra sola» tiene entrada en GRAFICAS —de ahí sale su
+       pie— pero no tiene opción: no hay nada que dibujar. */
+    if (!def.option) return;
+
+    let ch = instancias.get(clave);
+    if (!ch) {
+      ch = echarts.init(el, "datos", { renderer: "canvas" });
+      instancias.set(clave, ch);
+    }
+    /* El contenedor pudo cambiar de tamaño mientras la diapositiva estaba
+       oculta (una rotación, un F11): medir antes de dibujar. */
+    ch.resize();
+    /* El segundo argumento en true tira la opción anterior en vez de
+       fundirla, que es lo que hace que la animación vuelva a arrancar
+       cada vez que se llega a la diapositiva. */
+    ch.setOption(preparar(def, union, acento), true);
+  });
+
+  contar(sec);
+}
+
+addEventListener("resize", () => instancias.forEach(ch => ch.resize()));
+
+/* ── navegación ────────────────────────────────────────────── */
+const slides = [...document.querySelectorAll(".slide")];
+const total  = slides.length;
+let actual   = 0;
+
+document.getElementById("cTotal").textContent = String(total).padStart(2, "0");
+const cActual = document.getElementById("cActual");
+
+/* Los pies se pintan todos de entrada, no al llegar a la diapositiva: así una
+   presentación recién abierta ya es auditable sin recorrerla entera. */
+slides.forEach(pintarPie);
+
+function ir(i){
+  if (i < 0 || i >= total || i === actual) return;
+  actual = i;
+  pintar();
+}
+function pintar(){
+  slides.forEach((s, i) => s.classList.toggle("activa", i === actual));
+  cActual.textContent = String(actual + 1).padStart(2, "0");
+  dibujar(slides[actual]);
+}
+const sig = () => ir(actual + 1);
+const ant = () => ir(actual - 1);
+
+/* ── vuelta al mazo ──────────────────────────────────────────
+   Quien enlaza estos datos dice a dónde regresar con
+   ?volver=<url relativa>, p. ej.
+   uso-chatbots-ia.html?volver=modulo1.html%23t%3D...
+   Si no lo dice, se vuelve a la diapositiva del Módulo 1 de la
+   que nacieron. Solo rutas relativas: nada con esquema ni con //. */
+const volver = document.getElementById("volver");
+const pedido = new URLSearchParams(location.search).get("volver");
+if (pedido && !/^[a-z][a-z0-9+.-]*:|^\/\//i.test(pedido)) volver.href = pedido;
+
+addEventListener("keydown", e => {
+  if (e.target.isContentEditable) return;
+  switch (e.key) {
+    case "ArrowRight": case "PageDown": case " ": e.preventDefault(); sig(); break;
+    case "ArrowLeft":  case "PageUp":           e.preventDefault(); ant(); break;
+    case "Home": e.preventDefault(); ir(0); break;
+    case "End":  e.preventDefault(); ir(total - 1); break;
+    case "Escape": e.preventDefault(); location.href = volver.href; break;
+  }
+});
+
+/* Clic: mitad derecha avanza, izquierda retrocede. El lienzo y los
+   enlaces quedan fuera, o los tooltips se volverían inusables. */
+addEventListener("click", e => {
+  if (e.target.closest(".lienzo, a, button")) return;
+  (e.clientX > innerWidth / 2 ? sig : ant)();
+});
+
+let tocoX = null;
+addEventListener("touchstart", e => { tocoX = e.touches[0].clientX; }, { passive: true });
+addEventListener("touchend", e => {
+  if (tocoX === null) return;
+  const d = e.changedTouches[0].clientX - tocoX;
+  tocoX = null;
+  if (Math.abs(d) > 60) (d < 0 ? sig : ant)();
+}, { passive: true });
+
+/* capturar.ps1 navega con el hash: mazo.html#4 */
+function porHash(){
+  const m = /^#(\d+)$/.exec(location.hash);
+  if (m) ir(+m[1]);
+}
+addEventListener("hashchange", porHash);
+
+/* ECharts dibuja el texto de los ejes en un canvas y lo mide con la métrica de
+   la fuente que haya cargada en ese momento. Si mide con la de reserva, las
+   etiquetas quedan descolocadas. `fonts.ready` no basta: puede resolverse antes
+   de que la cara concreta esté disponible; hay que pedir cada una. */
+function alLlegarLasFuentes(fn){
+  if (!document.fonts || !document.fonts.load) return;
+  Promise.all([
+    document.fonts.load('12px "JetBrains Mono"'),
+    document.fonts.load('600 40px Inter'),
+    document.fonts.ready
+  ]).then(fn).catch(() => {});
+}
+
+pintar();
+porHash();
+alLlegarLasFuentes(() => {
+  instancias.forEach(ch => ch.resize());
+  dibujar(slides[actual]);
+});
+window.go = ir;   // lo usa capturar.ps1
+})();
+</script>
+</body>
+</html>
