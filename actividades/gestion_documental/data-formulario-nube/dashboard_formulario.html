@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard · Diagnóstico de uso de IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   Paleta. Tomada de la identidad del curso (index/modulo3.html) y validada
+   con el validador de dataviz contra la superficie real de las tarjetas:
+       rampa ordinal cian 5 pasos vs #101727 -> todas las comprobaciones PASS
+   La rampa es de UN solo tono, clara -> oscura, y se usa unicamente para
+   escalas ORDENADAS (nivel de uso 1-5, nivel de formacion). Las categorias
+   nominales (area, herramientas) van todas del mismo color: el largo de la
+   barra ya codifica la magnitud.
+   ========================================================================== */
+:root{
+  --bg:#0a0e1a;
+  --card:#101727;
+  --card-alt:#0d1320;
+  --line:rgba(255,255,255,.09);
+  --grid:#1e2740;
+  --axis:#2a3450;
+
+  --text:#e9edf7;
+  --text-2:#b9c2da;
+  --muted:#8b94b3;
+
+  /* rampa ordinal cian (clara -> oscura) */
+  --o1:#d4fff8;
+  --o2:#7ef0de;
+  --o3:#14d2b8;
+  --o4:#00a892;
+  --o5:#007668;
+
+  /* serie unica para categorias nominales */
+  --serie:#14d2b8;
+
+  --accent:#00f5d4;
+  --gold:#ffd166;
+  --danger:#ff6b6b;
+  --good:#0ca30c;
+
+  --font-display:'Fraunces',Georgia,serif;
+  --font-body:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:var(--font-body); font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1280px;margin:0 auto;padding:28px 22px 64px}
+
+/* ---------- cabecera ---------- */
+.top{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;justify-content:space-between;margin-bottom:8px}
+.eyebrow{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 6px
+}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(26px,4vw,40px);line-height:1.1;margin:0}
+.sub{color:var(--text-2);margin:8px 0 0;max-width:62ch}
+
+/* ---------- estado de conexion ---------- */
+.estado{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.pill{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid var(--line);border-radius:999px;background:var(--card);
+  padding:7px 14px;font-size:12.5px;font-weight:500;color:var(--text-2);
+  font-family:var(--font-mono);letter-spacing:.02em;white-space:nowrap
+}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.pill.vivo{border-color:rgba(12,163,12,.45)}
+.pill.vivo .dot{background:var(--good);box-shadow:0 0 0 3px rgba(12,163,12,.18)}
+.pill.respaldo{border-color:rgba(255,209,102,.45)}
+.pill.respaldo .dot{background:var(--gold)}
+.pill.cargando .dot{background:var(--accent);animation:latido 1.1s ease-in-out infinite}
+@keyframes latido{0%,100%{opacity:.25}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.pill.cargando .dot{animation:none}}
+
+.btn{
+  font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--text);
+  background:var(--card);border:1px solid var(--line);border-radius:9px;
+  padding:8px 14px;cursor:pointer;transition:border-color .15s,background .15s
+}
+.btn:hover{border-color:rgba(0,245,212,.45);background:#131b2e}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn:disabled{opacity:.5;cursor:default}
+.btn-fila{display:flex;gap:8px}
+
+/* ---------- aviso ---------- */
+.aviso{
+  display:none;margin:18px 0 0;padding:14px 16px;border-radius:11px;
+  border:1px solid rgba(255,209,102,.35);background:rgba(255,209,102,.07);
+  color:var(--text-2);font-size:13.5px;line-height:1.6
+}
+.aviso.visible{display:block}
+.aviso strong{color:var(--gold)}
+.aviso code{
+  font-family:var(--font-mono);font-size:12.5px;background:rgba(255,255,255,.07);
+  padding:2px 6px;border-radius:5px;color:var(--text)
+}
+
+/* ---------- fila de filtros (una sola, arriba de todo lo que afecta) ---------- */
+.filtros{
+  display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;
+  margin:22px 0 0;padding:16px;border:1px solid var(--line);border-radius:13px;background:var(--card-alt)
+}
+.campo{display:flex;flex-direction:column;gap:6px;min-width:0}
+.campo > label{
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)
+}
+select,input[type=search]{
+  font-family:var(--font-body);font-size:13.5px;color:var(--text);
+  background:var(--card);border:1px solid var(--line);border-radius:9px;
+  padding:9px 11px;min-width:176px;max-width:100%
+}
+select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.filtros .crece{flex:1 1 240px}
+.filtros .crece input{width:100%}
+.filtros .derecha{margin-left:auto;display:flex;gap:8px;align-items:flex-end}
+.conteo{font-family:var(--font-mono);font-size:12px;color:var(--muted);padding-bottom:10px;white-space:nowrap}
+
+/* ---------- KPIs ---------- */
+.kpis{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:14px;margin-top:14px}
+@media (max-width:980px){.kpis{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.kpis{grid-template-columns:1fr}}
+.tile{border:1px solid var(--line);border-radius:13px;background:var(--card);padding:18px 18px 16px;min-width:0}
+.tile .etiqueta{font-size:12.5px;color:var(--muted);margin:0 0 10px}
+/* cifra heroe y valores de tile: misma sans que todo lo demas, cifras
+   proporcionales (tabular-nums solo en columnas de tabla y ejes) */
+.heroe{font-family:var(--font-body);font-weight:700;font-size:58px;line-height:.95;letter-spacing:-.02em}
+.tile .valor{font-family:var(--font-body);font-weight:600;font-size:30px;line-height:1.05;letter-spacing:-.01em}
+.tile .valor .de{font-size:15px;font-weight:500;color:var(--muted);letter-spacing:0}
+.tile .nota{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+
+/* medidor: relleno en acento, pista = paso recesivo del MISMO tono */
+.medidor{margin-top:12px;height:8px;border-radius:999px;background:rgba(20,210,184,.16);overflow:hidden}
+.medidor > span{display:block;height:100%;border-radius:999px;background:var(--serie)}
+.medidor-escala{
+  display:flex;justify-content:space-between;margin-top:6px;
+  font-family:var(--font-mono);font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums
+}
+
+/* ---------- rejilla de graficos ---------- */
+.rejilla{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+@media (max-width:900px){.rejilla{grid-template-columns:1fr}}
+.card{
+  border:1px solid var(--line);border-radius:13px;background:var(--card);
+  padding:18px 18px 16px;min-width:0;transition:opacity .18s
+}
+.card.ancho{grid-column:1/-1}
+.card h2{font-family:var(--font-body);font-size:15px;font-weight:600;margin:0;letter-spacing:-.005em}
+.card .pie{font-size:12.5px;color:var(--muted);margin:5px 0 0}
+.card-top{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+
+/* conmutador grafico / tabla */
+.conm{display:flex;gap:2px;background:var(--card-alt);border:1px solid var(--line);border-radius:8px;padding:2px;flex:none}
+.conm button{
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);background:none;border:0;border-radius:6px;padding:5px 9px;cursor:pointer
+}
+.conm button[aria-pressed=true]{background:rgba(255,255,255,.08);color:var(--text)}
+.conm button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+/* ---------- barras horizontales ---------- */
+.barras{display:flex;flex-direction:column;gap:2px}            /* 2px de hueco: separa con la superficie */
+.fila{
+  display:grid;grid-template-columns:minmax(90px,var(--col,34%)) 1fr;gap:12px;align-items:center;
+  min-height:26px;padding:2px 0;border-radius:7px;cursor:default   /* objetivo de hover >= 24px */
+}
+.fila:hover,.fila:focus-visible{background:rgba(255,255,255,.035);outline:none}
+.fila .nom{font-size:13px;color:var(--text-2);overflow-wrap:anywhere}
+/* El valor va pegado a la punta de la barra. Para que no se salga de la tarjeta,
+   la barra se escala sobre la pista MENOS el ancho reservado (--reserva, medido
+   en ch sobre la etiqueta mas larga del grafico). Asi la barra mas alta llega
+   justo hasta donde empieza su etiqueta. */
+.pista{display:flex;align-items:center;gap:9px;min-width:0}
+.barra{
+  height:18px;border-radius:0 4px 4px 0;flex:none;min-width:2px;
+  width:calc(var(--f,0) * (100% - var(--reserva,7ch)))
+}
+.val{font-family:var(--font-mono);font-size:12px;color:var(--text-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.val em{font-style:normal;color:var(--muted)}
+
+/* ---------- columnas (escala 1-5) ---------- */
+.cols{display:flex;align-items:flex-end;gap:2px;height:190px;border-bottom:1px solid var(--axis);position:relative}
+.cols .cel{
+  flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:7px;
+  height:100%;border-radius:7px 7px 0 0;cursor:default
+}
+.cols .cel:hover,.cols .cel:focus-visible{background:rgba(255,255,255,.035);outline:none}
+.cols .tope{font-family:var(--font-mono);font-size:12px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.cols .col{width:100%;max-width:24px;border-radius:4px 4px 0 0}  /* <=24px de grosor */
+.cols-eje{display:flex;gap:2px;margin-top:9px}
+.cols-eje span{
+  flex:1;text-align:center;font-family:var(--font-mono);font-size:11px;color:var(--muted);
+  font-variant-numeric:tabular-nums
+}
+.cols-leyenda{display:flex;justify-content:space-between;margin-top:4px;font-size:11.5px;color:var(--muted)}
+
+/* ---------- tabla gemela ---------- */
+.tablabox{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:8px 12px 8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+th{
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);font-weight:500;white-space:nowrap
+}
+td.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap}
+tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}
+
+/* ---------- lista de texto libre ---------- */
+.tareas{display:flex;flex-direction:column;gap:1px;max-height:420px;overflow-y:auto;margin-top:2px}
+.tarea{
+  display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;
+  padding:11px 2px;border-bottom:1px solid var(--line)
+}
+.tarea:last-child{border-bottom:0}
+.tarea .chip{
+  font-family:var(--font-mono);font-size:10.5px;color:var(--muted);
+  border:1px solid var(--line);border-radius:999px;padding:2px 8px;white-space:nowrap
+}
+.tarea p{margin:0;color:var(--text-2);font-size:13.5px}
+
+.vacio{color:var(--muted);font-size:13px;padding:22px 0;text-align:center}
+.oculto{display:none !important}
+.cargando-datos{opacity:.45}   /* al refrescar: se mantiene el render previo atenuado, sin salto */
+
+/* ---------- tooltip ---------- */
+#tip{
+  position:fixed;z-index:60;pointer-events:none;opacity:0;transform:translateY(3px);
+  transition:opacity .12s,transform .12s;
+  background:#060a14;border:1px solid var(--line);border-radius:9px;
+  padding:9px 12px;font-size:12.5px;color:var(--text);max-width:290px;
+  box-shadow:0 10px 30px rgba(0,0,0,.55)
+}
+#tip.on{opacity:1;transform:translateY(0)}
+#tip .t{font-weight:600;margin-bottom:3px}
+#tip .v{font-family:var(--font-mono);font-size:12px;color:var(--text-2);font-variant-numeric:tabular-nums}
+
+footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+footer a{color:var(--text-2)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <p class="eyebrow">Módulo 3 · Taller de datos en la nube</p>
+      <h1>Diagnóstico de uso de IA</h1>
+      <p class="sub">Respuestas del formulario de inscripción, leídas en vivo desde la hoja de cálculo de Google que alimenta el Google Form.</p>
+    </div>
+    <div class="estado">
+      <span class="pill cargando" id="pill"><span class="dot"></span><span id="pill-txt">Conectando…</span></span>
+      <div class="btn-fila">
+        <button class="btn" id="btn-refrescar">Actualizar</button>
+        <button class="btn" id="btn-csv">Descargar CSV</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="aviso" id="aviso"></div>
+
+  <!-- una sola fila de filtros, arriba de todo lo que alcanza -->
+  <section class="filtros" aria-label="Filtros">
+    <div class="campo">
+      <label for="f-area">Área de formación</label>
+      <select id="f-area" data-todos="Todas"><option value="">Todas</option></select>
+    </div>
+    <div class="campo">
+      <label for="f-form">Nivel de formación</label>
+      <select id="f-form" data-todos="Todos"><option value="">Todos</option></select>
+    </div>
+    <div class="campo">
+      <label for="f-nivel">Nivel de uso de IA</label>
+      <select id="f-nivel"><option value="">Todos</option></select>
+    </div>
+    <div class="campo crece">
+      <label for="f-texto">Buscar en la tarea a automatizar</label>
+      <input type="search" id="f-texto" placeholder="excel, correos, informes…">
+    </div>
+    <div class="derecha">
+      <span class="conteo" id="conteo"></span>
+      <button class="btn" id="btn-limpiar">Limpiar</button>
+    </div>
+  </section>
+
+  <section class="kpis" aria-label="Indicadores">
+    <div class="tile">
+      <p class="etiqueta">Respuestas en la selección</p>
+      <div class="heroe" id="k-total">—</div>
+      <p class="nota" id="k-total-nota"></p>
+    </div>
+    <div class="tile">
+      <p class="etiqueta">Nivel promedio de uso</p>
+      <div class="valor"><span id="k-prom">—</span><span class="de" id="k-prom-de"></span></div>
+      <div class="medidor"><span id="k-medidor" style="width:0"></span></div>
+      <div class="medidor-escala"><span>1</span><span id="k-medidor-max">5</span></div>
+    </div>
+    <div class="tile">
+      <p class="etiqueta">En nivel inicial (1–2)</p>
+      <div class="valor" id="k-inicial">—</div>
+      <p class="nota" id="k-inicial-nota"></p>
+    </div>
+    <div class="tile">
+      <p class="etiqueta">Solo usan chatbots de texto</p>
+      <div class="valor" id="k-solochat">—</div>
+      <p class="nota" id="k-solochat-nota"></p>
+    </div>
+  </section>
+
+  <div class="rejilla" id="rejilla">
+
+    <section class="card" id="card-nivel">
+      <div class="card-top">
+        <div>
+          <h2>Nivel actual de uso de IA</h2>
+          <p class="pie">Autoevaluación en escala de 1 a <span class="esc-max">5</span>. El tono se oscurece con el nivel.</p>
+        </div>
+        <div class="conm" role="group" aria-label="Ver como">
+          <button data-v="g" aria-pressed="true">Gráfico</button>
+          <button data-v="t" aria-pressed="false">Tabla</button>
+        </div>
+      </div>
+      <div data-vista="g">
+        <div class="cols" id="g-nivel"></div>
+        <div class="cols-eje" id="g-nivel-eje"></div>
+        <div class="cols-leyenda"><span>1 · nulo o muy bajo</span><span class="esc-max-lbl">5 · avanzado</span></div>
+      </div>
+      <div data-vista="t" class="oculto tablabox" id="t-nivel"></div>
+    </section>
+
+    <section class="card" id="card-form">
+      <div class="card-top">
+        <div>
+          <h2>Nivel máximo de formación académica</h2>
+          <p class="pie">Escala ordenada: el tono se oscurece al subir de nivel.</p>
+        </div>
+        <div class="conm" role="group" aria-label="Ver como">
+          <button data-v="g" aria-pressed="true">Gráfico</button>
+          <button data-v="t" aria-pressed="false">Tabla</button>
+        </div>
+      </div>
+      <div data-vista="g" class="barras" id="g-form"></div>
+      <div data-vista="t" class="oculto tablabox" id="t-form"></div>
+    </section>
+
+    <section class="card" id="card-area">
+      <div class="card-top">
+        <div>
+          <h2>Área de formación de base</h2>
+          <p class="pie">Categorías sin orden natural: un solo color, la longitud lleva la magnitud.</p>
+        </div>
+        <div class="conm" role="group" aria-label="Ver como">
+          <button data-v="g" aria-pressed="true">Gráfico</button>
+          <button data-v="t" aria-pressed="false">Tabla</button>
+        </div>
+      </div>
+      <div data-vista="g" class="barras" id="g-area"></div>
+      <div data-vista="t" class="oculto tablabox" id="t-area"></div>
+    </section>
+
+    <section class="card" id="card-prom">
+      <div class="card-top">
+        <div>
+          <h2>Nivel promedio de uso por área</h2>
+          <p class="pie">Promedio sobre pocas respuestas por área: se indica la n de cada una.</p>
+        </div>
+        <div class="conm" role="group" aria-label="Ver como">
+          <button data-v="g" aria-pressed="true">Gráfico</button>
+          <button data-v="t" aria-pressed="false">Tabla</button>
+        </div>
+      </div>
+      <div data-vista="g" class="barras" id="g-prom"></div>
+      <div data-vista="t" class="oculto tablabox" id="t-prom"></div>
+    </section>
+
+    <section class="card ancho" id="card-tools">
+      <div class="card-top">
+        <div>
+          <h2>Herramientas de IA que ya usan o conocen</h2>
+          <p class="pie">Pregunta de selección múltiple: una respuesta puede contar en varias filas, por eso los porcentajes no suman 100 %.</p>
+        </div>
+        <div class="conm" role="group" aria-label="Ver como">
+          <button data-v="g" aria-pressed="true">Gráfico</button>
+          <button data-v="t" aria-pressed="false">Tabla</button>
+        </div>
+      </div>
+      <div data-vista="g" class="barras" id="g-tools"></div>
+      <div data-vista="t" class="oculto tablabox" id="t-tools"></div>
+    </section>
+
+    <section class="card ancho" id="card-tareas">
+      <div class="card-top">
+        <div>
+          <h2>Qué quieren automatizar</h2>
+          <p class="pie">Respuestas de texto libre, tal como las escribieron. Usa el buscador de arriba para filtrarlas.</p>
+        </div>
+      </div>
+      <div class="tareas" id="g-tareas"></div>
+    </section>
+
+  </div>
+
+  <footer>
+    <p id="pie-fuente">Fuente: hoja de respuestas del Google Form.</p>
+  </footer>
+</div>
+
+<div id="tip" role="tooltip" aria-hidden="true"></div>
+
+<!-- ==========================================================================
+     RESPALDO. Copia exacta del CSV que devuelve la hoja, incrustada para que el
+     tablero siempre muestre algo: si la descarga en vivo falla (sin red, o el
+     archivo abierto con doble clic via file://, donde Google no envia cabeceras
+     CORS), se dibuja esto y el estado lo dice con claridad.
+     ========================================================================== -->
+<script type="text/plain" id="respaldo-csv">"Marca temporal","Cuál es su nivel máximo de formación académica alcanzado","En qué área se encuentra su formación de base","Cómo calificaría su nivel actual de uso de herramientas de Inteligencia Artificial","Qué herramientas de IA ha utilizado o conoce","Mencione un proceso o tarea de su trabajo que le gustaría automatizar o mejorar mediante IA"
+"13/8/2026 18:05:19","Maestría","Ingeniería y Tecnología","3","Chatbots de texto (ChatGPT, Claude, Gemini)","Automatizar procesos de auditoría."
+"13/8/2026 18:05:21","Pregrado (Profesional)","Administración y Negocios","2","Chatbots de texto (ChatGPT, Claude, Gemini)","organizacion del correo electronico, analisis de datos"
+"13/8/2026 18:06:22","Pregrado (Profesional)","Ingeniería y Tecnología","3","Chatbots de texto (ChatGPT, Claude, Gemini), Generadores de imágenes (Midjourney, DALL-E)","Consultas de textos y relleno de celdas o formatos "
+"13/8/2026 18:07:35","Especialización","Administración y Negocios","1","Chatbots de texto (ChatGPT, Claude, Gemini)","Automatizar guardado de archivo, lectura de archivo y consolidación de información en excel con esta información. Y automatizar respuestas autómaticas"
+"13/8/2026 18:08:41","Especialización","Administración y Negocios","1","Chatbots de texto (ChatGPT, Claude, Gemini)","ANALISIS BASES EXCEL"
+"13/8/2026 18:08:58","Especialización","Administración y Negocios","2","Chatbots de texto (ChatGPT, Claude, Gemini)","Gestión de Conocimiento (procesador de infirmación para la toma de decisiones)"
+"13/8/2026 18:10:46","Especialización","Ingeniería y Tecnología","1","Chatbots de texto (ChatGPT, Claude, Gemini)","ENTREGAS PRODUCCION, ESTANDAR POR CAJA"
+"13/8/2026 18:11:24","Especialización","Administración y Negocios","1","Chatbots de texto (ChatGPT, Claude, Gemini), Asistentes de código (GitHub Copilot)","Analisis de informes, margenes, presnetaciones"
+"13/8/2026 18:11:58","Especialización","Administración y Negocios","1","Chatbots de texto (ChatGPT, Claude, Gemini)","Lo referente a los procesos de control y seguimiento de los procesos de presupuesto deano de Obra."
+"13/8/2026 18:12:34","Especialización","Administración y Negocios","4","Chatbots de texto (ChatGPT, Claude, Gemini)","Automatizar procesos "
+"13/8/2026 18:15:31","Pregrado (Profesional)","Administración y Negocios","4","Chatbots de texto (ChatGPT, Claude, Gemini), Generadores de imágenes (Midjourney, DALL-E), Herramientas de productividad integradas (Copilot, Notion AI)","Respuesta automátizada de correos"
+"13/8/2026 18:57:41","Pregrado (Profesional)","Ingeniería y Tecnología","3","Chatbots de texto (ChatGPT, Claude, Gemini), Herramientas de productividad integradas (Copilot, Notion AI), Herramientas de edición de video o audio con IA","Procesar ordenes de compra"
+"13/8/2026 18:57:59","Pregrado (Profesional)","Administración y Negocios","3","Chatbots de texto (ChatGPT, Claude, Gemini)","Reportes y cotizaciones mas interactivas "
+"13/8/2026 18:59:53","Especialización","Ingeniería y Tecnología","2","Chatbots de texto (ChatGPT, Claude, Gemini)","analisis de informacion para el area de gestion de activos"
+"13/8/2026 19:09:39","Especialización","Administración y Negocios","1","Chatbots de texto (ChatGPT, Claude, Gemini)","Radicacion de documentos no electronicos, contabilizacion de facturas, automatizacion de informes complejos, calculos y papeles de trabajo de impuestos."
+"13/8/2026 19:20:49","Especialización","Ciencias de la Salud","3","Chatbots de texto (ChatGPT, Claude, Gemini)","Dashboard de encuestas de satisfacción "</script>
+
+<script>
+/* ==========================================================================
+   CONFIGURACION
+   ========================================================================== */
+
+/* ID de la hoja de respuestas. Es el tramo que va despues de /spreadsheets/d/
+   en la URL. Mismo ID que usa descargar_data_gmail.py. */
+const SHEET_ID = '1jCNd7s2CIVlPJk9HojriOl0kr7O5wS1kccG5Db9kZYY';
+
+/* Pestana concreta. Dejalo vacio para la primera hoja, o pon el nombre exacto
+   de la pestana (p. ej. 'Respuestas de formulario 1'). */
+const NOMBRE_HOJA = '';
+
+/* Tope de la escala de la pregunta "nivel actual de uso de IA".
+   Las respuestas actuales llegan hasta 4; si el formulario usa otra escala
+   (1 a 4, 1 a 10...), cambia solo este numero. Si llegara un valor mayor, el
+   grafico se amplia solo. */
+const ESCALA_NIVEL_MAX = 5;
+
+/* Refresco automatico, en segundos. 0 lo desactiva. */
+const REFRESCO_SEG = 120;
+
+/* Orden de la escala de formacion academica, de menor a mayor. Fija el tono de
+   cada nivel: el color sigue al nivel, no a su puesto en el ranking, asi que
+   filtrar no repinta a los que quedan.
+   Son 5 niveles a proposito, uno por paso de la rampa: asi dos niveles contiguos
+   nunca comparten tono. Si añades uno mas, amplia RAMPA en la misma medida. */
+const ORDEN_FORMACION = [
+  'Técnico / Tecnólogo',
+  'Pregrado (Profesional)',
+  'Especialización',
+  'Maestría',
+  'Doctorado'
+];
+
+/* Rampa ordinal cian, clara -> oscura (validada contra la superficie #101727) */
+const RAMPA = ['#d4fff8', '#7ef0de', '#14d2b8', '#00a892', '#007668'];
+const COLOR_SERIE = '#14d2b8';   /* categorias nominales: un solo color */
+
+/* ==========================================================================
+   UTILIDADES
+   ========================================================================== */
+
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+/* minusculas y sin tildes: para comparar encabezados sin depender de la escritura */
+const normaliza = s => String(s || '')
+  .toLowerCase()
+  .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+  .trim();
+
+const esc = s => String(s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;');
+
+const pct = (n, d) => d ? Math.round(n / d * 100) : 0;
+
+/* Parser de CSV completo: comillas, comas y saltos de linea dentro de campo,
+   y comillas escapadas como "". Lo necesita tanto la descarga en vivo como el
+   respaldo incrustado, por eso hay un solo camino de codigo. */
+function parseCSV(texto) {
+  const filas = [];
+  let fila = [], campo = '', enComillas = false;
+
+  for (let i = 0; i < texto.length; i++) {
+    const c = texto[i];
+    if (enComillas) {
+      if (c === '"') {
+        if (texto[i + 1] === '"') { campo += '"'; i++; }
+        else enComillas = false;
+      } else campo += c;
+    } else if (c === '"') {
+      enComillas = true;
+    } else if (c === ',') {
+      fila.push(campo); campo = '';
+    } else if (c === '\n') {
+      fila.push(campo); filas.push(fila); fila = []; campo = '';
+    } else if (c !== '\r') {
+      campo += c;
+    }
+  }
+  if (campo !== '' || fila.length) { fila.push(campo); filas.push(fila); }
+  return filas.filter(f => f.some(v => v.trim() !== ''));
+}
+
+/* Separa una respuesta de seleccion multiple. Corta solo en las comas que estan
+   FUERA de parentesis: "Chatbots de texto (ChatGPT, Claude, Gemini)" es una
+   sola opcion, aunque lleve comas dentro. */
+function separaOpciones(txt) {
+  const out = [];
+  let nivel = 0, actual = '';
+  for (const c of String(txt || '')) {
+    if (c === '(' || c === '[') nivel++;
+    else if (c === ')' || c === ']') nivel = Math.max(0, nivel - 1);
+
+    if (c === ',' && nivel === 0) { out.push(actual); actual = ''; }
+    else actual += c;
+  }
+  out.push(actual);
+  return out.map(s => s.trim()).filter(Boolean);
+}
+
+/* La marca temporal de Google Forms llega como d/m/aaaa hh:mm:ss */
+function parseFecha(txt) {
+  const m = String(txt || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[\s,]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if (!m) return null;
+  const d = new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+  return isNaN(d) ? null : d;
+}
+
+const dosDig = n => String(n).padStart(2, '0');
+const fechaCorta = d => d ? `${dosDig(d.getDate())}/${dosDig(d.getMonth() + 1)}/${d.getFullYear()}` : '—';
+const fechaHora  = d => d ? `${fechaCorta(d)} ${dosDig(d.getHours())}:${dosDig(d.getMinutes())}` : '—';
+const horaAhora  = () => { const d = new Date(); return `${dosDig(d.getHours())}:${dosDig(d.getMinutes())}`; };
+
+/* ==========================================================================
+   LECTURA DE DATOS
+   ========================================================================== */
+
+function urlCSV() {
+  let u = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+  if (NOMBRE_HOJA) u += '&sheet=' + encodeURIComponent(NOMBRE_HOJA);
+  return u + '&_=' + Date.now();   /* rompe la cache para ver respuestas nuevas */
+}
+
+/* Las preguntas se localizan por palabras clave, no por posicion ni por el texto
+   exacto: si en el formulario se reescribe un enunciado, el tablero sigue
+   funcionando. */
+const CLAVES = {
+  fecha: ['marca temporal', 'timestamp'],
+  form:  ['nivel maximo de formacion', 'formacion academica alcanzado'],
+  area:  ['area se encuentra su formacion', 'formacion de base'],
+  nivel: ['nivel actual de uso', 'calificaria su nivel'],
+  tools: ['herramientas de ia ha utilizado', 'ha utilizado o conoce'],
+  tarea: ['proceso o tarea', 'automatizar o mejorar']
+};
+
+function buscaCol(encabezados, claves) {
+  const norm = encabezados.map(normaliza);
+  for (const clave of claves) {
+    const i = norm.findIndex(h => h.includes(clave));
+    if (i !== -1) return i;
+  }
+  return -1;
+}
+
+/* CSV -> lista de registros con campos ya tipados */
+function aRegistros(csv) {
+  const filas = parseCSV(csv);
+  if (filas.length < 2) throw new Error('La hoja no trae filas de respuestas.');
+
+  const enc = filas[0];
+  const idx = {};
+  for (const k in CLAVES) idx[k] = buscaCol(enc, CLAVES[k]);
+
+  const faltan = ['form', 'area', 'nivel'].filter(k => idx[k] === -1);
+  if (faltan.length) {
+    throw new Error('No se reconocieron columnas de la hoja (' + faltan.join(', ') +
+      '). Revisa que la pestaña sea la de respuestas del formulario.');
+  }
+
+  const celda = (f, k) => idx[k] === -1 ? '' : String(f[idx[k]] ?? '').trim();
+
+  return filas.slice(1).map(f => {
+    const nivelTxt = celda(f, 'nivel');
+    const nivel = nivelTxt === '' ? null : Number(String(nivelTxt).replace(',', '.'));
+    return {
+      fecha: parseFecha(celda(f, 'fecha')),
+      form:  celda(f, 'form'),
+      area:  celda(f, 'area'),
+      nivel: Number.isFinite(nivel) ? nivel : null,
+      tools: separaOpciones(celda(f, 'tools')),
+      tarea: celda(f, 'tarea')
+    };
+  }).filter(r => r.form || r.area || r.nivel !== null || r.tarea);
+}
+
+/* ==========================================================================
+   ESTADO
+   ========================================================================== */
+
+let TODOS = [];          /* todas las respuestas leidas */
+let FUENTE = 'respaldo'; /* 'vivo' | 'respaldo' */
+let escalaMax = ESCALA_NIVEL_MAX;
+
+const filtros = { area: '', form: '', nivel: '', texto: '' };
+
+function filtrar() {
+  const q = normaliza(filtros.texto);
+  return TODOS.filter(r =>
+    (!filtros.area  || r.area === filtros.area) &&
+    (!filtros.form  || r.form === filtros.form) &&
+    (!filtros.nivel || String(r.nivel) === filtros.nivel) &&
+    (!q || normaliza(r.tarea).includes(q))
+  );
+}
+
+/* ==========================================================================
+   TOOLTIP  (mejora la lectura; nunca es la unica via al valor: estan las
+   etiquetas directas y la vista de tabla)
+   ========================================================================== */
+
+const tip = $('#tip');
+
+function ponerTip(el, titulo, valor) {
+  const mostrar = ev => {
+    tip.innerHTML = `<div class="t">${esc(titulo)}</div><div class="v">${esc(valor)}</div>`;
+    tip.classList.add('on');
+    tip.setAttribute('aria-hidden', 'false');
+    mover(ev);
+  };
+  const mover = ev => {
+    const r = el.getBoundingClientRect();
+    const x = ev && ev.clientX ? ev.clientX : r.left + r.width / 2;
+    const y = ev && ev.clientY ? ev.clientY : r.top;
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    tip.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x + 14)) + 'px';
+    tip.style.top  = Math.max(8, y - h - 12) + 'px';
+  };
+  const ocultar = () => { tip.classList.remove('on'); tip.setAttribute('aria-hidden', 'true'); };
+
+  el.addEventListener('mouseenter', mostrar);
+  el.addEventListener('mousemove', mover);
+  el.addEventListener('mouseleave', ocultar);
+  el.addEventListener('focus', mostrar);   /* el teclado ve lo mismo que el raton */
+  el.addEventListener('blur', ocultar);
+  el.tabIndex = 0;
+  el.setAttribute('aria-label', `${titulo}: ${valor}`);
+}
+
+/* ==========================================================================
+   PIEZAS DE GRAFICO
+   ========================================================================== */
+
+/* Barras horizontales. datos: [{nom, valor, etiqueta, color, tip}] */
+function dibujaBarras(cont, datos, opt = {}) {
+  cont.innerHTML = '';
+  if (!datos.length) { cont.innerHTML = '<p class="vacio">Sin datos para esta selección.</p>'; return; }
+
+  const max = opt.max ?? Math.max(...datos.map(d => d.valor), 0);
+  if (opt.anchoNom) cont.style.setProperty('--col', opt.anchoNom);
+
+  for (const d of datos) {
+    const fila = document.createElement('div');
+    fila.className = 'fila';
+
+    const f = max > 0 ? Math.max(d.valor / max, d.valor > 0 ? .015 : 0) : 0;
+    fila.innerHTML =
+      `<div class="nom">${esc(d.nom)}</div>` +
+      `<div class="pista">` +
+        `<div class="barra" style="--f:${f.toFixed(4)};background:${d.color || COLOR_SERIE}"></div>` +
+        `<span class="val">${d.etiqueta}</span>` +
+      `</div>`;
+
+    ponerTip(fila, d.nom, d.tip);
+    cont.appendChild(fila);
+  }
+
+  /* Se mide la etiqueta mas ancha ya renderizada y se reserva ese espacio: la
+     barra mas larga termina justo donde empieza su valor, sin desbordar la
+     tarjeta. Se hace en el mismo ciclo, antes de pintar, asi que no parpadea. */
+  const anchoVal = Math.max(...$$('.val', cont).map(e => e.offsetWidth), 0);
+  cont.style.setProperty('--reserva', (anchoVal + 12) + 'px');
+}
+
+/* Columnas para la escala 1..max. datos: [{n, valor}] */
+function dibujaColumnas(cont, eje, datos, total) {
+  cont.innerHTML = '';
+  eje.innerHTML = '';
+  const max = Math.max(...datos.map(d => d.valor), 1);
+
+  for (const d of datos) {
+    const cel = document.createElement('div');
+    cel.className = 'cel';
+    /* un nivel sin respuestas no dibuja nada: una astilla de 2px se leeria
+       como "hay algo" cuando el conteo es cero */
+    const alto = d.valor > 0 ? Math.max(d.valor / max * 100, 2) : 0;
+    /* el tono lo fija el nivel, no el tamano de la barra */
+    const color = RAMPA[Math.min(d.n - 1, RAMPA.length - 1)];
+
+    cel.innerHTML =
+      `<span class="tope">${d.valor || ''}</span>` +
+      `<div class="col" style="height:${alto}%;background:${color}"></div>`;
+
+    ponerTip(cel, `Nivel ${d.n} de ${escalaMax}`,
+      `${d.valor} ${d.valor === 1 ? 'respuesta' : 'respuestas'} · ${pct(d.valor, total)} %`);
+    cont.appendChild(cel);
+
+    const t = document.createElement('span');
+    t.textContent = d.n;
+    eje.appendChild(t);
+  }
+}
+
+/* Tabla gemela: toda cifra del grafico es legible tambien aqui */
+function dibujaTabla(cont, cols, filas) {
+  cont.innerHTML =
+    '<table><thead><tr>' + cols.map(c => `<th>${esc(c)}</th>`).join('') + '</tr></thead><tbody>' +
+    (filas.length
+      ? filas.map(f => '<tr>' + f.map((v, i) =>
+          i === 0 ? `<td>${esc(v)}</td>` : `<td class="num">${esc(v)}</td>`).join('') + '</tr>').join('')
+      : `<tr><td colspan="${cols.length}" class="vacio">Sin datos para esta selección.</td></tr>`) +
+    '</tbody></table>';
+}
+
+/* cuenta ocurrencias y devuelve [[clave, n], ...] */
+function cuenta(lista) {
+  const m = new Map();
+  for (const v of lista) if (v) m.set(v, (m.get(v) || 0) + 1);
+  return [...m.entries()];
+}
+
+/* ==========================================================================
+   RENDER
+   ========================================================================== */
+
+function render() {
+  const d = filtrar();
+  const n = d.length;
+
+  $('#conteo').textContent = n === TODOS.length
+    ? `${n} de ${TODOS.length} respuestas`
+    : `${n} de ${TODOS.length} respuestas · filtrado`;
+
+  /* ---- KPIs ---- */
+  const niveles = d.map(r => r.nivel).filter(v => v !== null);
+  const prom = niveles.length ? niveles.reduce((a, b) => a + b, 0) / niveles.length : null;
+
+  $('#k-total').textContent = n;
+  const ultima = d.map(r => r.fecha).filter(Boolean).sort((a, b) => b - a)[0];
+  $('#k-total-nota').textContent = ultima ? `Última: ${fechaHora(ultima)}` : '';
+
+  $('#k-prom').textContent = prom === null ? '—' : prom.toFixed(1).replace('.', ',');
+  $('#k-prom-de').textContent = prom === null ? '' : ` / ${escalaMax}`;
+  /* el medidor mide el recorrido real de la escala: 1 = vacio, max = lleno */
+  const fr = prom === null ? 0 : (prom - 1) / (escalaMax - 1);
+  $('#k-medidor').style.width = Math.max(0, Math.min(1, fr)) * 100 + '%';
+  $('#k-medidor-max').textContent = escalaMax;
+
+  const inicial = niveles.filter(v => v <= 2).length;
+  $('#k-inicial').textContent = niveles.length ? pct(inicial, niveles.length) + ' %' : '—';
+  $('#k-inicial-nota').textContent = niveles.length ? `${inicial} de ${niveles.length} respuestas` : '';
+
+  const conTools = d.filter(r => r.tools.length);
+  const soloChat = conTools.filter(r =>
+    r.tools.length === 1 && normaliza(r.tools[0]).includes('chatbot')).length;
+  $('#k-solochat').textContent = conTools.length ? pct(soloChat, conTools.length) + ' %' : '—';
+  $('#k-solochat-nota').textContent = conTools.length
+    ? `${soloChat} de ${conTools.length} no mencionan otra categoría` : '';
+
+  /* ---- nivel de uso (escala ordenada -> columnas + rampa) ---- */
+  const maxVisto = Math.max(escalaMax, ...niveles.map(v => Math.ceil(v)), 1);
+  escalaMax = maxVisto;
+  $$('.esc-max').forEach(e => e.textContent = escalaMax);
+  $$('.esc-max-lbl').forEach(e => e.textContent = `${escalaMax} · avanzado`);
+
+  const porNivel = [];
+  for (let i = 1; i <= escalaMax; i++) {
+    porNivel.push({ n: i, valor: niveles.filter(v => Math.round(v) === i).length });
+  }
+  dibujaColumnas($('#g-nivel'), $('#g-nivel-eje'), porNivel, niveles.length);
+  dibujaTabla($('#t-nivel'), ['Nivel', 'Respuestas', '% del total'],
+    porNivel.map(p => [String(p.n), String(p.valor), pct(p.valor, niveles.length) + ' %']));
+
+  /* ---- formacion academica (escala ordenada -> rampa por nivel fijo) ---- */
+  const pos = v => { const i = ORDEN_FORMACION.indexOf(v); return i === -1 ? 999 : i; };
+  const form = cuenta(d.map(r => r.form)).sort((a, b) => pos(a[0]) - pos(b[0]));
+  /* el paso de la rampa lo fija el nivel academico, no el conteo: un nivel
+     conserva su tono aunque el filtro cambie el orden de las barras */
+  const pasoForm = v => {
+    const i = pos(v);
+    return i === 999 ? COLOR_SERIE : RAMPA[Math.min(i, RAMPA.length - 1)];
+  };
+  dibujaBarras($('#g-form'), form.map(([k, v]) => ({
+    nom: k, valor: v, color: pasoForm(k),
+    etiqueta: `${v} <em>· ${pct(v, n)} %</em>`,
+    tip: `${v} ${v === 1 ? 'respuesta' : 'respuestas'} · ${pct(v, n)} % de la selección`
+  })), { anchoNom: '40%' });
+  dibujaTabla($('#t-form'), ['Nivel de formación', 'Respuestas', '% del total'],
+    form.map(([k, v]) => [k, String(v), pct(v, n) + ' %']));
+
+  /* ---- area de formacion (nominal -> un solo color) ---- */
+  const area = cuenta(d.map(r => r.area)).sort((a, b) => b[1] - a[1]);
+  dibujaBarras($('#g-area'), area.map(([k, v]) => ({
+    nom: k, valor: v,
+    etiqueta: `${v} <em>· ${pct(v, n)} %</em>`,
+    tip: `${v} ${v === 1 ? 'respuesta' : 'respuestas'} · ${pct(v, n)} % de la selección`
+  })), { anchoNom: '42%' });
+  dibujaTabla($('#t-area'), ['Área de formación', 'Respuestas', '% del total'],
+    area.map(([k, v]) => [k, String(v), pct(v, n) + ' %']));
+
+  /* ---- promedio por area (magnitud sobre categorias nominales) ---- */
+  const porArea = new Map();
+  for (const r of d) {
+    if (!r.area || r.nivel === null) continue;
+    if (!porArea.has(r.area)) porArea.set(r.area, []);
+    porArea.get(r.area).push(r.nivel);
+  }
+  const proms = [...porArea.entries()]
+    .map(([k, vs]) => [k, vs.reduce((a, b) => a + b, 0) / vs.length, vs.length])
+    .sort((a, b) => b[1] - a[1]);
+  dibujaBarras($('#g-prom'), proms.map(([k, p, c]) => ({
+    nom: k, valor: p,
+    etiqueta: `${p.toFixed(1).replace('.', ',')} <em>· n=${c}</em>`,
+    tip: `Promedio ${p.toFixed(2).replace('.', ',')} de ${escalaMax} · sobre ${c} ${c === 1 ? 'respuesta' : 'respuestas'}`
+  })), { max: escalaMax, anchoNom: '42%' });
+  dibujaTabla($('#t-prom'), ['Área de formación', 'Promedio', 'n'],
+    proms.map(([k, p, c]) => [k, p.toFixed(2).replace('.', ','), String(c)]));
+
+  /* ---- herramientas (seleccion multiple, nominal -> un solo color) ---- */
+  const tools = cuenta(d.flatMap(r => r.tools)).sort((a, b) => b[1] - a[1]);
+  dibujaBarras($('#g-tools'), tools.map(([k, v]) => ({
+    nom: k, valor: v,
+    etiqueta: `${v} <em>· ${pct(v, n)} %</em>`,
+    tip: `${v} de ${n} ${n === 1 ? 'respuesta' : 'respuestas'} la mencionan · ${pct(v, n)} %`
+  })), { max: n, anchoNom: '46%' });
+  dibujaTabla($('#t-tools'), ['Herramienta', 'Menciones', '% de respuestas'],
+    tools.map(([k, v]) => [k, String(v), pct(v, n) + ' %']));
+
+  /* ---- texto libre ---- */
+  const cont = $('#g-tareas');
+  const conTarea = d.filter(r => r.tarea);
+  cont.innerHTML = conTarea.length
+    ? conTarea.map(r =>
+        `<div class="tarea"><span class="chip">${esc(r.area || '—')} · nivel ${r.nivel ?? '—'}</span>` +
+        `<p>${esc(r.tarea)}</p></div>`).join('')
+    : '<p class="vacio">Ninguna respuesta de texto coincide con la selección.</p>';
+}
+
+/* ==========================================================================
+   ESTADO DE CONEXION
+   ========================================================================== */
+
+function pintaEstado(modo, detalle) {
+  const pill = $('#pill');
+  pill.className = 'pill ' + modo;
+  $('#pill-txt').textContent = detalle;
+}
+
+function muestraAviso(html) {
+  const a = $('#aviso');
+  if (!html) { a.className = 'aviso'; a.innerHTML = ''; return; }
+  a.className = 'aviso visible';
+  a.innerHTML = html;
+}
+
+const AVISO_CORS =
+  '<strong>Mostrando la copia de respaldo incrustada en este archivo.</strong> ' +
+  'No se pudo leer la hoja en vivo. La causa más común es abrir el dashboard con doble clic ' +
+  '(<code>file://</code>): en ese caso Google no envía las cabeceras CORS y el navegador bloquea la lectura. ' +
+  'Sírvelo por HTTP y se conecta solo — en esta misma carpeta: ' +
+  '<code>python servir_dashboard.py</code>. ' +
+  'Si ya lo estás sirviendo por HTTP, revisa que la hoja esté compartida como ' +
+  '«Cualquier persona con el enlace · Lector».';
+
+/* ==========================================================================
+   ARRANQUE
+   ========================================================================== */
+
+function llenaSelect(sel, valores, orden) {
+  const actual = sel.value;
+  const vals = [...new Set(valores.filter(Boolean))];
+  if (orden) vals.sort(orden); else vals.sort((a, b) => a.localeCompare(b, 'es'));
+  sel.innerHTML = `<option value="">${sel.dataset.todos || 'Todas'}</option>` +
+    vals.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  if (vals.includes(actual)) sel.value = actual;
+}
+
+function refrescaSelects() {
+  llenaSelect($('#f-area'), TODOS.map(r => r.area));
+  llenaSelect($('#f-form'), TODOS.map(r => r.form),
+    (a, b) => ORDEN_FORMACION.indexOf(a) - ORDEN_FORMACION.indexOf(b));
+
+  const sel = $('#f-nivel'), actual = sel.value;
+  const vistos = [...new Set(TODOS.map(r => r.nivel).filter(v => v !== null))].sort((a, b) => a - b);
+  sel.innerHTML = '<option value="">Todos</option>' +
+    vistos.map(v => `<option value="${v}">Nivel ${v}</option>`).join('');
+  if (vistos.map(String).includes(actual)) sel.value = actual;
+}
+
+function cargaRespaldo() {
+  TODOS = aRegistros($('#respaldo-csv').textContent);
+  FUENTE = 'respaldo';
+  refrescaSelects();
+  render();
+}
+
+async function cargaEnVivo({ silencioso = false } = {}) {
+  const btn = $('#btn-refrescar');
+  btn.disabled = true;
+  if (!silencioso) pintaEstado('cargando', 'Conectando…');
+  /* se conserva el render anterior atenuado: sin parpadeo de esqueleto */
+  $('#rejilla').classList.add('cargando-datos');
+
+  try {
+    const resp = await fetch(urlCSV(), { cache: 'no-store' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+    const texto = await resp.text();
+    if (/^\s*</.test(texto)) throw new Error('Google devolvió HTML: la hoja no es pública.');
+
+    const datos = aRegistros(texto);
+    TODOS = datos;
+    FUENTE = 'vivo';
+    refrescaSelects();
+    render();
+    pintaEstado('vivo', `En vivo · ${horaAhora()}`);
+    muestraAviso('');
+    $('#pie-fuente').innerHTML =
+      `Fuente: hoja de respuestas del Google Form, leída en vivo · ${TODOS.length} respuestas · ` +
+      `última lectura ${horaAhora()} · ` +
+      `<a href="https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit" target="_blank" rel="noopener">abrir la hoja</a>`;
+  } catch (e) {
+    console.warn('[dashboard] lectura en vivo fallida:', e);
+    if (FUENTE !== 'vivo') {
+      pintaEstado('respaldo', 'Datos de respaldo');
+      muestraAviso(AVISO_CORS);
+      $('#pie-fuente').textContent =
+        `Fuente: copia de respaldo incrustada (${TODOS.length} respuestas del 13/08/2026). Sin conexión con la hoja.`;
+    } else {
+      /* ya habia datos en vivo: se conservan y solo se avisa del fallo puntual */
+      pintaEstado('vivo', `En vivo · ${horaAhora()} (sin refrescar)`);
+    }
+  } finally {
+    $('#rejilla').classList.remove('cargando-datos');
+    btn.disabled = false;
+  }
+}
+
+/* ---- eventos ---- */
+$('#f-area').addEventListener('change', e => { filtros.area = e.target.value; render(); });
+$('#f-form').addEventListener('change', e => { filtros.form = e.target.value; render(); });
+$('#f-nivel').addEventListener('change', e => { filtros.nivel = e.target.value; render(); });
+
+let tTexto;
+$('#f-texto').addEventListener('input', e => {
+  clearTimeout(tTexto);
+  const v = e.target.value;
+  tTexto = setTimeout(() => { filtros.texto = v; render(); }, 160);
+});
+
+$('#btn-limpiar').addEventListener('click', () => {
+  filtros.area = filtros.form = filtros.nivel = filtros.texto = '';
+  $('#f-area').value = $('#f-form').value = $('#f-nivel').value = '';
+  $('#f-texto').value = '';
+  render();
+});
+
+$('#btn-refrescar').addEventListener('click', () => cargaEnVivo());
+
+/* descarga de la seleccion visible, con BOM para que Excel respete las tildes */
+$('#btn-csv').addEventListener('click', () => {
+  const d = filtrar();
+  const cab = ['Marca temporal', 'Nivel de formación', 'Área de formación',
+               'Nivel de uso de IA', 'Herramientas', 'Tarea a automatizar'];
+  const cel = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = [cab.map(cel).join(',')].concat(
+    d.map(r => [
+      r.fecha ? fechaHora(r.fecha) : '', r.form, r.area,
+      r.nivel ?? '', r.tools.join('; '), r.tarea
+    ].map(cel).join(','))
+  ).join('\r\n');
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'seleccion_dashboard.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+/* conmutador grafico / tabla en cada tarjeta */
+$$('.conm').forEach(grupo => {
+  grupo.addEventListener('click', ev => {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    const card = grupo.closest('.card');
+    $$('button', grupo).forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    $$('[data-vista]', card).forEach(v => v.classList.toggle('oculto', v.dataset.vista !== b.dataset.v));
+  });
+});
+
+/* 1) pinta ya con el respaldo  2) intenta la lectura en vivo y la sustituye */
+cargaRespaldo();
+pintaEstado('cargando', 'Conectando…');
+cargaEnVivo();
+
+if (REFRESCO_SEG > 0) {
+  setInterval(() => {
+    if (!document.hidden) cargaEnVivo({ silencioso: true });
+  }, REFRESCO_SEG * 1000);
+}
+</script>
+</body>
+</html>

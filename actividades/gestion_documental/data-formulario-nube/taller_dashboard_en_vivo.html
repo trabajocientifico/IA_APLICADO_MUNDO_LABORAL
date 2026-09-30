@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Un dashboard que lee el formulario en vivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   ESTILO CUADERNO · sistema de diseño
+   Cálido, denso, dos temas. El contenido lo pones tú: aquí solo
+   está el lenguaje visual y las piezas con las que se compone.
+   Catálogo completo en references/piezas.md
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── tokens ────────────────────────────────────────────────── */
+:root{
+  --bg:#0d1117; --bg2:#121a26;
+  --ink:#eef2f7; --ink2:#b9c4d2; --muted:#8b97a8;
+  --accent:#ff6b3d; --accent2:#3dd6c4; --gold:#e8b04b;
+  --violet:#7c8cff; --mint:#19c2a8; --rose:#ff7fa8; --sky:#5eb0ff;
+  --line:rgba(255,255,255,.10);
+  --card:rgba(255,255,255,.04);
+  --card2:rgba(255,255,255,.07);
+  --mesh-a:rgba(255,107,61,.16); --mesh-b:rgba(61,214,196,.13); --mesh-c:rgba(232,176,75,.06);
+  --grain-op:.05; --grid-op:.4;
+  --shadow:0 20px 60px -28px rgba(0,0,0,.75);
+  --a2-08:rgba(61,214,196,.08); --a2-14:rgba(61,214,196,.16);
+
+  /* alias que usan las figuras SVG: se redefinen por diapositiva
+     cuando lleva una clase de color c1…c7 */
+  --paper:var(--bg); --surface:var(--card); --gray:var(--muted);
+  --hair:var(--line); --fill:rgba(255,255,255,.07);
+  --blue:var(--accent);
+  --blue-06:rgba(255,107,61,.08); --blue-14:rgba(255,107,61,.18);
+  --blue-30:rgba(255,107,61,.36); --blue-55:rgba(255,107,61,.62);
+  --blue-78:rgba(255,107,61,.82);
+
+  --editor-bg:#0b1016; --editor-fg:#dbe4ee;
+
+  --sans:'Sora',system-ui,sans-serif;
+  --serif:'Fraunces',Georgia,serif;
+  --mono:'Space Mono',ui-monospace,monospace;
+  --spring:cubic-bezier(.22,1,.36,1);
+}
+:root[data-theme="light"]{
+  --bg:#f7f4ee; --bg2:#ece8df;
+  --ink:#1a1f29; --ink2:#414d5c; --muted:#5a6878;
+  --accent:#d4501c; --accent2:#0e8a7c; --gold:#b8842e;
+  --violet:#4c5bd4; --mint:#0b7a6c; --rose:#c23a68; --sky:#1f6fc0;
+  --line:rgba(0,0,0,.13);
+  --card:rgba(255,255,255,.62);
+  --card2:rgba(255,255,255,.86);
+  --mesh-a:rgba(212,80,28,.10); --mesh-b:rgba(14,138,124,.08); --mesh-c:rgba(184,132,46,.06);
+  --grain-op:.035; --grid-op:.5;
+  --shadow:0 18px 44px -26px rgba(40,26,12,.45);
+  --a2-08:rgba(14,138,124,.07); --a2-14:rgba(14,138,124,.14);
+  --fill:rgba(0,0,0,.05);
+  --blue-06:rgba(212,80,28,.07); --blue-14:rgba(212,80,28,.16);
+  --blue-30:rgba(212,80,28,.34); --blue-55:rgba(212,80,28,.62);
+  --blue-78:rgba(212,80,28,.85);
+  --editor-bg:rgba(255,255,255,.72); --editor-fg:#242c36;
+}
+
+/* Rueda de color. Ponla en la <section> o en cualquier contenedor:
+   todo lo que hay dentro (incluidas las figuras SVG) toma ese color. */
+.c1{--c:var(--accent)}.c2{--c:var(--accent2)}.c3{--c:var(--gold)}
+.c4{--c:var(--violet)}.c5{--c:var(--mint)}.c6{--c:var(--rose)}.c7{--c:var(--sky)}
+[class*="c1"],[class*="c2"],[class*="c3"],[class*="c4"],
+[class*="c5"],[class*="c6"],[class*="c7"]{
+  --blue:var(--c,var(--accent));
+  --blue-06:color-mix(in srgb,var(--c,var(--accent)) 9%,transparent);
+  --blue-14:color-mix(in srgb,var(--c,var(--accent)) 18%,transparent);
+  --blue-30:color-mix(in srgb,var(--c,var(--accent)) 36%,transparent);
+  --blue-55:color-mix(in srgb,var(--c,var(--accent)) 62%,transparent);
+  --blue-78:color-mix(in srgb,var(--c,var(--accent)) 82%,transparent);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  height:100vh;overflow:hidden;
+  background:var(--bg);color:var(--ink);
+  font-family:var(--sans);-webkit-font-smoothing:antialiased;
+  transition:background-color .35s ease,color .35s ease;
+}
+
+/* ── fondo ambiental ───────────────────────────────────────── */
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(60vw 60vw at 78% 12%, var(--mesh-a), transparent 60%),
+    radial-gradient(50vw 50vw at 12% 88%, var(--mesh-b), transparent 60%),
+    radial-gradient(40vw 40vw at 50% 50%, var(--mesh-c), transparent 70%);
+  animation:meshfloat 18s ease-in-out infinite alternate}
+@keyframes meshfloat{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(-2%,2%,0) scale(1.08)}}
+.bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:var(--grid-op);
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:64px 64px;mask-image:radial-gradient(circle at 50% 40%,#000 30%,transparent 80%)}
+.bg-grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:var(--grain-op);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+@keyframes enterFwd{from{opacity:0;transform:translateX(64px)}to{opacity:1;transform:none}}
+@keyframes enterBwd{from{opacity:0;transform:translateX(-64px)}to{opacity:1;transform:none}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+/* ── cromo ─────────────────────────────────────────────────── */
+.progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:200;background:var(--line)}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold),var(--accent2));width:0%;transition:width .5s var(--spring)}
+.deck{position:relative;z-index:2;display:flex;flex-direction:column;height:100vh;padding-top:3px}
+.topbar{flex:0 0 auto;height:64px;display:flex;align-items:center;gap:18px;
+  padding:0 clamp(26px,5vw,70px);border-bottom:1px solid var(--line);position:relative;z-index:10}
+.brand{font-family:var(--serif);font-style:italic;font-weight:600;font-size:18px;color:var(--ink);
+  display:flex;align-items:center;gap:11px;flex-shrink:0}
+.brand-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px -1px var(--accent)}
+.themebtn{flex-shrink:0;background:transparent;border:1px solid var(--line);color:var(--muted);
+  width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:1rem;display:grid;place-items:center;transition:.2s}
+.themebtn:hover{color:var(--ink);border-color:var(--ink2)}
+.themebtn:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+.topbar-gap{flex:1}
+.counter{font-family:var(--mono);font-size:13px;letter-spacing:.14em;color:var(--muted);text-align:right}
+.stage{flex:1 1 auto;position:relative;overflow:hidden}
+.slide{position:absolute;inset:0;
+  padding:clamp(30px,4.5vh,52px) clamp(26px,5vw,70px) clamp(22px,3vh,34px);
+  overflow-y:auto;opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .22s ease,visibility 0s .22s;
+  scrollbar-width:thin;scrollbar-color:var(--hair) transparent}
+.slide.on{opacity:1;visibility:visible;pointer-events:auto;transition:none}
+.stage[data-dir="1"]  .slide.on{animation:enterFwd .46s var(--spring) both}
+.stage[data-dir="-1"] .slide.on{animation:enterBwd .46s var(--spring) both}
+/* entrada escalonada: se aplica a los hijos directos de .wrap */
+.slide.on .wrap>*{animation:fadeUp .45s both}
+.slide.on .wrap>*:nth-child(1){animation-delay:.04s}
+.slide.on .wrap>*:nth-child(2){animation-delay:.12s}
+.slide.on .wrap>*:nth-child(3){animation-delay:.20s}
+.slide.on .wrap>*:nth-child(4){animation-delay:.28s}
+.slide.on .wrap>*:nth-child(n+5){animation-delay:.34s}
+.rail{flex:0 0 auto;display:flex;align-items:stretch;padding:0 clamp(26px,5vw,70px);border-top:1px solid var(--line)}
+.tick{flex:1 1 0;min-width:0;border:0;background:transparent;padding:12px 14px 15px 0;cursor:pointer;
+  font-family:var(--mono);text-align:left;display:flex;flex-direction:column;gap:5px;
+  border-top:2px solid transparent;margin-top:-1px;color:var(--muted);transition:border-color .2s,color .2s}
+.tick:hover:not(.here){color:var(--ink);border-top-color:var(--line)}
+.tick.done{color:var(--ink2);border-top-color:var(--ink2)}
+.tick.here{color:var(--c,var(--accent));border-top-color:var(--c,var(--accent))}
+.tick:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+.tick-num{font-size:12px;font-weight:700;letter-spacing:.16em}
+.tick-name{font-size:10px;letter-spacing:.05em;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding-right:8px}
+.tick.here .tick-name{opacity:1}
+
+/* ══ PIEZAS ═════════════════════════════════════════════════
+   Todo lo de aquí abajo son clases sueltas que se combinan.
+   Ninguna es obligatoria y no hay un orden previsto.
+   ══════════════════════════════════════════════════════════ */
+
+/* contenedor · .centro lo centra verticalmente */
+.wrap{max-width:1460px;margin:0 auto;min-height:100%}
+.wrap.centro{display:flex;flex-direction:column;justify-content:center}
+.wrap.eje{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+
+/* texto */
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.26em;text-transform:uppercase;
+  color:var(--accent2);display:flex;align-items:center;gap:14px;margin-bottom:18px;font-weight:700}
+.eyebrow::before{content:"";width:30px;height:2px;background:currentColor;flex-shrink:0}
+.wrap.eje .eyebrow{justify-content:center}
+.titular{font-family:var(--serif);font-weight:900;font-size:clamp(44px,6.4vw,96px);
+  line-height:.95;letter-spacing:-.028em;color:var(--ink)}
+.titulo{font-family:var(--serif);font-weight:900;font-size:clamp(30px,4vw,58px);
+  line-height:1.02;letter-spacing:-.025em;color:var(--ink);margin-bottom:14px}
+.subtitulo{font-family:var(--serif);font-weight:900;font-size:clamp(20px,2.4vw,30px);
+  letter-spacing:-.02em;line-height:1.1;color:var(--ink)}
+.titular em,.titulo em,.subtitulo em{font-style:italic;color:var(--c,var(--accent))}
+.bajada{font-size:clamp(15px,1.5vw,19px);color:var(--muted);line-height:1.65;
+  max-width:64ch;font-weight:300;margin-bottom:clamp(18px,3vh,32px)}
+.wrap.eje .bajada{max-width:52ch;margin-left:auto;margin-right:auto}
+.parrafo{font-size:clamp(15px,1.5vw,18px);line-height:1.7;color:var(--ink2);font-weight:300;max-width:70ch}
+.parrafo b,.bajada b{color:var(--ink);font-weight:600}
+.mono{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--muted)}
+
+/* rótulo de bloque, con línea al lado */
+.rotulo{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--accent2);margin-bottom:14px;display:flex;align-items:center;gap:14px;font-weight:700}
+.rotulo::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* columnas y rejillas · --min controla cuándo se parten */
+.cols-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(18px,2.6vw,36px);align-items:start}
+.cols-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(16px,2.2vw,28px);align-items:start}
+.cols-ancha{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:clamp(24px,4vw,60px);align-items:start}
+.cols-estrecha{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:clamp(24px,4vw,60px);align-items:start}
+.rejilla{display:grid;grid-template-columns:repeat(auto-fit,minmax(var(--min,230px),1fr));gap:clamp(14px,1.8vw,22px)}
+.centrar-v{align-items:center}
+
+/* tarjeta */
+.tarjeta{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:9px;
+  padding:clamp(18px,2.4vh,26px) clamp(18px,2vw,24px);border-radius:20px;
+  border:1px solid var(--line);background:var(--card);transition:.25s var(--spring)}
+.tarjeta.barra::before{content:"";position:absolute;left:0;top:0;right:0;height:4px;background:var(--c,var(--accent))}
+.tarjeta.viva:hover{transform:translateY(-4px);border-color:var(--c,var(--accent))}
+.tarjeta.tinte{background:var(--blue-06);border-color:var(--blue-30)}
+.tarjeta .cabeza{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  padding-bottom:11px;margin-bottom:4px;border-bottom:1px solid var(--line)}
+.tarjeta h4{font-size:15px;font-weight:600;color:var(--ink);line-height:1.25}
+.tarjeta p{font-size:14px;color:var(--muted);line-height:1.55;font-weight:300}
+.tarjeta .icono{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;
+  background:var(--blue-06);color:var(--c,var(--accent));flex-shrink:0}
+.tarjeta .icono svg{width:22px;height:22px}
+
+/* pastilla */
+.pastilla{display:inline-flex;align-items:center;align-self:flex-start;gap:8px;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;
+  padding:7px 15px;border-radius:999px;color:var(--c,var(--accent));
+  border:1px solid var(--blue-30);background:var(--blue-06)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips span{font-size:12.5px;padding:7px 13px;border-radius:999px;
+  background:var(--card);border:1px solid var(--line);color:var(--ink2)}
+
+/* pasos · cualquier número, con o sin flechas */
+.pasos{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
+.pasos.vertical{flex-direction:column}
+.paso{flex:1 1 160px;min-width:0;display:flex;flex-direction:column;gap:8px;
+  padding:16px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
+.paso .n{font-family:var(--serif);font-weight:900;font-size:20px;line-height:1;color:var(--c,var(--accent))}
+.paso h4{font-size:14px;font-weight:600;color:var(--ink)}
+.paso p{font-size:12.5px;color:var(--muted);line-height:1.45;font-weight:300}
+.flecha{display:grid;place-items:center;color:var(--muted);font-size:18px;flex-shrink:0}
+
+/* cifras */
+.cifras{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:16px;
+  overflow:hidden;background:var(--card)}
+.cifra{flex:1 1 130px;padding:16px 22px;text-align:center;border-left:1px solid var(--line)}
+.cifra:first-child{border-left:0}
+.cifra .n{font-family:var(--serif);font-size:clamp(26px,3vw,42px);font-weight:900;
+  line-height:1;color:var(--c,var(--accent))}
+.cifra .l{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);margin-top:7px;font-weight:700}
+
+/* comparación · dos paneles o los que hagan falta */
+.comparar{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:clamp(16px,2.2vw,26px)}
+.panel{padding:24px;border-radius:20px;background:var(--card);border:1px solid var(--line);
+  display:flex;flex-direction:column;gap:12px}
+.panel.destaca{background:var(--a2-08);border-color:var(--a2-14)}
+.panel .tag{align-self:flex-start;font-family:var(--mono);font-size:11px;letter-spacing:.2em;
+  text-transform:uppercase;font-weight:700;padding:6px 14px;border-radius:999px;
+  background:var(--fill);color:var(--muted)}
+.panel.destaca .tag{background:var(--a2-14);color:var(--accent2)}
+
+/* lista con viñeta de color */
+.lista{list-style:none;display:flex;flex-direction:column;gap:11px}
+.lista li{position:relative;padding-left:22px;font-size:15px;line-height:1.55;color:var(--ink2);font-weight:300}
+.lista li::before{content:"";position:absolute;left:2px;top:.6em;width:7px;height:7px;
+  border-radius:50%;background:var(--c,var(--accent))}
+.lista li b{color:var(--ink);font-weight:600}
+
+/* caja destacada · para el concepto que no se puede olvidar */
+.destacado{position:relative;overflow:hidden;border-radius:16px;
+  padding:20px 24px 20px 28px;border:1px solid var(--line);
+  background:linear-gradient(150deg,var(--blue-14),var(--a2-08) 70%,var(--card))}
+.destacado::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:linear-gradient(180deg,var(--c,var(--accent)),var(--accent2))}
+.destacado .rotulo{margin-bottom:9px}
+.destacado .rotulo::after{display:none}
+.destacado p{font-size:clamp(15px,1.5vw,17px);line-height:1.6;color:var(--ink)}
+
+/* nota al margen */
+.nota{font-size:14.5px;line-height:1.65;color:var(--ink2);font-weight:300;
+  padding:14px 18px;border-radius:0 12px 12px 0;
+  border-left:3px solid var(--accent2);background:var(--a2-08)}
+.nota .quien{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--gold);margin-bottom:7px;font-weight:700}
+.pie{font-size:13.5px;color:var(--muted);line-height:1.6;font-weight:300}
+.pie b{color:var(--ink);font-weight:600}
+
+/* cita */
+.cita{font-family:var(--serif);font-style:italic;font-weight:600;
+  font-size:clamp(24px,3.4vw,48px);line-height:1.22;letter-spacing:-.02em;
+  color:var(--ink);max-width:22ch}
+.cita .autor{display:block;margin-top:22px;font-family:var(--mono);font-style:normal;
+  font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:700}
+
+/* tabla */
+.tabla{width:100%;border-collapse:collapse;font-size:15px}
+.tabla th{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--accent2);text-align:left;padding:0 14px 11px 0;border-bottom:2px solid var(--accent2);font-weight:700}
+.tabla td{padding:13px 14px 13px 0;border-bottom:1px solid var(--line);color:var(--ink2);
+  font-weight:300;line-height:1.5}
+.tabla tr:last-child td{border-bottom:0}
+.tabla td b{color:var(--ink);font-weight:600}
+
+/* figura · marco con esquinas y pie */
+.figura{position:relative;border:1px solid var(--line);border-radius:16px;
+  background:var(--card);padding:20px 14px}
+.figura::before,.figura::after{content:"";position:absolute;width:9px;height:9px;
+  border:1.5px solid var(--c,var(--accent))}
+.figura::before{top:9px;left:9px;border-right:0;border-bottom:0}
+.figura::after{bottom:9px;right:9px;border-left:0;border-top:0}
+.figura svg,.figura img{display:block;width:100%;height:auto;max-height:34vh;margin:0 auto}
+.figura+.pie{margin-top:13px}
+
+/* separador */
+.hr{height:1px;background:var(--line);border:0;margin:clamp(18px,3vh,30px) 0}
+
+/* utilidades de espacio */
+.mt-0{margin-top:0}.mt-1{margin-top:12px}.mt-2{margin-top:22px}.mt-3{margin-top:34px}
+.mb-0{margin-bottom:0}
+
+/* ── responsive ────────────────────────────────────────────── */
+@media(max-width:1100px){
+  .slide{padding:24px 26px 22px}
+  .topbar,.rail{padding-left:26px;padding-right:26px}
+  .cols-2,.cols-3,.cols-ancha,.cols-estrecha{grid-template-columns:1fr;gap:22px}
+  .flecha{transform:rotate(90deg)}
+  .tick-name{display:none}
+  .brand{font-size:15px}
+  .figura svg,.figura img{max-height:30vh}
+}
+@media(prefers-reduced-motion:reduce){
+  .bg-mesh{animation:none}
+  .stage[data-dir] .slide.on,.slide.on .wrap>*{animation:none}
+  *{transition-duration:.01ms!important}
+}
+
+/* ── figura de flujo a mayor tamaño ────────────────────────────
+   El tope general de 34vh deja el esquema demasiado pequeño para
+   proyectarlo. Se sube solo en esta figura, y se devuelve al tope
+   estrecho por debajo de 1100 px para no romper el modo apilado. */
+.figura.grande svg{max-height:46vh}
+@media(max-width:1100px){.figura.grande svg{max-height:30vh}}
+
+/* ── prompts copiables ─────────────────────────────────────── */
+.prompt-box{display:flex;background:var(--editor-bg);border:1px solid var(--line);
+  border-radius:16px;overflow:hidden;max-height:56vh}
+.prompt{flex:1;min-width:0;overflow-y:auto;color:var(--editor-fg);
+  padding:clamp(18px,2.4vh,26px) clamp(20px,2.2vw,28px);
+  font-family:var(--mono);font-size:clamp(13px,1.05vw,15px);line-height:1.9;
+  white-space:pre-wrap;word-break:break-word;cursor:text}
+.prompt:focus{outline:none}
+.ph{color:var(--accent2);background:var(--a2-14);border-radius:4px;padding:1px 5px;
+  border-bottom:1px dashed var(--accent2)}
+.copiar{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  font-weight:700;background:none;border:0;padding:2px 0;cursor:pointer;color:var(--muted);
+  transition:color .18s}
+.copiar:hover{color:var(--c,var(--accent))}
+.copiar.ok{color:var(--accent2)}
+.campo{margin-bottom:20px}
+.campo label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.campo input{width:100%;font-family:var(--mono);font-size:15px;color:var(--accent);
+  background:transparent;border:0;border-bottom:1.5px solid var(--line);padding:7px 0}
+.campo input:focus{outline:0;border-bottom-color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+<div class="bg-grid"></div>
+<div class="bg-grain"></div>
+<div class="progress"><div class="progress-fill" id="prog"></div></div>
+<div class="deck">
+  <div class="topbar">
+    <div class="brand"><div class="brand-dot"></div>Trabajo Científico · Dashboard en vivo</div>
+    <div class="topbar-gap"></div>
+    <div class="counter" id="counter">01 / 01</div>
+    <button class="themebtn" id="themeToggle" aria-label="cambiar tema" title="Cambiar tema (T)"><span id="themeIcon">☾</span></button>
+  </div>
+  <div class="stage" id="stage"></div>
+  <div class="rail" id="rail"></div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   LAS DIAPOSITIVAS
+   Cada una es {tick, name, html}. `html` es HTML libre: usa las
+   clases del sistema y combínalas como pida el contenido. No hay
+   tipos fijos, ni orden previsto, ni secciones obligatorias.
+
+     tick  rótulo corto del riel de abajo (2-3 caracteres o una palabra)
+     name  rótulo largo, debajo del tick
+     cls   opcional: c1…c7 para darle color propio a la diapositiva
+     html  el contenido
+
+   Las piezas están en references/piezas.md. Las especiales
+   —ficha del docente, prompts copiables, anillos, figuras SVG—
+   en references/piezas-especiales.md.
+   ══════════════════════════════════════════════════════════════ */
+/* valores que se repiten · se escriben {{ASI}} en cualquier html */
+const S={
+  ENLACE:"https://docs.google.com/spreadsheets/d/1jCNd7s2CIVlPJk9HojriOl0kr7O5wS1kccG5Db9kZYY/edit?usp=sharing",
+  ESTRUCTURA:"indicadores arriba, un gráfico por pregunta, tabla con las respuestas de texto libre y una fila de filtros que afecte a todo",
+  ESTILO:"tema oscuro, coherente con index/modulo3.html de este repo"
+};
+const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const resolver=h=>h.replace(/\{\{(\w+)\}\}/g,
+  (_,k)=>`<span class="ph" data-key="${k}">${esc(S[k]??"")}</span>`);
+const campo=(k,etiqueta)=>`<div class="campo"><label for="in-${k}">${etiqueta}</label>
+  <input id="in-${k}" data-key="${k}" value="${esc(S[k]||"")}" spellcheck="false" autocomplete="off"></div>`;
+
+/* la figura del flujo · solo tokens, ni un color literal, para que siga
+   al tema claro/oscuro y al color de la diapositiva */
+const FIG_FLUJO=`<svg viewBox="0 0 420 200" role="img"
+  aria-label="La hoja de Google Sheets alimenta al dashboard HTML; el script de Python lo sirve por HTTP para que la conexión sea posible">
+
+  <g font-family="var(--mono)" font-size="9" fill="var(--muted)" letter-spacing="1">
+    <text x="14" y="16">EN LA NUBE</text><text x="286" y="16">EN EL NAVEGADOR</text>
+  </g>
+
+  <!-- la hoja de respuestas -->
+  <g stroke="var(--ink)" fill="none">
+    <rect x="14" y="26" width="104" height="60" fill="var(--fill)"/>
+    <line x1="14" y1="42" x2="118" y2="42"/>
+  </g>
+  <g stroke="var(--hair)"><line x1="48" y1="42" x2="48" y2="86"/><line x1="84" y1="42" x2="84" y2="86"/>
+    <line x1="14" y1="57" x2="118" y2="57"/><line x1="14" y1="72" x2="118" y2="72"/></g>
+  <g font-family="var(--mono)" font-size="9" fill="var(--ink)">
+    <text x="20" y="38">fecha</text><text x="54" y="38">área</text><text x="90" y="38">nivel</text>
+    <text x="20" y="53">····</text><text x="54" y="53">····</text><text x="90" y="53">··</text>
+    <text x="20" y="68">····</text><text x="54" y="68">····</text><text x="90" y="68">··</text>
+  </g>
+  <text x="14" y="100" font-family="var(--mono)" font-size="9" fill="var(--muted)">Google Sheets · respuestas</text>
+
+  <!-- el dashboard -->
+  <rect x="286" y="26" width="120" height="60" fill="none" stroke="var(--blue)" stroke-width="1.2"/>
+  <line x1="286" y1="40" x2="406" y2="40" stroke="var(--blue)" stroke-width="1.2"/>
+  <circle cx="294" cy="33" r="2" fill="var(--blue)"/><circle cx="302" cy="33" r="2" fill="var(--blue)"/>
+  <g fill="var(--blue)">
+    <rect x="294" y="66" width="9" height="14"/><rect x="308" y="58" width="9" height="22"/>
+    <rect x="322" y="50" width="9" height="30"/><rect x="336" y="70" width="9" height="10"/>
+  </g>
+  <g stroke="var(--hair)"><line x1="356" y1="52" x2="398" y2="52"/><line x1="356" y1="62" x2="392" y2="62"/>
+    <line x1="356" y1="72" x2="400" y2="72"/></g>
+  <text x="286" y="100" font-family="var(--mono)" font-size="9" fill="var(--muted)">dashboard_formulario.html</text>
+
+  <!-- la lectura en vivo · ida y vuelta, rotuladas al centro del trayecto -->
+  <path d="M132 50 L272 50" stroke="var(--blue)" stroke-width="1.3"/>
+  <path d="M266 45 L272 50 L266 55" fill="none" stroke="var(--blue)" stroke-width="1.3"/>
+  <text x="202" y="44" text-anchor="middle" font-family="var(--mono)" font-size="9" fill="var(--blue)">fetch del CSV</text>
+  <path d="M272 66 L132 66" stroke="var(--blue)" stroke-width="1.3" stroke-dasharray="3 3"/>
+  <path d="M138 61 L132 66 L138 71" fill="none" stroke="var(--blue)" stroke-width="1.3"/>
+  <text x="202" y="80" text-anchor="middle" font-family="var(--mono)" font-size="9" fill="var(--blue)">CORS: origen válido</text>
+
+  <!-- quien da el origen valido -->
+  <rect x="112" y="132" width="180" height="34" fill="var(--blue-14)" stroke="var(--blue)" stroke-width="1.2"/>
+  <text x="124" y="146" font-family="var(--mono)" font-size="10" fill="var(--ink)">servir_dashboard.py</text>
+  <text x="124" y="159" font-family="var(--mono)" font-size="9" fill="var(--muted)">abre http://localhost:8000</text>
+  <path d="M202 132 L202 108" stroke="var(--blue)" stroke-width="1.3"/>
+  <path d="M197 114 L202 108 L207 114" fill="none" stroke="var(--blue)" stroke-width="1.3"/>
+
+  <!-- el camino que no funciona -->
+  <path d="M346 132 L346 108" stroke="var(--muted)" stroke-width="1.1" stroke-dasharray="4 4" fill="none"/>
+  <g stroke="var(--muted)" stroke-width="1.4"><line x1="341" y1="115" x2="351" y2="125"/><line x1="351" y1="115" x2="341" y2="125"/></g>
+  <text x="300" y="146" font-family="var(--mono)" font-size="9" fill="var(--muted)">doble clic</text>
+  <text x="300" y="158" font-family="var(--mono)" font-size="9" fill="var(--muted)">file:// · origen null</text>
+
+  <text x="14" y="190" font-family="var(--mono)" font-size="9" fill="var(--muted)">el .py no toca los datos: solo le da a la página un origen válido</text>
+</svg>`;
+
+const SLIDES=[
+
+{tick:"01", name:"Portada", cls:"c1", html:`
+  <div class="wrap centro">
+    <p class="eyebrow">Módulo 3 · Datos en la nube</p>
+    <h1 class="titular">Un dashboard que lee<br>el formulario <em>en vivo</em></h1>
+    <p class="bajada mt-2">De la hoja de respuestas a un tablero que se actualiza
+      solo. Dos archivos y un prompt.</p>
+    <div class="chips mt-3">
+      <span>dashboard_formulario.html</span>
+      <span>servir_dashboard.py</span>
+    </div>
+  </div>`},
+
+{tick:"02", name:"Cómo se conecta", cls:"c2", html:`
+  <div class="wrap">
+    <p class="eyebrow">Lo que vamos a hacer</p>
+    <h2 class="titulo">Conectar la hoja con el <em>navegador</em></h2>
+    <p class="bajada">Qué entra, quién le habla a quién, y por qué hacen falta
+      dos archivos y no uno.</p>
+
+    <div class="figura grande mt-2">${FIG_FLUJO}</div>
+    <p class="pie"><b>Lo que se mira:</b> la página pide el CSV a Google cada vez
+      que se abre o se refresca. Google solo contesta si quien pregunta tiene un
+      origen válido, y eso es lo único que aporta el script de Python.</p>
+  </div>`},
+
+{tick:"03", name:"El prompt", cls:"c4", html:`
+  <div class="wrap">
+    <p class="eyebrow">Para replicarlo con tus datos</p>
+    <h2 class="titulo">El prompt que <em>construye</em> las dos piezas</h2>
+    <p class="bajada">Cambia los tres campos y el prompt se reescribe solo.
+      Después, copiar y pegar.</p>
+
+    <div class="cols-estrecha mt-2">
+      <div>
+        ${campo("ENLACE","Enlace de la hoja")}
+        ${campo("ESTRUCTURA","Estructura del dashboard")}
+        ${campo("ESTILO","Estilo visual")}
+        <p class="nota"><span class="quien">En el aula</span>
+          Que cada uno pegue su propio enlace antes de copiar, y que compruebe
+          que la hoja está compartida como «cualquier persona con el enlace».</p>
+      </div>
+
+      <div>
+        <div class="rotulo">Prompt · <button class="copiar" data-copy="p1">copiar ⧉</button></div>
+        <div class="prompt-box">
+<div class="prompt" id="p1" data-prompt contenteditable="true" spellcheck="false">Tengo el enlace de una hoja de Google Sheets con las respuestas de un Google Form:
+{{ENLACE}}
+
+Quiero un dashboard web que lea esas respuestas EN VIVO. Entrégame dos archivos en esta carpeta:
+
+1. dashboard_formulario.html — un solo archivo autónomo, sin librerías ni CDNs
+2. servir_dashboard.py — para abrirlo de forma que la lectura en vivo funcione
+
+Deja la configuración (ID de la hoja, escalas, refresco) en constantes al principio de cada archivo, para poder reutilizarlos con otro formulario.
+
+## Antes de escribir código
+
+- Descarga la hoja y examínala: cuántas respuestas hay, qué columnas, de qué tipo es cada pregunta (opción única, selección múltiple, escala numérica, texto libre) y qué valores reales toma cada una. Diseña los gráficos a partir de lo que encuentres, no de lo que supongas.
+- Comprueba con curl si el endpoint de exportación de Google manda cabeceras CORS y con qué orígenes. Pruébalo con «Origin: https://ejemplo.com» y con «Origin: null» — este último es el que usa el navegador cuando el HTML se abre con doble clic, vía file://. El resultado decide la arquitectura.
+
+## Conexión en vivo
+
+- Lee la hoja desde el navegador con fetch, sin API key ni credenciales. Está compartida como «cualquier persona con el enlace».
+- El HTML nunca debe quedarse en blanco: incrusta una copia de respaldo de los datos actuales y píntala de inmediato; luego intenta la lectura en vivo y sustitúyela si funciona.
+- Muestra siempre de qué fuente vienen los datos: en vivo con la hora de la última lectura, o respaldo. Si falla, el aviso debe decir la causa probable y cómo arreglarlo, no solo «error».
+- Botón de actualizar y refresco automático. Al refrescar, mantén el render anterior atenuado; nada de pantallas de carga que salten.
+
+## Robustez del parseo (esto se rompe si se hace a la ligera)
+
+- Escribe un parser de CSV de verdad: comillas, comas y saltos de línea dentro de un campo, y comillas escapadas.
+- Localiza cada columna por palabras clave del enunciado, no por su posición ni por su texto exacto: si alguien reescribe una pregunta en el formulario, el dashboard debe seguir funcionando.
+- Las preguntas de selección múltiple llegan como texto separado por comas, pero las propias opciones pueden llevar comas dentro de paréntesis. Sepáralas bien.
+- La marca temporal de Google Forms viene en formato d/m/aaaa.
+
+## Estructura del dashboard
+
+{{ESTRUCTURA}}
+
+Además:
+- Elige la forma según el trabajo que hace el dato. Un número suelto es un indicador, no un gráfico de una sola barra.
+- Escalas ORDENADAS (niveles, etapas): rampa de un solo tono, de claro a oscuro. El tono lo fija el nivel, nunca el tamaño de la barra ni su puesto en el ranking; filtrar no debe repintar las barras que quedan.
+- Categorías SIN orden natural: todas del mismo color. La longitud ya codifica la magnitud.
+- Una sola fila de filtros arriba que reescale todo el tablero a la vez. Nada de filtros dentro de cada tarjeta.
+- Cada gráfico con su tabla equivalente y con tooltip; ninguna cifra debe ser accesible solo pasando el ratón. Todo navegable por teclado.
+- Ninguna etiqueta se sale de su tarjeta ni queda cortada.
+
+## Estilo
+
+{{ESTILO}}
+
+## Verificación (no lo des por terminado sin esto)
+
+- Levanta el servidor, ábrelo en el navegador y mira el resultado.
+- Comprueba que el estado diga «en vivo», que los filtros recalculen todo, que la vista de tabla funcione y que nada se desborde.
+- Comprueba también la ruta de respaldo, simulando que la lectura falla.
+- Cuéntame cualquier suposición que hayas tenido que hacer sobre los datos.</div>
+        </div>
+      </div>
+    </div>
+  </div>`}
+
+];
+
+/* ══════════════════════════════════════════════════════════════
+   A partir de aquí no hace falta tocar nada.
+   ══════════════════════════════════════════════════════════════ */
+const stage=document.getElementById("stage");
+const rail=document.getElementById("rail");
+const counter=document.getElementById("counter");
+const prog=document.getElementById("prog");
+let cur=0;
+
+stage.innerHTML=SLIDES.map((s,i)=>
+  `<section class="slide ${s.cls||""}" data-i="${i}">${resolver(s.html)}</section>`).join("");
+rail.innerHTML=SLIDES.map((s,i)=>`<button class="tick ${s.cls||""}" data-go="${i}">
+  <span class="tick-num">${s.tick||i+1}</span>
+  <span class="tick-name">${s.name||""}</span>
+</button>`).join("");
+
+function show(next){
+  const n=Math.max(0,Math.min(SLIDES.length-1,next));
+  stage.dataset.dir=n>cur?1:-1;
+  cur=n;
+  document.querySelectorAll(".slide").forEach(el=>el.classList.toggle("on",+el.dataset.i===cur));
+  document.querySelectorAll(".tick").forEach((el,k)=>{
+    el.classList.toggle("here",k===cur);
+    el.classList.toggle("done",k<cur);
+  });
+  counter.textContent=String(cur+1).padStart(2,"0")+" / "+String(SLIDES.length).padStart(2,"0");
+  prog.style.width=(SLIDES.length<2?100:(cur/(SLIDES.length-1))*100)+"%";
+  const el=document.querySelector(".slide.on");
+  if(el) el.scrollTop=0;
+}
+document.querySelector('.slide[data-i="0"]').classList.add("on");
+document.querySelectorAll(".tick")[0].classList.add("here");
+counter.textContent="01 / "+String(SLIDES.length).padStart(2,"0");
+
+document.addEventListener("click",e=>{
+  const go=e.target.closest("[data-go]");
+  if(go){show(+go.dataset.go);return}
+  const cp=e.target.closest("[data-copy]");
+  if(cp){
+    const src=document.getElementById(cp.dataset.copy);
+    if(!src) return;
+    navigator.clipboard.writeText(src.innerText).then(()=>{
+      const t=cp.textContent;
+      cp.textContent="copiado ✓";cp.classList.add("ok");
+      setTimeout(()=>{cp.textContent=t;cp.classList.remove("ok")},1800);
+    }).catch(()=>{});
+  }
+});
+
+document.addEventListener("keydown",e=>{
+  if(e.target.isContentEditable) return;
+  if(["INPUT","TEXTAREA"].includes(document.activeElement.tagName)
+     &&!["ArrowLeft","ArrowRight"].includes(e.key)) return;
+  if(e.key==="ArrowRight"||e.key==="PageDown") show(cur+1);
+  else if(e.key==="ArrowLeft"||e.key==="PageUp") show(cur-1);
+  else if(e.key==="Home") show(0);
+  else if(e.key==="End") show(SLIDES.length-1);
+  else if(e.key==="t"||e.key==="T") toggleTheme();
+});
+
+const themeIcon=document.getElementById("themeIcon");
+function applyTheme(t){document.documentElement.setAttribute("data-theme",t);themeIcon.textContent=t==="light"?"☀":"☾"}
+function toggleTheme(){
+  const ahora=document.documentElement.getAttribute("data-theme")==="light"?"light":"dark";
+  const nx=ahora==="light"?"dark":"light";
+  applyTheme(nx);
+  try{localStorage.setItem("tcTheme",nx)}catch(e){}
+}
+(function(){let s="dark";try{s=localStorage.getItem("tcTheme")||"dark"}catch(e){}applyTheme(s)})();
+document.getElementById("themeToggle").onclick=toggleTheme;
+
+/* los campos de configuración reescriben cada {{CLAVE}} en vivo */
+const tocados=new Set();
+document.addEventListener("input",e=>{
+  const caja=e.target.closest("[data-prompt]");
+  if(caja){tocados.add(caja.id);return}          // editado a mano: ya no se pisa
+  const k=e.target.dataset?.key; if(!k) return;
+  S[k]=e.target.value;
+  document.querySelectorAll(`input[data-key="${k}"]`).forEach(i=>{if(i!==e.target)i.value=e.target.value});
+  document.querySelectorAll(`.ph[data-key="${k}"]`).forEach(sp=>{
+    const caja=sp.closest("[data-prompt]");
+    if(!caja||!tocados.has(caja.id)) sp.textContent=e.target.value;
+  });
+});
+
+let x0=null;
+stage.addEventListener("touchstart",e=>{x0=e.touches[0].clientX},{passive:true});
+stage.addEventListener("touchend",e=>{
+  if(x0===null)return;
+  const dx=e.changedTouches[0].clientX-x0;
+  if(Math.abs(dx)>60)show(cur+(dx<0?1:-1));
+  x0=null;
+},{passive:true});
+</script>
+</body>
+</html>
