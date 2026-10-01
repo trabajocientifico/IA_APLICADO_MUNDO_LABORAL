@@ -151,6 +151,15 @@ body{
 #momentos i{width:5px;height:2px;background:#22414E;transition:background .25s}
 #momentos i.on{background:#5C7C88}
 #momentos.hide{display:none}
+/* vuelta al mazo · vive dentro del #hud para que el clic no adelante la
+   película (el escenario ignora los clics que caen en #hud). Tenue como los
+   puntos: referencia para quien proyecta, no interfaz para el público. */
+#volver{margin-left:auto;display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--text);font-size:11.5px;font-weight:600;letter-spacing:.01em;
+  color:#5C7C88;text-decoration:none;padding:3px 6px;border-radius:4px;
+  transition:color .25s,background .25s}
+#volver svg{width:12px;height:12px;flex:none}
+#volver:hover,#volver:focus-visible{color:var(--yellow);background:rgba(255,201,74,.08)}
 :focus-visible{outline:3px solid var(--yellow);outline-offset:3px}
 #stage:focus,#stage:focus-visible{outline:none}
 .rotate-hint{position:fixed;inset:auto 0 14px;text-align:center;font-size:13px;color:#7d939b;display:none}
@@ -1045,6 +1054,11 @@ body{
 <div id="hud">
   <div id="escenas" role="tablist" aria-label="Escenas"></div>
   <div id="momentos" aria-hidden="true"></div>
+  <a id="volver" href="modulo1.html#t=Cuatro%20palabras%20clave"
+     title="Volver a la diapositiva (Esc)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+    Volver a la diapositiva
+  </a>
 </div>
 </main>
 </div>
@@ -1159,6 +1173,18 @@ body{
     const d = e.changedTouches[0].clientX - tx;
     if (Math.abs(d) > 50) (d < 0 ? nextBeat() : prevBeat());
   }, {passive:true});
+
+  /* ── vuelta al mazo ─────────────────────────────────────────────────────
+     Quien enlaza este corto dice a dónde volver con ?volver=<url relativa>,
+     p. ej. modulo1-corto-machine-learning.html?volver=modulo1.html%23t%3D...
+     Si no lo dice, se regresa a la diapositiva del Módulo 1 que lo enlaza.
+     Solo se aceptan rutas relativas: nada con esquema ni con //. */
+  const volver = document.getElementById('volver');
+  const pedido = new URLSearchParams(location.search).get('volver');
+  if (pedido && !/^[a-z][a-z0-9+.-]*:|^\/\//i.test(pedido)) volver.href = pedido;
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape'){ e.preventDefault(); location.href = volver.href; }
+  });
 
   // enlace profundo #escena,momento · lo usa scripts/capturar.ps1
   window.ir = function(n, k){

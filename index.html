@@ -296,6 +296,14 @@ h2{ font-size:clamp(28px,4vw,52px); font-weight:700; line-height:1.08; letter-sp
 /* al pasar el ratón la tarjeta se detiene y se eleva: el foco manda sobre la flotación */
 .mod-card:hover{ animation:none; transform:translateY(-6px); box-shadow:0 18px 40px -22px rgba(0,245,212,.55); }
 .mod-card:hover::before{ animation:none; }
+/* módulo aún sin publicar: se ve en la ruta pero no invita a pulsar.
+   Sigue flotando como las demás para que la rejilla respire pareja. */
+.mod-card.is-soon{ cursor:default; opacity:.6; }
+.mod-card.is-soon:hover{ animation:modFloat 7s ease-in-out infinite; animation-delay:-3.6s;
+  transform:none; border-color:var(--line); box-shadow:none; }
+.mod-card.is-soon:hover::before{ animation:modGlow 7s ease-in-out infinite; animation-delay:-3.6s; opacity:.5; }
+.mod-card.is-soon .mod-go,
+.mod-card.is-soon:hover .mod-go{ color:var(--gold); opacity:.8; gap:7px; }
 
 /* ==========================================================================
    ÍNDICE / MENÚ (estilo panel editorial de fundamentos)
@@ -544,12 +552,13 @@ h2{ font-size:clamp(28px,4vw,52px); font-weight:700; line-height:1.08; letter-sp
         <p>Ordenar, analizar y transformar datos con apoyo de IA, y automatizar las tareas repetitivas de tu día a día.</p>
         <span class="mod-go">Entrar <i>&rarr;</i></span>
       </a>
-      <a class="mod-card" href="index/modulo5.html">
+      <!-- sin enlace hasta que exista index/modulo5.html -->
+      <div class="mod-card is-soon" aria-disabled="true">
         <div class="mod-n">Módulo 5</div>
         <h3>Creación de Agentes Inteligentes</h3>
         <p>Del asistente que responde al agente que ejecuta: diseñar, montar y poner a trabajar agentes de IA en tu computador.</p>
-        <span class="mod-go">Entrar <i>&rarr;</i></span>
-      </a>
+        <span class="mod-go">Próximamente</span>
+      </div>
     </div>
     <p class="note-foot"><b>Regla de la casa:</b> nadie avanza solo. Si algo no funciona, lo resolvemos en vivo antes de pasar al siguiente módulo.</p>
   </div>

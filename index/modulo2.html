@@ -144,6 +144,9 @@
         border:1px solid var(--line);border-radius:999px;padding:.32rem .7rem;margin:.2rem .3rem .2rem 0}
 
   #num{position:fixed;right:1.5rem;bottom:1.1rem;font-size:.75rem;color:#b9bfc7;font-variant-numeric:tabular-nums;letter-spacing:.08em}
+  /* vuelta a la portada del diplomado: tan tenue como el número de lámina */
+  #back{position:fixed;left:1.5rem;bottom:1.1rem;z-index:5;font-size:.75rem;color:#b9bfc7;letter-spacing:.08em;text-decoration:none}
+  #back:hover{color:var(--accent)}
   .big{font-size:clamp(1.05rem,1.7vw,1.35rem);line-height:1.45;font-weight:600;max-width:52ch}
   .cols{display:grid;grid-template-columns:.9fr 1.1fr;gap:2rem;align-items:start}
   .scroll{overflow:auto;max-height:78vh;padding-right:.3rem}
@@ -1116,6 +1119,7 @@ que le sean contrarias.</div>
 
 </div>
 <div id="num">1</div>
+<a id="back" href="../index.html">&#8592; Curso</a>
 
 <script>
 (function(){
@@ -1171,6 +1175,7 @@ que le sean contrarias.</div>
   document.addEventListener('click',e=>{
     const c=e.target.closest('.fcard');
     if(c){ c.classList.toggle('open'); return; }
+    if(e.target.closest('#back')) return;
     /* dentro del material del ejercicio se selecciona y se hace scroll:
        ahí el clic no debe pasar de lámina */
     if(e.target.closest('.mat')) return;

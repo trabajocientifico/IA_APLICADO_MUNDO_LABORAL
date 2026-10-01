@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Automatización de Tareas con Agentes de IA</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --text-sub: #334155;
+      --accent: #1d4ed8;
+      --accent-soft: #eff6ff;
+      --border: #e2e8f0;
+      --border-light: #f1f5f9;
+      --card-bg: #f8fafc;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      cursor: default;
+    }
+
+    /* Deck Layout Fullscreen */
+    .deck-root {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: var(--bg);
+    }
+
+    /* Top Linear Progress Indicator */
+    .progress-bar-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 3px;
+      background: var(--border-light);
+      z-index: 100;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--accent);
+      width: 0;
+      transition: width 0.45s var(--ease);
+    }
+
+    /* Header Bar */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 22px 7vw 0 7vw;
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+
+    .slide-counter {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.08em;
+    }
+
+    /* Main Slide Viewport */
+    .slide-container {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 3vh 7vw 6vh 7vw;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.35s ease, visibility 0.35s;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* ================= ANIMACIÓN ================= */
+    /* Entrada escalonada al activar la diapositiva */
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes underline {
+      from { background-size: 0 0.09em; }
+      to   { background-size: 100% 0.09em; }
+    }
+
+    .slide.active .rise { animation: rise 0.7s var(--ease) both; }
+    .slide.active .d1 { animation-delay: 0.10s; }
+    .slide.active .d2 { animation-delay: 0.22s; }
+    .slide.active .d3 { animation-delay: 0.34s; }
+    .slide.active .d4 { animation-delay: 0.46s; }
+    .slide.active .d5 { animation-delay: 0.58s; }
+    .slide.active .d6 { animation-delay: 0.90s; }
+
+    /* Revelado por pasos: cada clic muestra el siguiente .step */
+    .step {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.5s ease, transform 0.6s var(--ease);
+    }
+
+    .step.shown {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .step.all { display: none; }
+
+    .slide.instant .step,
+    .slide.instant .step * {
+      transition: none !important;
+    }
+
+    /* ================= ELEMENTOS COMUNES ================= */
+    .slide-tag {
+      display: block;
+      font-size: clamp(0.8rem, 1vw, 1rem);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--accent);
+      margin-bottom: 1.6vh;
+    }
+
+    .slide-title {
+      font-size: clamp(2rem, 3.8vw, 3.6rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      color: var(--text-main);
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.88em;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: var(--text-main);
+    }
+
+    /* ================= PORTADA ================= */
+    .cover-title {
+      font-size: clamp(3.4rem, 8.4vw, 7.6rem);
+      font-weight: 800;
+      letter-spacing: -0.045em;
+      line-height: 1;
+      margin-bottom: 3.2vh;
+    }
+
+    .cover-title .highlight-text { color: var(--accent); }
+
+    .cover-desc {
+      font-size: clamp(1.15rem, 1.9vw, 1.7rem);
+      line-height: 1.4;
+      color: var(--text-muted);
+      max-width: 34em;
+    }
+
+    .cover-phases {
+      display: flex;
+      gap: clamp(28px, 5vw, 90px);
+      margin-top: 6vh;
+      padding-top: 3vh;
+      border-top: 1px solid var(--border);
+    }
+
+    .cover-phase {
+      font-size: clamp(1.1rem, 1.6vw, 1.5rem);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .cover-phase span {
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      margin-right: 0.5em;
+    }
+
+    .key-hint {
+      position: absolute;
+      left: 7vw;
+      bottom: 3.5vh;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+
+    .key-hint kbd {
+      font-family: inherit;
+      font-weight: 700;
+      color: var(--text-sub);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      margin: 0 3px 0 12px;
+    }
+
+    .key-hint kbd:first-child { margin-left: 0; }
+
+    /* ================= DIAPOSITIVAS DE FASE ================= */
+    .concepts {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(24px, 4vw, 72px);
+      margin-top: 6vh;
+    }
+
+    .concept {
+      border-top: 2px solid var(--text-main);
+      padding-top: 2.4vh;
+    }
+
+    /* El concepto en curso queda a color pleno; los anteriores se atenúan */
+    .slide:not(.recap) .concept.shown:not(.current) { opacity: 0.32; }
+
+    .concept.current { border-top-color: var(--accent); }
+
+    .concept-num {
+      display: block;
+      font-size: clamp(0.9rem, 1.1vw, 1.1rem);
+      font-weight: 800;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      margin-bottom: 1vh;
+    }
+
+    .concept h2 {
+      font-size: clamp(1.35rem, 2.1vw, 2.1rem);
+      font-weight: 750;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 2.4vh;
+    }
+
+    .concept ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 1.3vh;
+    }
+
+    .concept li {
+      font-size: clamp(1.05rem, 1.45vw, 1.5rem);
+      line-height: 1.3;
+      color: var(--text-sub);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.45s ease, transform 0.5s var(--ease);
+    }
+
+    .concept.shown li {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Palabras clave en cascada */
+    .concept.shown li:nth-child(1) { transition-delay: 0.20s; }
+    .concept.shown li:nth-child(2) { transition-delay: 0.34s; }
+    .concept.shown li:nth-child(3) { transition-delay: 0.48s; }
+
+    /* ================= FRASES DE PRINCIPIO ================= */
+    .statement {
+      font-size: clamp(2.2rem, 5vw, 4.8rem);
+      font-weight: 800;
+      line-height: 1.12;
+      letter-spacing: -0.035em;
+      max-width: 17em;
+    }
+
+    .statement .line { display: block; }
+    .mark { white-space: nowrap; }
+    .statement .soft { color: var(--text-muted); }
+
+    .mark {
+      background: linear-gradient(var(--accent), var(--accent)) no-repeat 0 100% / 100% 0.09em;
+      padding-bottom: 0.06em;
+    }
+
+    .slide.active .mark { animation: underline 0.8s var(--ease) 0.9s both; }
+
+    /* ================= FLUJOS ================= */
+    .flow {
+      display: flex;
+      align-items: center;
+      margin-top: 7vh;
+    }
+
+    .flow-item {
+      display: flex;
+      align-items: center;
+    }
+
+    .flow-item.step {
+      opacity: 1;
+      transform: none;
+    }
+
+    .arrow {
+      flex: none;
+      position: relative;
+      width: clamp(36px, 6vw, 110px);
+      height: 2px;
+      margin: 0 clamp(16px, 2.4vw, 40px);
+      background: var(--accent);
+      transform-origin: left center;
+      transition: transform 0.5s var(--ease);
+    }
+
+    .arrow::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: 50%;
+      width: 10px;
+      height: 10px;
+      border-top: 2px solid var(--accent);
+      border-right: 2px solid var(--accent);
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .node-num {
+      display: block;
+      font-size: clamp(0.9rem, 1.1vw, 1.1rem);
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 0.8vh;
+    }
+
+    .node-title {
+      display: block;
+      font-size: clamp(1.6rem, 3vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    .node-desc {
+      display: block;
+      font-size: clamp(0.98rem, 1.3vw, 1.35rem);
+      color: var(--text-muted);
+      margin-top: 1vh;
+      line-height: 1.3;
+    }
+
+    /* La flecha se traza primero y luego aparece el nodo */
+    .flow-item.step .node {
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.5s ease, transform 0.6s var(--ease);
+    }
+
+    .flow-item.step:not(.shown) .arrow { transform: scaleX(0); }
+
+    .flow-item.step.shown .node {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 0.3s;
+    }
+
+    .flow-item.step:first-child.shown .node { transition-delay: 0s; }
+
+    /* ================= GUÍA DOCENTE ================= */
+    .note { display: none; }
+
+    .notes-panel {
+      flex-shrink: 0;
+      height: 0;
+      overflow: hidden;
+      background: var(--card-bg);
+      border-top: 1px solid transparent;
+      transition: height 0.4s var(--ease), border-color 0.4s;
+      user-select: text;
+      cursor: auto;
+    }
+
+    .notes-on .notes-panel {
+      height: 31vh;
+      border-top-color: var(--border);
+    }
+
+    .notes-inner {
+      height: 31vh;
+      overflow-y: auto;
+      padding: 2.2vh 7vw 2.6vh 7vw;
+    }
+
+    .notes-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1vh;
+    }
+
+    .notes-body,
+    .note {
+      font-size: 0.98rem;
+      line-height: 1.5;
+      color: var(--text-sub);
+      max-width: 70em;
+    }
+
+    .notes-body p,
+    .note p { margin-bottom: 0.6em; }
+
+    .notes-body ul,
+    .note ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45em;
+    }
+
+    .notes-body li,
+    .note li {
+      position: relative;
+      padding-left: 1.1em;
+    }
+
+    .notes-body li::before,
+    .note li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.62em;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .notes-body strong,
+    .note strong {
+      color: var(--text-main);
+      font-weight: 650;
+    }
+
+    /* Con la guía abierta la diapositiva se compacta para no desbordar */
+    .notes-on .slide { padding-bottom: 3vh; }
+    .notes-on .concepts,
+    .notes-on .flow { margin-top: 3.5vh; }
+    .notes-on .cover-phases { margin-top: 3vh; }
+    .notes-on .key-hint { display: none; }
+    .notes-on .cover-title { font-size: clamp(3rem, 6.4vw, 5.6rem); }
+    .notes-on .statement { font-size: clamp(2rem, 4vw, 3.8rem); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0s !important;
+        transition-duration: 0.01ms !important;
+        transition-delay: 0s !important;
+      }
+    }
+
+    /* Print / PDF: una diapositiva por página con su guía docente debajo */
+    @page {
+      size: landscape;
+      margin: 10mm;
+    }
+
+    @media print {
+      body, html, .deck-root {
+        overflow: visible !important;
+        height: auto !important;
+        width: auto !important;
+        display: block !important;
+        background: #ffffff !important;
+      }
+      .progress-bar-container,
+      .header-bar,
+      .notes-panel,
+      .key-hint {
+        display: none !important;
+      }
+      .slide-container {
+        position: static !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+      .slide {
+        position: relative !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        display: block !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        padding: 20px 24px !important;
+      }
+      .slide::after {
+        content: "";
+        display: block;
+        clear: both;
+      }
+      .concepts { margin-top: 24px !important; }
+      .slide *,
+      .slide *::before,
+      .slide *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+      .step,
+      .step .node,
+      .concept li,
+      .concept.shown:not(.current) {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+      .arrow { transform: none !important; }
+      .note {
+        display: block !important;
+        clear: both;
+        margin-top: 16px;
+        padding-top: 10px;
+        border-top: 1px solid #cbd5e1;
+        font-size: 0.74rem;
+        line-height: 1.4;
+        max-width: none;
+        break-inside: avoid;
+      }
+      .concepts ~ .note[data-at="1"],
+      .concepts ~ .note[data-at="2"],
+      .concepts ~ .note[data-at="3"] {
+        clear: none;
+        float: left;
+        width: 31%;
+        margin-right: 3.5%;
+        margin-bottom: 14px;
+      }
+      .concepts ~ .note[data-at="3"] { margin-right: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="deck-root">
+    <!-- Top Linear Progress Indicator -->
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- Header Bar -->
+    <header class="header-bar">
+      <span class="brand-title">Automatización con agentes de IA</span>
+      <span class="slide-counter" id="counter">01 / 08</span>
+    </header>
+
+    <!-- Slide Viewport -->
+    <main class="slide-container">
+
+      <!-- ================= SLIDE 1 · PORTADA ================= -->
+      <section class="slide active">
+        <span class="slide-tag rise">Guía de ingeniería y procesos</span>
+        <h1 class="cover-title rise d1">Automatización<br>de <span class="highlight-text">Tareas</span>.</h1>
+        <p class="cover-desc rise d2">Soluciones confiables con agentes de IA, sin código frágil ni errores silenciosos.</p>
+
+        <div class="cover-phases">
+          <div class="cover-phase rise d3"><span>01</span>Definir</div>
+          <div class="cover-phase rise d4"><span>02</span>Construir</div>
+          <div class="cover-phase rise d5"><span>03</span>Validar</div>
+        </div>
+
+        <p class="key-hint rise d6"><kbd>→</kbd>avanzar <kbd>←</kbd>retroceder <kbd>N</kbd>guía docente <kbd>F</kbd>pantalla completa</p>
+
+        <aside class="note" data-at="0">
+          <p>Cómo diseñar, construir y desplegar soluciones de automatización de trabajo confiables utilizando agentes de inteligencia artificial. Entregables: scripts en Python y archivos HTML autónomos.</p>
+          <ul>
+            <li><strong>01 · Diseño del flujo de trabajo:</strong> definición atómica de entradas, formatos óptimos (Python vs. HTML) y control de casos borde.</li>
+            <li><strong>02 · Estrategia y arquitectura:</strong> modularidad ETL, cero dependencias inútiles, manejo granular de excepciones e idempotencia.</li>
+            <li><strong>03 · Seguridad y despliegue:</strong> aislamiento de credenciales (.env), auditoría human-in-the-loop y autonomía para todo el equipo.</li>
+          </ul>
+        </aside>
+      </section>
+
+      <!-- ================= SLIDE 2 · FASE 1 ================= -->
+      <section class="slide">
+        <span class="slide-tag rise">Fase 1 · Definir</span>
+        <h1 class="slide-title rise d1">El flujo y sus entradas</h1>
+
+        <div class="concepts">
+          <article class="concept step">
+            <span class="concept-num">01</span>
+            <h2>Alcance</h2>
+            <ul>
+              <li>Disparador</li>
+              <li>Transformación</li>
+              <li>Salida esperada</li>
+            </ul>
+          </article>
+          <article class="concept step">
+            <span class="concept-num">02</span>
+            <h2>Python vs. HTML</h2>
+            <ul>
+              <li><code>.py</code> lotes, archivos, APIs</li>
+              <li><code>.html</code> tableros con doble clic</li>
+            </ul>
+          </article>
+          <article class="concept step">
+            <span class="concept-num">03</span>
+            <h2>Muestras y casos borde</h2>
+            <ul>
+              <li>2–3 filas reales</li>
+              <li>Vacíos y fechas</li>
+              <li>Escala de datos</li>
+            </ul>
+          </article>
+          <span class="step all" aria-hidden="true"></span>
+        </div>
+
+        <aside class="note" data-at="0">
+          <p>El éxito del código generado por un agente de IA depende de la precisión y exhaustividad con que se definan los datos de entrada, las restricciones operativas y el entregable exacto.</p>
+        </aside>
+        <aside class="note" data-at="1">
+          <p><strong>Delimitación del alcance.</strong> Antes de solicitar una sola línea de código, descompón el proceso manual en pasos atómicos comprobables:</p>
+          <ul>
+            <li><strong>Trigger (disparador):</strong> ¿se ejecuta manualmente a demanda, por horario programado o al detectar un archivo nuevo?</li>
+            <li><strong>Secuencia de transformación:</strong> detalla cada cálculo, filtro, cruce o limpieza que debe aplicarse a la información.</li>
+            <li><strong>Salida esperada:</strong> especifica el formato exacto del entregable (columnas específicas, nombres de archivo con fecha y destino).</li>
+          </ul>
+        </aside>
+        <aside class="note" data-at="2">
+          <p><strong>Python vs. HTML autónomo.</strong> Elige el formato de entrega según quién ejecutará el resultado y qué capacidades técnicas requiere:</p>
+          <ul>
+            <li><strong>Python (.py), procesamiento en lote y sistema:</strong> manipulación masiva de archivos (Excel, CSV, PDF), scraping web, consumo de APIs autenticadas y scripts de fondo sin interfaz gráfica.</li>
+            <li><strong>HTML (.html), tableros e interactividad directa:</strong> reportes ejecutivos, visualización de métricas o tablas interactivas con filtros y ordenamiento que cualquier colega abre con doble clic sin instalar nada.</li>
+          </ul>
+        </aside>
+        <aside class="note" data-at="3">
+          <p><strong>Muestras reales y casos borde.</strong> Alimentar al agente con el contexto adecuado previene fallos silenciosos y asunciones erróneas:</p>
+          <ul>
+            <li><strong>Esquema con datos de muestra:</strong> pega en el prompt 2 a 3 filas reales anonimizadas con encabezados exactos.</li>
+            <li><strong>Tratamiento de valores atípicos:</strong> define explícitamente cómo actuar ante celdas vacías (<code>NaN</code>/<code>None</code>), textos mal codificados o fechas en formatos variados.</li>
+            <li><strong>Escala de procesamiento:</strong> informa si procesará 50 o 500,000 filas para que la IA elija estructuras eficientes en memoria.</li>
+          </ul>
+        </aside>
+        <aside class="note" data-at="4">
+          <p>Repaso de la fase: alcance, formato de entrega y muestras con casos borde. Da paso al principio rector.</p>
+        </aside>
+      </section>
+
+      <!-- ================= SLIDE 3 · PRINCIPIO RECTOR ================= -->
+      <section class="slide">
+        <span class="slide-tag rise">Principio rector</span>
+        <p class="statement">
+          <span class="line rise d1">Si no puedes explicarlo</span>
+          <span class="line rise d2">con <span class="mark">lápiz y papel</span>,</span>
+          <span class="line soft rise d4">la IA inventará supuestos.</span>
+        </p>
+
+        <aside class="note" data-at="0">
+          <p><strong>Si no puedes explicar la tarea paso a paso a un humano con lápiz y papel,</strong> el agente de IA inventará supuestos arbitrarios que resultarán en código frágil o incompleto.</p>
+        </aside>
+      </section>
+
+      <!-- ================= SLIDE 4 · FASE 2 ================= -->
+      <section class="slide">
+        <span class="slide-tag rise">Fase 2 · Construir</span>
+        <h1 class="slide-title rise d1">Código modular y resiliente</h1>
+
+        <div class="concepts">
+          <article class="concept step">
+            <span class="concept-num">01</span>
+            <h2>Modular y sin dependencias</h2>
+            <ul>
+              <li><code>load</code> · <code>transform</code> · <code>export</code></li>
+              <li>Biblioteca estándar</li>
+              <li>Configuración al inicio</li>
+            </ul>
+          </article>
+          <article class="concept step">
+            <span class="concept-num">02</span>
+            <h2>Errores y logs</h2>
+            <ul>
+              <li>Sin <code>except: pass</code></li>
+              <li>Logs trazables</li>
+              <li>Alertas visibles en HTML</li>
+            </ul>
+          </article>
+          <article class="concept step">
+            <span class="concept-num">03</span>
+            <h2>Idempotencia y rutas relativas</h2>
+            <ul>
+              <li>Mismo resultado siempre</li>
+              <li>Backup antes de sobrescribir</li>
+              <li>Sin rutas absolutas</li>
+            </ul>
+          </article>
+          <span class="step all" aria-hidden="true"></span>
+        </div>
+
+        <aside class="note" data-at="0">
+          <p>Cómo guiar la generación técnica del agente para obtener código modular, resiliente a errores, fácil de auditar y con el menor número de dependencias posibles.</p>
+        </aside>
+        <aside class="note" data-at="1">
+          <p><strong>Modularidad y dependencias mínimas.</strong> Instruye al agente para construir una arquitectura limpia que reduzca la fricción de instalación:</p>
+          <ul>
+            <li><strong>Estructura ETL desacoplada:</strong> funciones separadas para extracción (<code>load</code>), transformación (<code>transform</code>) y guardado/renderizado (<code>export</code>).</li>
+            <li><strong>Priorizar bibliotecas estándar:</strong> en Python, preferir módulos nativos (<code>pathlib</code>, <code>csv</code>, <code>json</code>, <code>datetime</code>) antes de añadir paquetes externos pesados.</li>
+            <li><strong>Parámetros centralizados:</strong> exigir que rutas, nombres de columnas y constantes se declaren en un bloque de configuración al inicio del script.</li>
+          </ul>
+        </aside>
+        <aside class="note" data-at="2">
+          <p><strong>Manejo riguroso de errores y logs.</strong> El código generado por IA debe resistir fallos inesperados y comunicar su estado con claridad:</p>
+          <ul>
+            <li><strong>Captura granular de excepciones:</strong> prohibir el uso de <code>except Exception: pass</code>. Forzar el manejo explícito de errores como archivos no encontrados o formatos inválidos.</li>
+            <li><strong>Trazabilidad y logging:</strong> mensajes en consola o archivos de texto que indiquen qué fila falló, qué archivo se procesó y la duración de la tarea.</li>
+            <li><strong>Alertas visuales en HTML:</strong> si es un visor interactivo, renderizar banners claros si los datos están corruptos o vacíos, en lugar de dejar la pantalla en blanco.</li>
+          </ul>
+        </aside>
+        <aside class="note" data-at="3">
+          <p><strong>Idempotencia y rutas relativas.</strong> Asegura que el script se pueda correr de manera repetitiva y en cualquier computadora:</p>
+          <ul>
+            <li><strong>Idempotencia garantizada:</strong> ejecutar el script 3 veces seguidas debe dar el mismo resultado exacto sin duplicar registros ni romper archivos anteriores.</li>
+            <li><strong>Copias de seguridad automáticas:</strong> antes de modificar o sobrescribir un archivo original, generar un backup previo con marca de tiempo.</li>
+            <li><strong>Portabilidad absoluta:</strong> prohibir rutas fijas absolutas (ej. <code>C:\MiCarpeta\...</code>). Utilizar rutas dinámicas relativas a la ubicación del script.</li>
+          </ul>
+        </aside>
+        <aside class="note" data-at="4">
+          <p>Repaso de la fase: modularidad, manejo de errores e idempotencia. Da paso a la técnica de prompteo.</p>
+        </aside>
+      </section>
+
+      <!-- ================= SLIDE 5 · TÉCNICA DE PROMPTEO ================= -->
+      <section class="slide">
+        <span class="slide-tag rise">Técnica de prompteo</span>
+        <h1 class="slide-title rise d1">Prompt de dos tiempos</h1>
+
+        <div class="flow">
+          <div class="flow-item step">
+            <div class="node">
+              <span class="node-num">01</span>
+              <span class="node-title">Pseudocódigo</span>
+              <span class="node-desc">Funciones, validaciones, errores</span>
+            </div>
+          </div>
+          <div class="flow-item step">
+            <span class="arrow"></span>
+            <div class="node">
+              <span class="node-num">02</span>
+              <span class="node-title">Tu aprobación</span>
+              <span class="node-desc">Revisas el flujo</span>
+            </div>
+          </div>
+          <div class="flow-item step">
+            <span class="arrow"></span>
+            <div class="node">
+              <span class="node-num">03</span>
+              <span class="node-title">Código final</span>
+              <span class="node-desc">Se genera el archivo</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="note" data-at="0">
+          <p><strong>"Prompt de dos tiempos".</strong> Pide al agente: <em>"Primero describe en pseudocódigo las funciones, validaciones y lógica de control de errores. Una vez que apruebe el flujo, genera el archivo de código final."</em></p>
+        </aside>
+      </section>
+
+      <!-- ================= SLIDE 6 · FASE 3 ================= -->
+      <section class="slide">
+        <span class="slide-tag rise">Fase 3 · Validar</span>
+        <h1 class="slide-title rise d1">Seguridad, calidad y entrega</h1>
+
+        <div class="concepts">
+          <article class="concept step">
+            <span class="concept-num">01</span>
+            <h2>Seguridad</h2>
+            <ul>
+              <li>Sin secretos en el prompt</li>
+              <li>Credenciales en <code>.env</code></li>
+              <li>Datos anonimizados</li>
+            </ul>
+          </article>
+          <article class="concept step">
+            <span class="concept-num">02</span>
+            <h2>Validación humana</h2>
+            <ul>
+              <li>Corrida de prueba</li>
+              <li>Sumas y conteos</li>
+              <li>Lógica crítica</li>
+            </ul>
+          </article>
+          <article class="concept step">
+            <span class="concept-num">03</span>
+            <h2>Autonomía del equipo</h2>
+            <ul>
+              <li>Instrucciones en el encabezado</li>
+              <li>Ejecución en un clic</li>
+              <li>Guía de mantenimiento</li>
+            </ul>
+          </article>
+          <span class="step all" aria-hidden="true"></span>
+        </div>
+
+        <aside class="note" data-at="0">
+          <p>Asegurar que la solución automatizada sea segura ante fugas de información, esté debidamente auditada y pueda ser operada por cualquier persona del equipo.</p>
+        </aside>
+        <aside class="note" data-at="1">
+          <p><strong>Seguridad y privacidad de datos.</strong> Salvaguardar la confidencialidad de la información corporativa tanto en el código como en la IA:</p>
+          <ul>
+            <li><strong>Nunca incluir secretos en el prompt:</strong> tokens de acceso, contraseñas de bases de datos o llaves API nunca deben enviarse al chat del modelo.</li>
+            <li><strong>Gestión de credenciales con .env:</strong> instruir al agente a leer variables de entorno o solicitar contraseñas interactivamente por consola con <code>getpass</code>.</li>
+            <li><strong>Anonimización de datos:</strong> sustituir nombres reales de clientes, montos reales o información confidencial por valores de prueba al formular preguntas al agente.</li>
+          </ul>
+        </aside>
+        <aside class="note" data-at="2">
+          <p><strong>Validación humana (human-in-the-loop).</strong> Nunca pongas en producción una automatización generada por IA sin auditoría previa exhaustiva:</p>
+          <ul>
+            <li><strong>Corrida de prueba (dry-run):</strong> ejecuta una prueba sobre un conjunto de datos duplicado y compara los resultados contra los cálculos manuales históricos.</li>
+            <li><strong>Comprobación de sumatorias y conteos:</strong> valida que no haya registros perdidos, sumas alteradas por redondeo o filtros excesivamente restrictivos.</li>
+            <li><strong>Revisión de lógica crítica:</strong> lee detenidamente las operaciones matemáticas y condicionales generadas por la IA para confirmar que reflejan la regla de negocio.</li>
+          </ul>
+        </aside>
+        <aside class="note" data-at="3">
+          <p><strong>Entrega y autonomía del equipo.</strong> Construir herramientas que perduren y no dependan exclusivamente del autor inicial:</p>
+          <ul>
+            <li><strong>Instrucciones mínimas en el encabezado:</strong> el script o archivo HTML debe incluir en las primeras líneas cómo se ejecuta y qué paquetes requiere.</li>
+            <li><strong>Ejecución en un solo clic:</strong> en Windows, acompañar el script con un archivo <code>.bat</code> sencillo; en HTML, garantizar que funcione con doble clic directo.</li>
+            <li><strong>Guía de mantenimiento rápido:</strong> señala claramente en qué líneas del código deben cambiarse carpetas o umbrales si las reglas de negocio cambian a futuro.</li>
+          </ul>
+        </aside>
+        <aside class="note" data-at="4">
+          <p>Repaso de la fase: seguridad, validación humana y autonomía del equipo. Da paso al criterio de éxito.</p>
+        </aside>
+      </section>
+
+      <!-- ================= SLIDE 7 · CRITERIO DE ÉXITO ================= -->
+      <section class="slide">
+        <span class="slide-tag rise">Criterio de éxito</span>
+        <p class="statement">
+          <span class="line rise d1">Está terminada cuando</span>
+          <span class="line rise d2">cualquiera del equipo</span>
+          <span class="line soft rise d4">puede ejecutarla <span class="mark">sin ti</span>.</span>
+        </p>
+
+        <aside class="note" data-at="0">
+          <p><strong>Una automatización está verdaderamente terminada</strong> cuando cualquier miembro de tu equipo puede ejecutarla, interpretar sus resultados y solucionar un fallo común sin requerir tu ayuda.</p>
+        </aside>
+      </section>
+
+      <!-- ================= SLIDE 8 · CIERRE ================= -->
+      <section class="slide">
+        <span class="slide-tag rise">En resumen</span>
+
+        <div class="flow">
+          <div class="flow-item rise d1">
+            <div class="node">
+              <span class="node-num">01</span>
+              <span class="node-title">Definir</span>
+              <span class="node-desc">Entradas claras</span>
+            </div>
+          </div>
+          <div class="flow-item rise d3">
+            <span class="arrow"></span>
+            <div class="node">
+              <span class="node-num">02</span>
+              <span class="node-title">Construir</span>
+              <span class="node-desc">Código resiliente</span>
+            </div>
+          </div>
+          <div class="flow-item rise d5">
+            <span class="arrow"></span>
+            <div class="node">
+              <span class="node-num">03</span>
+              <span class="node-title">Validar</span>
+              <span class="node-desc">Equipo autónomo</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="note" data-at="0">
+          <ul>
+            <li><strong>Definir:</strong> si no puedes explicar la tarea paso a paso a un humano con lápiz y papel, el agente inventará supuestos.</li>
+            <li><strong>Construir:</strong> primero pseudocódigo y aprobación del flujo; después el código final.</li>
+            <li><strong>Validar:</strong> está terminada cuando cualquier miembro del equipo puede ejecutarla, interpretar sus resultados y solucionar un fallo común sin ayuda.</li>
+          </ul>
+        </aside>
+      </section>
+
+    </main>
+
+    <!-- Guía docente (tecla N) -->
+    <aside class="notes-panel" id="notesPanel" aria-hidden="true">
+      <div class="notes-inner">
+        <div class="notes-label">Guía docente</div>
+        <div class="notes-body" id="notesBody"></div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const stepsOf = slides.map((slide) => Array.from(slide.querySelectorAll('.step')));
+    const totalUnits = stepsOf.reduce((sum, steps) => sum + steps.length + 1, 0);
+
+    let currentSlide = 0;
+    let currentStep = 0;
+
+    const pad = (n) => String(n).padStart(2, '0');
+
+    function applySteps(index, step) {
+      const steps = stepsOf[index];
+      steps.forEach((el, i) => {
+        el.classList.toggle('shown', i < step);
+        el.classList.toggle('current', i === step - 1);
+      });
+      slides[index].classList.toggle('recap', step > 0 && steps[step - 1].classList.contains('all'));
+    }
+
+    function updateNotes() {
+      let match = null;
+      slides[currentSlide].querySelectorAll('.note').forEach((note) => {
+        if (Number(note.dataset.at) <= currentStep) match = note;
+      });
+      document.getElementById('notesBody').innerHTML = match ? match.innerHTML : '';
+    }
+
+    function updateView() {
+      slides.forEach((slide, i) => slide.classList.toggle('active', i === currentSlide));
+      applySteps(currentSlide, currentStep);
+
+      document.getElementById('counter').innerText = `${pad(currentSlide + 1)} / ${pad(slides.length)}`;
+
+      let units = currentStep + 1;
+      for (let i = 0; i < currentSlide; i++) units += stepsOf[i].length + 1;
+      document.getElementById('progressBar').style.width = `${(units / totalUnits) * 100}%`;
+
+      updateNotes();
+    }
+
+    function goTo(index, step) {
+      if (index !== currentSlide) {
+        // Deja los pasos en su estado inicial sin animarlos antes de mostrar la diapositiva
+        const slide = slides[index];
+        slide.classList.add('instant');
+        applySteps(index, step);
+        void slide.offsetWidth;
+        slide.classList.remove('instant');
+      }
+      currentSlide = index;
+      currentStep = step;
+      updateView();
+    }
+
+    function next() {
+      if (currentStep < stepsOf[currentSlide].length) {
+        goTo(currentSlide, currentStep + 1);
+      } else if (currentSlide < slides.length - 1) {
+        goTo(currentSlide + 1, 0);
+      }
+    }
+
+    function prev() {
+      if (currentStep > 0) {
+        goTo(currentSlide, currentStep - 1);
+      } else if (currentSlide > 0) {
+        goTo(currentSlide - 1, stepsOf[currentSlide - 1].length);
+      }
+    }
+
+    function toggleNotes() {
+      const on = document.body.classList.toggle('notes-on');
+      document.getElementById('notesPanel').setAttribute('aria-hidden', String(!on));
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+
+    // Navegación con clic: el cuarto izquierdo retrocede, el resto avanza
+    window.addEventListener('click', (e) => {
+      if (e.target.closest('.notes-panel, a, input')) return;
+      if (e.clientX < window.innerWidth * 0.25) {
+        prev();
+      } else {
+        next();
+      }
+    });
+
+    // Navegación con teclado (estilo Keynote / PowerPoint)
+    window.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown' || e.key === 'Enter') {
+        e.preventDefault();
+        next();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'Backspace') {
+        e.preventDefault();
+        prev();
+      } else if (e.key === 'Home') {
+        goTo(0, 0);
+      } else if (e.key === 'End') {
+        goTo(slides.length - 1, stepsOf[slides.length - 1].length);
+      } else if (e.key === 'n' || e.key === 'N') {
+        toggleNotes();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      }
+    });
+
+    updateView();
+  </script>
+</body>
+</html>

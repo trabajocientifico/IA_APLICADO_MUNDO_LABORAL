@@ -329,7 +329,7 @@ h2{ font-size:clamp(28px,4vw,52px); font-weight:700; line-height:1.08; letter-sp
 @keyframes nudge{ 0%,100%{ transform:translateX(0); opacity:.5;} 50%{ transform:translateX(3px); opacity:1;} }
 .ia-ex{ display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
 .ia-ex span{ font-size:11.5px; padding:6px 12px; border-radius:99px; background:rgba(255,255,255,.04); border:1px solid var(--line); font-weight:600; color:var(--text); }
-/* enlace al cortometraje (modulo10.html): discreto al lado del titular, pero
+/* enlace al cortometraje (modulo1-corto-que-es-ia.html): discreto al lado del titular, pero
    con borde para que se lea como algo pulsable. Se enciende al pasar el cursor.
    Mucho más callado que .go-module, que es para los saltos de módulo. */
 .ia-corto{ display:inline-flex; align-items:center; gap:8px; margin-top:14px;
@@ -1194,7 +1194,7 @@ body:has(.slide.anim-slide.active) #next:hover{ transform:translateY(-50%) scale
            volver= le dice al corto a dónde regresar; codificado porque el
            título lleva # y tildes. -->
       <a class="ia-corto"
-         href="modulo10.html?volver=modulo1.html%23t%3D%C2%BFQu%C3%A9%20es%20la%20IA%3F">
+         href="modulo1-corto-que-es-ia.html?volver=modulo1.html%23t%3D%C2%BFQu%C3%A9%20es%20la%20IA%3F">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m10 9 5 3-5 3z"/></svg>
         Verlo contado como historia
       </a>
@@ -1241,6 +1241,14 @@ body:has(.slide.anim-slide.active) #next:hover{ transform:translateY(-50%) scale
       <span class="eyebrow">Definiciones sin tecnicismos</span>
       <h2>Cuatro palabras que escucharás <span class="hl">todo el curso</span></h2>
       <p class="lead">Toca cada tarjeta para profundizar.</p>
+      <!-- enlace al corto de machine learning (modulo1-corto-machine-learning.html).
+           Mismo trato que el otro cortometraje: volver= le dice a dónde regresar,
+           y va codificado porque el título lleva # y espacios. -->
+      <a class="ia-corto"
+         href="modulo1-corto-machine-learning.html?volver=modulo1.html%23t%3DCuatro%20palabras%20clave">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m10 9 5 3-5 3z"/></svg>
+        Machine learning contado como historia
+      </a>
     </div>
     <div class="def-grid" id="defCards">
       <div class="def-card">
@@ -1296,7 +1304,7 @@ body:has(.slide.anim-slide.active) #next:hover{ transform:translateY(-50%) scale
     </div>
     <p class="note-foot">Lo que antes tomaba una carrera universitaria, hoy es accesible en una tarde — si sabes <b>qué preguntar</b>.</p>
     <div class="go-module-wrap">
-      <a class="go-module" href="modulo11.html">
+      <a class="go-module" href="modulo1-casos-reales.html">
         <i class="fa-solid fa-flask"></i>
         Aplicaciones de IA reales
         <span class="gm-arr">→</span>
@@ -1432,11 +1440,11 @@ body:has(.slide.anim-slide.active) #next:hover{ transform:translateY(-50%) scale
       <span class="eyebrow">El destino</span>
       <h2>¿Qué es hacer <span class="hl">ciencia de datos</span>?</h2>
       <p class="lead">Es la intersección de <b>tres mundos</b>. Ahí, justo en el centro, vive el científico de datos.</p>
-      <!-- enlace al mazo de datos (impactos-ia-industria.html). Mismo trato que
+      <!-- enlace al mazo de datos (modulo1-datos-ia-industria.html). Mismo trato que
            el enlace al cortometraje: volver= le dice a dónde regresar, y va
            codificado dos veces porque el título lleva ¿ ? y tildes. -->
       <a class="ia-corto"
-         href="impactos-ia-industria.html?volver=modulo1.html%23t%3D%C2%BFQu%C3%A9%20es%20ciencia%20de%20datos%3F">
+         href="modulo1-datos-ia-industria.html?volver=modulo1.html%23t%3D%C2%BFQu%C3%A9%20es%20ciencia%20de%20datos%3F">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="8"/><rect x="12" y="6" width="3" height="12"/><rect x="17" y="13" width="3" height="5"/></svg>
         Ver los datos: la IA en la industria
       </a>
@@ -1499,11 +1507,11 @@ body:has(.slide.anim-slide.active) #next:hover{ transform:translateY(-50%) scale
       <span class="eyebrow">El mapa de la industria</span>
       <h2>Quién está detrás de <span class="hl">los modelos</span></h2>
       <p class="lead">No existe "la IA": existen <b>empresas</b> que entrenan modelos y los venden. Estos son los nombres que vas a oír — y de quién son.</p>
-      <!-- enlace al mazo de datos de uso (uso-chatbots-ia.html). Mismo trato que
+      <!-- enlace al mazo de datos de uso (modulo1-datos-uso-chatbots.html). Mismo trato que
            los otros saltos fuera del mazo: volver= le dice a dónde regresar, y va
            codificado porque el título lleva tilde y espacios. -->
       <a class="ia-corto"
-         href="uso-chatbots-ia.html?volver=modulo1.html%23t%3DQui%C3%A9n%20hace%20la%20IA">
+         href="modulo1-datos-uso-chatbots.html?volver=modulo1.html%23t%3DQui%C3%A9n%20hace%20la%20IA">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/></svg>
         USO DE IA
       </a>
@@ -3147,7 +3155,7 @@ function slideContexto(svg,idx,total){
    modulo1.html#t=<título exacto de la diapositiva>  →  salta a esa
    modulo1.html#s=<número de diapositiva, 1..n>     →  salta a esa
    Se usa el título y no el número para que insertar o quitar
-   diapositivas no rompa el enlace de vuelta desde modulo11.html.
+   diapositivas no rompa el enlace de vuelta desde modulo1-casos-reales.html.
    Va al final: en este punto ya existen go, goTitle y window.__anim.
    ================================================================ */
 (function(){
