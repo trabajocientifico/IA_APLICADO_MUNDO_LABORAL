@@ -58,6 +58,18 @@ a:focus-visible{ outline:3px solid var(--gold); outline-offset:3px; border-radiu
 .author{ font-size:clamp(15px,1.2vw,22px); color:var(--muted); margin-top:clamp(12px,1.8vh,22px); }
 .author b{ color:var(--ink); font-weight:700; }
 
+/* --- botones de descarga de los datos de los ejercicios --- */
+.datos-row{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:clamp(18px,3vh,36px); }
+.datos-lbl{ flex-basis:100%; font-size:clamp(13px,1vw,18px); font-weight:600; color:var(--muted); }
+.datos-btn{ display:inline-flex; align-items:center; gap:.55em; padding:.7em 1.25em; border-radius:99px;
+  background:var(--sci); border:2px solid var(--sci); color:#fff; font-size:clamp(14.5px,1.15vw,21px); font-weight:600;
+  text-decoration:none; transition:background .25s, border-color .25s, transform .3s var(--ease); }
+.datos-btn i{ font-style:normal; }
+.datos-btn:hover{ background:var(--ink); border-color:var(--ink); transform:translateY(-2px); }
+.datos-btn.is-pending{ background:none; border-style:dashed; border-color:var(--line); color:var(--muted); cursor:default; }
+.datos-btn.is-pending:hover{ background:none; border-color:var(--line); transform:none; }
+.datos-btn small{ font-size:.72em; font-weight:600; padding:.15em .6em; border-radius:99px; background:var(--mist); }
+
 /* --- tarjetas de los dos momentos --- */
 .mom-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(18px,1.7vw,32px); width:100%;
   margin-top:clamp(24px,4.5vh,60px); }
@@ -76,7 +88,7 @@ a:focus-visible{ outline:3px solid var(--gold); outline-offset:3px; border-radiu
 .mom-go i{ font-style:normal; }
 .mom-card:hover .mom-go{ gap:14px; }
 @media (max-width:700px){ .mom-grid{ grid-template-columns:1fr; } }
-@media (prefers-reduced-motion:reduce){ .in{ animation-duration:.01s; animation-delay:0s; } .mom-card,.mom-go{ transition:none; } }
+@media (prefers-reduced-motion:reduce){ .in{ animation-duration:.01s; animation-delay:0s; } .mom-card,.mom-go,.datos-btn{ transition:none; } }
 
 /* --- visor del momento --- */
 #visor{ position:fixed; inset:0; z-index:100; background:var(--paper); display:none; }
@@ -97,15 +109,23 @@ body.en-momento{ overflow:hidden; }
   <p class="sub in" style="--d:2">Dos momentos: primero los documentos, después los datos</p>
   <p class="author in" style="--d:3"><b>Oscar Iván Vargas Pineda</b> · Docente</p>
 
+  <div class="datos-row in" style="--d:4">
+    <span class="datos-lbl">Para iniciar · datos de los ejercicios</span>
+    <a class="datos-btn" href="https://drive.google.com/file/d/1RH9-nvm6WqbxQ-ZMfX_1_JhisN1k5ZK_/view?usp=sharing" target="_blank" rel="noopener"><i>⬇</i> Gestión Documental</a>
+    <a class="datos-btn" href="https://drive.google.com/file/d/1Cn13dOHoJVUGzyUJuFMlz89XxuEdlQ_o/view?usp=sharing" target="_blank" rel="noopener"><i>⬇</i> Automatización de Tareas</a>
+    <!-- Análisis de Datos: cuando llegue el enlace, cambiar el <span> por <a class="datos-btn" href="…" target="_blank" rel="noopener"> y quitar is-pending y el <small> -->
+    <span class="datos-btn is-pending" aria-disabled="true" title="Enlace disponible próximamente"><i>⬇</i> Análisis de Datos <small>pronto</small></span>
+  </div>
+
   <div class="mom-grid">
-    <a class="mom-card in" style="--d:4" href="#documentos">
+    <a class="mom-card in" style="--d:5" href="#documentos">
       <span class="mom-n">Momento 1</span>
       <h2>Gestión de Documentos</h2>
       <p>Resumir, traducir y gestionar el correo con IA, y un taller de quince ejercicios en los que un agente inventaría, ordena, renombra, convierte, une y protege archivos.</p>
       <div class="mom-tags"><span>Síntesis</span><span>Traducción y tono</span><span>Correo y agenda</span><span>15 ejercicios</span></div>
       <span class="mom-go">Entrar <i>→</i></span>
     </a>
-    <a class="mom-card in" style="--d:5" href="#datos">
+    <a class="mom-card in" style="--d:6" href="#datos">
       <span class="mom-n">Momento 2</span>
       <h2>Gestión de Datos</h2>
       <p>Entender y limpiar los datos, elegir el gráfico que responde a la pregunta, hacer que se entienda y pedírselo a la IA con el prompt correcto.</p>
