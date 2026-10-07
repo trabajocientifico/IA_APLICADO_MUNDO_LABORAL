@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Ejercicios de automatización</title>
+<style>
+:root{
+  --ink:#16243b; --muted:#596a80; --bg:#f7f9fc; --line:#dce4ef;
+  --excel:#1D6F42; --outlook:#0875d1; --auto:#6d5ce7; --python:#3776AB;
+  --in:cubic-bezier(.22,.61,.36,1);
+}
+*{box-sizing:border-box}
+html{min-height:100%;background:var(--bg)}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;justify-content:center;
+  color:var(--ink);font:16px/1.5 "Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif;
+  background:radial-gradient(120% 90% at 50% 0%,#FBFCFD 0%,#E9EDF3 100%) fixed}
+h1,h2,p{margin:0}
+svg{display:block}
+.symbols{position:absolute;width:0;height:0;overflow:hidden}
+
+.wrap{width:100%;max-width:1280px;margin:0 auto;padding:40px 34px 34px}
+
+.head{margin-bottom:30px}
+.eyebrow{font-size:12px;letter-spacing:.18em;font-weight:750;color:var(--muted)}
+.head h1{font-size:clamp(32px,4vw,52px);line-height:1.08;letter-spacing:-.04em;font-weight:700;margin-top:8px}
+.rule{width:132px;height:4px;border-radius:2px;margin-top:16px;
+  background:linear-gradient(90deg,var(--excel),var(--outlook),var(--auto))}
+.lead{font-size:17px;color:var(--muted);margin-top:14px;max-width:760px}
+
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+
+.card{--accent:var(--python);position:relative;display:flex;flex-direction:column;
+  background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;
+  color:inherit;text-decoration:none;box-shadow:0 15px 40px #15264008;
+  transition:transform 260ms var(--in), box-shadow 260ms var(--in), border-color 260ms ease;
+  animation:rise 620ms var(--in) both;animation-delay:calc(var(--i) * 70ms)}
+.card.pa{--accent:var(--auto)}
+.card:hover,.card:focus-visible{transform:translateY(-5px);border-color:var(--accent);
+  box-shadow:0 22px 46px #15264018}
+.card:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+/* Franja superior: el recorrido del ejercicio dibujado con iconos. */
+.art{display:flex;align-items:center;justify-content:center;gap:12px;height:104px;
+  background:color-mix(in srgb,var(--accent) 7%,#fff);border-bottom:1px solid var(--line)}
+.ico{position:relative;width:46px;height:46px;flex:none}
+.ico svg{width:100%;height:100%}
+.ico.mid{width:38px;height:38px}
+.times{position:absolute;top:-9px;right:-14px;background:var(--ink);color:#fff;
+  font:700 11px/1 "Consolas","SF Mono",Menlo,monospace;padding:4px 6px;border-radius:999px}
+.arrow{width:26px;height:12px;flex:none;color:var(--accent);opacity:.75}
+.card:hover .arrow,.card:focus-visible .arrow{animation:nudge 900ms var(--in) infinite}
+@keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+
+.body{display:flex;flex-direction:column;flex:1;padding:20px 22px 20px}
+.meta{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.num{font:700 13px/1 "Consolas","SF Mono",Menlo,monospace;color:var(--accent)}
+.tag{font-size:11px;letter-spacing:.14em;font-weight:750;color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 10%,#fff);padding:5px 9px;border-radius:999px}
+.card h2{font-size:20px;line-height:1.22;letter-spacing:-.02em;font-weight:700}
+.desc{font-size:14.5px;color:var(--muted);margin-top:8px}
+.go{margin-top:auto;padding-top:16px;font-size:13px;font-weight:650;color:var(--accent)}
+.go span{display:inline-block;transition:transform 260ms var(--in)}
+.card:hover .go span,.card:focus-visible .go span{transform:translateX(5px)}
+
+.foot{margin-top:22px;font-size:12px;color:var(--muted);text-align:right}
+.foot kbd{font:600 11px/1 "Consolas","SF Mono",Menlo,monospace;background:#fff;
+  border:1px solid var(--line);border-radius:5px;padding:3px 6px;color:var(--ink)}
+
+@media(max-width:1000px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){
+  .wrap{padding:26px 16px 24px}
+  .grid{grid-template-columns:1fr;gap:14px}
+  .head{margin-bottom:22px}
+  .lead{font-size:15px}
+  .art{height:92px}
+  .foot{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*:before,*:after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<svg class="symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+  <symbol id="i-excel" viewBox="0 0 48 48">
+    <rect width="48" height="48" rx="10" fill="#1D6F42"/>
+    <text x="24" y="35" font-family="Segoe UI,system-ui,sans-serif" font-size="27" font-weight="700" fill="#fff" text-anchor="middle">X</text>
+  </symbol>
+  <symbol id="i-word" viewBox="0 0 48 48">
+    <rect width="48" height="48" rx="10" fill="#185ABD"/>
+    <text x="24" y="35" font-family="Segoe UI,system-ui,sans-serif" font-size="27" font-weight="700" fill="#fff" text-anchor="middle">W</text>
+  </symbol>
+  <symbol id="i-pdf" viewBox="0 0 48 48">
+    <rect width="48" height="48" rx="10" fill="#C5352B"/>
+    <text x="24" y="31" font-family="Segoe UI,system-ui,sans-serif" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">PDF</text>
+  </symbol>
+  <symbol id="i-python" viewBox="0 0 48 48">
+    <g fill="#3776AB"><rect x="4" y="3" width="40" height="17" rx="6"/><rect x="4" y="3" width="20" height="25" rx="6"/></g>
+    <g fill="#FFD343"><rect x="4" y="28" width="40" height="17" rx="6"/><rect x="24" y="20" width="20" height="25" rx="6"/></g>
+    <circle cx="13" cy="11" r="2.4" fill="#fff"/><circle cx="35" cy="37" r="2.4" fill="#fff"/>
+  </symbol>
+  <symbol id="i-form" viewBox="0 0 48 48">
+    <rect width="48" height="48" rx="10" fill="#6B4FBB"/>
+    <g stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M20 16h15M20 24h15M20 32h15"/></g>
+    <g fill="#fff"><circle cx="13" cy="16" r="2.2"/><circle cx="13" cy="24" r="2.2"/><circle cx="13" cy="32" r="2.2"/></g>
+  </symbol>
+  <symbol id="i-download" viewBox="0 0 48 48">
+    <rect width="48" height="48" rx="10" fill="#16243b"/>
+    <path d="M24 11v18m0 0-8-8m8 8 8-8M13 36h22" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="i-outlook" viewBox="0 0 48 48">
+    <rect width="48" height="48" rx="10" fill="#0875d1"/>
+    <rect x="10" y="14" width="28" height="20" rx="3" fill="none" stroke="#fff" stroke-width="2.8"/>
+    <path d="m11.5 16 12.5 10 12.5-10" fill="none" stroke="#fff" stroke-width="2.8" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="i-flow" viewBox="0 0 48 48">
+    <rect width="48" height="48" rx="10" fill="#6d5ce7"/>
+    <g fill="none" stroke="#fff" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round">
+      <rect x="9" y="10" width="12" height="10" rx="2.5"/><rect x="27" y="28" width="12" height="10" rx="2.5"/>
+      <path d="M15 20v6h18v2"/>
+    </g>
+  </symbol>
+  <symbol id="i-folder" viewBox="0 0 48 48">
+    <path d="M3 13a4 4 0 0 1 4-4h12l5 5h17a4 4 0 0 1 4 4v19a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" fill="#c98f2b"/>
+    <path d="M3 20a4 4 0 0 1 4-4h34a4 4 0 0 1 4 4v17a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" fill="#e8ad46"/>
+  </symbol>
+  <symbol id="i-arrow" viewBox="0 0 26 12">
+    <path d="M1 6h22m0 0-5-4.5M23 6l-5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+</defs></svg>
+
+<div class="wrap">
+  <header class="head">
+    <p class="eyebrow">CURSO DE AUTOMATIZACIÓN Y PRODUCTIVIDAD</p>
+    <h1>Ejercicios de automatización</h1>
+    <div class="rule" aria-hidden="true"></div>
+    <p class="lead">Seis recorridos animados. Elige una tarjeta para ver cómo funciona cada automatización; desde cualquiera puedes volver aquí con «← Inicio».</p>
+  </header>
+
+  <main class="grid" id="grid">
+    <a class="card" style="--i:0" href="intro_excel_limpio.html">
+      <div class="art" aria-hidden="true">
+        <span class="ico"><svg><use href="#i-excel"/></svg></span>
+        <svg class="arrow"><use href="#i-arrow"/></svg>
+        <span class="ico mid"><svg><use href="#i-python"/></svg></span>
+        <svg class="arrow"><use href="#i-arrow"/></svg>
+        <span class="ico"><svg><use href="#i-excel"/></svg></span>
+      </div>
+      <div class="body">
+        <div class="meta"><span class="num">01</span><span class="tag">PYTHON</span></div>
+        <h2>De un Excel sucio a un Excel vivo</h2>
+        <p class="desc">Una nómina desordenada se depura con un script y sale un informe cuyas fórmulas siguen vivas.</p>
+        <p class="go">Ver la animación <span aria-hidden="true">→</span></p>
+      </div>
+    </a>
+
+    <a class="card" style="--i:1" href="intro_excel_a_word.html">
+      <div class="art" aria-hidden="true">
+        <span class="ico"><svg><use href="#i-excel"/></svg></span>
+        <svg class="arrow"><use href="#i-arrow"/></svg>
+        <span class="ico mid"><svg><use href="#i-python"/></svg></span>
+        <svg class="arrow"><use href="#i-arrow"/></svg>
+        <span class="ico"><svg><use href="#i-word"/></svg><b class="times">×127</b></span>
+      </div>
+      <div class="body">
+        <div class="meta"><span class="num">02</span><span class="tag">PYTHON</span></div>
+        <h2>De un Excel a 127 informes en Word</h2>
+        <p class="desc">Un script lee la base de nómina y genera 127 informes en Word, ya con formato.</p>
+        <p class="go">Ver la animación <span aria-hidden="true">→</span></p>
+      </div>
+    </a>
+
+    <a class="card" style="--i:2" href="intro_pdf_a_excel.html">
+      <div class="art" aria-hidden="true">
+        <span class="ico"><svg><use href="#i-pdf"/></svg><b class="times">×8</b></span>
+        <svg class="arrow"><use href="#i-arrow"/></svg>
+        <span class="ico mid"><svg><use href="#i-python"/></svg></span>
+        <svg class="arrow"><use href="#i-arrow"/></svg>
+        <span class="ico"><svg><use href="#i-excel"/></svg></span>
+      </div>
+      <div class="body">
+        <div class="meta"><span class="num">03</span><span class="tag">PYTHON</span></div>
+        <h2>De una carpeta de PDF a un Excel verificado</h2>
+        <p class="desc">Ocho facturas en PDF de tres diseños distintos se leen solas y quedan en un Excel comprobado.</p>
+        <p class="go">Ver la animación <span aria-hidden="true">→</span></p>
+      </div>
+    </a>
+
+    <a class="card" style="--i:3" href="intro_descarga_automatica.html">
+      <div class="art" aria-hidden="true">
+        <span class="ico"><svg><use href="#i-form"/></svg></span>
+        <svg class="arrow"><use href="#i-arrow"/></svg>
+        <span class="ico mid"><svg><use href="#i-python"/></svg></span>
+        <svg class="arrow"><use href="#i-arrow"/></svg>
+        <span class="ico"><svg><use href="#i-download"/></svg></span>
+      </div>
+      <div class="body">
+        <div class="meta"><span class="num">04</span><span class="tag">PYTHON</span></div>
+        <h2>Que el archivo se baje solo</h2>
+        <p class="desc">Las respuestas de un formulario de Google y de Microsoft se descargan solas con un script.</p>
+        <p class="go">Ver la animación <span aria-hidden="true">→</span></p>
+      </div>
+    </a>
+
+    <a class="card pa" style="--i:4" href="facturas-automaticas-power-automate.html">
+      <div class="art" aria-hidden="true">
+        <span class="ico"><svg><use href="#i-outlook"/></svg></span>
+        <svg class="arrow"><use href="#i-arrow"/></svg>
+        <span class="ico mid"><svg><use href="#i-flow"/></svg></span>
+        <svg class="arrow"><use href="#i-arrow"/></svg>
+        <span class="ico"><svg><use href="#i-folder"/></svg></span>
+      </div>
+      <div class="body">
+        <div class="meta"><span class="num">05</span><span class="tag">POWER AUTOMATE</span></div>
+        <h2>Facturas automáticas</h2>
+        <p class="desc">Llega una factura en PDF a Outlook y el flujo la guarda en la carpeta de su proveedor.</p>
+        <p class="go">Ver la animación <span aria-hidden="true">→</span></p>
+      </div>
+    </a>
+
+    <a class="card pa" style="--i:5" href="control-cotizaciones-power-automate.html">
+      <div class="art" aria-hidden="true">
+        <span class="ico"><svg><use href="#i-outlook"/></svg></span>
+        <svg class="arrow"><use href="#i-arrow"/></svg>
+        <span class="ico mid"><svg><use href="#i-flow"/></svg></span>
+        <svg class="arrow"><use href="#i-arrow"/></svg>
+        <span class="ico"><svg><use href="#i-folder"/></svg></span>
+        <span class="ico"><svg><use href="#i-excel"/></svg></span>
+      </div>
+      <div class="body">
+        <div class="meta"><span class="num">06</span><span class="tag">POWER AUTOMATE</span></div>
+        <h2>Control de cotizaciones</h2>
+        <p class="desc">Cada respuesta de un proveedor guarda sus archivos en carpetas y actualiza el seguimiento en Excel.</p>
+        <p class="go">Ver la animación <span aria-hidden="true">→</span></p>
+      </div>
+    </a>
+  </main>
+
+  <p class="foot">Teclas <kbd>1</kbd>–<kbd>6</kbd> abren un ejercicio · <kbd>I</kbd> vuelve aquí desde cualquiera</p>
+</div>
+
+<script>
+(function(){
+  var cards = document.querySelectorAll('#grid .card');
+  window.addEventListener('keydown', function(e){
+    if(e.ctrlKey || e.metaKey || e.altKey) return;
+    var n = Number(e.key);
+    if(n >= 1 && n <= cards.length){ e.preventDefault(); location.href = cards[n - 1].getAttribute('href'); }
+  });
+})();
+</script>
+</body>
+</html>

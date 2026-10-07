@@ -1,0 +1,895 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intro · Que el archivo se baje solo</title>
+<style>
+:root{
+  --t-fast:260ms; --t-mid:520ms; --t-slow:900ms;
+  --in:cubic-bezier(.22,.61,.36,1);
+  --out:cubic-bezier(.55,.06,.68,.19);
+  --pop:cubic-bezier(.3,1.35,.5,1);
+}
+html,body{margin:0;height:100%;background:#F2F4F7;overflow:hidden;cursor:pointer;
+  -webkit-user-select:none;user-select:none}
+svg{display:block;width:100vw;height:100vh}
+text{font-family:"Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif}
+/* `.mono text` no es redundante: la regla `text{font-family}` se aplica
+   DIRECTAMENTE al <text>, y una declaración directa siempre gana a un valor
+   heredado, por mucha especificidad que tenga el ancestro. Sin este selector,
+   un <g class="mono"> no pone en monoespaciada a ninguno de sus hijos. */
+.mono,.mono text{font-family:"Consolas","SF Mono",Menlo,monospace}
+
+/* Se promueve a su propia capa solo lo que anima de verdad. `will-change`
+   sobre una tarjeta con sombra (un filtro SVG) obliga al compositor a
+   rasterizarla otra vez en cada fotograma y sale más caro que barato. */
+.pyblock{will-change:transform,opacity}
+
+/* ── Motor de estados: pre (sin clase) → .in → .out ───────────────────────── */
+
+.rut,.rutline,.hookA,.hookAline,.hookB,.hookBline,.src,.srcline,.cond,.condline,
+.urlc,.urlline,.xcard,.pyblock,.resp,.rline,.okc,.okline,.errc,.errline,
+.warnnote,.hist,.histline{
+  opacity:0;transform:translateY(16px);
+  transition:opacity var(--t-mid) ease, transform var(--t-mid) var(--in)}
+.rut.in,.rutline.in,.hookA.in,.hookAline.in,.hookB.in,.hookBline.in,.src.in,
+.srcline.in,.cond.in,.condline.in,.urlc.in,.urlline.in,.xcard.in,.pyblock.in,
+.resp.in,.rline.in,.okc.in,.okline.in,.errc.in,.errline.in,.warnnote.in,
+.hist.in,.histline.in{opacity:1;transform:none}
+.rut.out,.rutline.out,.hookA.out,.hookAline.out,.hookB.out,.hookBline.out,
+.src.out,.srcline.out,.cond.out,.condline.out,.urlc.out,.urlline.out,.xcard.out,
+.pyblock.out,.resp.out,.rline.out,.okc.out,.okline.out,.errc.out,.errline.out,
+.warnnote.out,.hist.out,.histline.out{opacity:0;transform:translateY(-12px);
+  transition-duration:var(--t-fast)}
+
+.rut.dim:not(.out){opacity:.4}
+
+/* El tachado se dibuja con la misma técnica que el subrayado del título:
+   pathLength 100 + stroke-dashoffset de 100 a 0. Va después de .hookBline
+   para que su `transform:none` gane. */
+.strike{transform:none;stroke-dasharray:100;stroke-dashoffset:100;
+  transition:stroke-dashoffset var(--t-mid) var(--in), opacity var(--t-fast) ease}
+.strike.in{stroke-dashoffset:0}
+
+.cl,.stagelbl,.step{opacity:0;transform:translateX(-16px);
+  transition:opacity var(--t-fast) ease, transform 300ms var(--in)}
+.cl.in,.stagelbl.in,.step.in{opacity:1;transform:none}
+.cl.out,.step.out{opacity:0;transform:translateX(0);transition-duration:var(--t-fast)}
+.stagelbl{transform:translateY(12px)}
+
+/* Cabecera */
+.ptitle{opacity:0;transform:translateY(-12px);
+  transition:opacity var(--t-slow) ease, transform var(--t-slow) var(--in)}
+.ptitle.in{opacity:1;transform:none}
+.ptitle.out{opacity:0;transform:translateY(-12px);transition-duration:var(--t-mid)}
+.ptrule{stroke-dasharray:100;stroke-dashoffset:100;
+  transition:stroke-dashoffset var(--t-slow) var(--in), opacity var(--t-mid) ease}
+.ptrule.in{stroke-dashoffset:0}
+
+.logo{opacity:0;transform:translateY(10px);
+  transition:opacity var(--t-mid) ease, transform var(--t-mid) var(--in)}
+.logo.in{opacity:1;transform:none}
+.logo.out{opacity:0;transform:translateY(-10px);transition-duration:var(--t-fast)}
+
+.runui{opacity:0;transition:opacity var(--t-fast) ease}
+.runui.in{opacity:1}
+.runui.out{opacity:0}
+/* scaleX en vez de animar `width`: se compone en GPU. */
+.prog{transform:scaleX(0);transform-origin:452px 622px;
+  transition:transform 1900ms cubic-bezier(.35,.05,.25,1)}
+.prog.in{transform:scaleX(1)}
+.chkmark{opacity:0;transition:opacity var(--t-fast) ease}
+.chkmark.on{opacity:1}
+
+.flow{opacity:0;transition:opacity var(--t-fast) ease}
+.flow.in{opacity:1}
+.flow.out{opacity:0}
+.pa{animation:laneA 1.5s linear infinite}
+@keyframes laneA{0%{transform:translateX(0);opacity:0}18%{opacity:1}82%{opacity:1}100%{transform:translateX(42px);opacity:0}}
+.pb{animation:laneB 1.6s linear infinite}
+@keyframes laneB{0%{transform:translateX(0);opacity:0}18%{opacity:1}82%{opacity:1}100%{transform:translateX(26px);opacity:0}}
+
+.otitle,.osub,.brand{opacity:0;transform:translateY(22px);
+  transition:opacity var(--t-slow) ease, transform var(--t-slow) var(--in)}
+.otitle.in,.osub.in,.brand.in{opacity:1;transform:none}
+
+/* ── HUD ──────────────────────────────────────────────────────────────────── */
+.dot{fill:#7C8AA0;opacity:.16;transition:opacity var(--t-fast) ease, fill var(--t-fast) ease}
+.dot.done{opacity:.30}
+.dot.on{fill:#1A73E8;opacity:.60}
+#hint{opacity:0;transition:opacity var(--t-mid) ease}
+#hint.show{opacity:1}
+
+#fsexit{position:fixed;top:18px;right:18px;z-index:10;opacity:0;pointer-events:none;
+  transition:opacity .3s ease;
+  font:600 14px/1 "Segoe UI",system-ui,-apple-system,sans-serif;color:#fff;
+  background:rgba(15,23,42,.78);border:1px solid rgba(255,255,255,.28);
+  border-radius:999px;padding:11px 18px;cursor:pointer}
+#fsexit:hover{background:rgba(15,23,42,.95)}
+.isfs.fsui #fsexit{opacity:1;pointer-events:auto}
+
+/* Vuelta al índice de ejercicios. Se va con el HUD (H o ?hud=0) y en pantalla
+   completa, para que tampoco quede en la grabación. */
+#home{position:fixed;top:18px;left:18px;z-index:10;opacity:.6;
+  transition:opacity .3s ease, background .3s ease;
+  font:600 14px/1 "Segoe UI",system-ui,-apple-system,sans-serif;color:#334155;
+  background:rgba(255,255,255,.72);border:1px solid rgba(15,23,42,.14);
+  border-radius:999px;padding:11px 18px;cursor:pointer;text-decoration:none}
+#home:hover,#home:focus-visible{opacity:1;background:#fff}
+.isfs #home{display:none}
+
+.instant *{transition-duration:0s !important;transition-delay:0s !important}
+</style>
+</head>
+<body>
+<svg id="stage" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Las respuestas de un formulario de Google y de Microsoft se descargan solas con un script de Python que convierte el enlace compartido en un enlace de descarga directa y comprueba que lo que bajó sea de verdad un archivo de Excel">
+<defs>
+  <radialGradient id="canvas" cx="50%" cy="42%" r="80%">
+    <stop offset="0" stop-color="#FBFCFD"/>
+    <stop offset="1" stop-color="#E9EDF3"/>
+  </radialGradient>
+
+  <!-- userSpaceOnUse: una línea horizontal tiene caja delimitadora de altura
+       cero y un degradado en objectBoundingBox degeneraría. -->
+  <linearGradient id="ruleGrad" gradientUnits="userSpaceOnUse" x1="690" y1="0" x2="910" y2="0">
+    <stop offset="0"  stop-color="#1A73E8"/>
+    <stop offset=".5" stop-color="#B45309"/>
+    <stop offset="1"  stop-color="#1D6F42"/>
+  </linearGradient>
+  <filter id="cardShadow" x="-25%" y="-25%" width="150%" height="150%">
+    <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#0F1B2A" flood-opacity="0.10"/>
+  </filter>
+  <filter id="softShadow" x="-25%" y="-25%" width="150%" height="150%">
+    <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#0F1B2A" flood-opacity="0.09"/>
+  </filter>
+
+  <g id="icoForm">
+    <rect width="48" height="48" rx="10" fill="#7248B9"/>
+    <rect x="12" y="13" width="24" height="3.5" rx="1.75" fill="#fff"/>
+    <rect x="12" y="22" width="24" height="3.5" rx="1.75" fill="#fff"/>
+    <rect x="12" y="31" width="15" height="3.5" rx="1.75" fill="#fff"/>
+  </g>
+  <g id="icoSheets">
+    <rect width="48" height="48" rx="10" fill="#0F9D58"/>
+    <rect x="12" y="13" width="24" height="22" rx="2" fill="#fff"/>
+    <rect x="12" y="19" width="24" height="1.6" fill="#0F9D58"/>
+    <rect x="12" y="25" width="24" height="1.6" fill="#0F9D58"/>
+    <rect x="23" y="13" width="1.6" height="22" fill="#0F9D58"/>
+  </g>
+  <g id="icoOneDrive">
+    <rect width="48" height="48" rx="10" fill="#0078D4"/>
+    <path d="M13 32 a7 7 0 0 1 1.6 -13.8 a9.5 9.5 0 0 1 17.6 2.2 a6.4 6.4 0 0 1 -1.4 12.6 Z" fill="#fff"/>
+  </g>
+  <g id="icoPython">
+    <g fill="#3776AB">
+      <rect x="4" y="3" width="40" height="17" rx="6"/>
+      <rect x="4" y="3" width="20" height="25" rx="6"/>
+    </g>
+    <g fill="#FFD343">
+      <rect x="4" y="28" width="40" height="17" rx="6"/>
+      <rect x="24" y="20" width="20" height="25" rx="6"/>
+    </g>
+    <circle cx="11.5" cy="11" r="2.7" fill="#fff"/>
+    <circle cx="36.5" cy="37" r="2.7" fill="#fff"/>
+  </g>
+
+  <!-- Libro de Excel en miniatura, 38×48, para la pila del histórico -->
+  <g id="xlsxpg">
+    <rect width="38" height="48" rx="3" fill="#fff" stroke="#D8E0E8" stroke-width="1"/>
+    <rect width="38" height="4" rx="2" fill="#1D6F42"/>
+    <rect x="7" y="11" width="24" height="3" fill="#E4E9EE"/>
+    <rect x="7" y="18" width="24" height="3" fill="#E4E9EE"/>
+    <rect x="7" y="25" width="24" height="3" fill="#E4E9EE"/>
+    <rect x="7" y="32" width="14" height="3" fill="#E4E9EE"/>
+    <text class="mono" x="19" y="45" font-size="7" font-weight="700" fill="#1D6F42" text-anchor="middle">XLSX</text>
+  </g>
+
+  <path id="tick" d="M0 5 l 5 5.5 l 10 -12" fill="none" stroke="currentColor"
+        stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path id="cross" d="M0 -6 l 12 12 M12 -6 l -12 12" fill="none" stroke="currentColor"
+        stroke-width="3" stroke-linecap="round"/>
+</defs>
+
+<rect width="1600" height="900" fill="url(#canvas)"/>
+
+<!-- ═══ TÍTULO DEL PROYECTO ════════════════════════════════════════════════ -->
+<g class="ptitle">
+  <text x="800" y="86" font-size="38" font-weight="700" text-anchor="middle" letter-spacing="-.8"><tspan fill="#0F172A">De un </tspan><tspan fill="#1A73E8">formulario</tspan><tspan fill="#0F172A"> a </tspan><tspan fill="#1D6F42">tu carpeta</tspan><tspan fill="#0F172A"> con </tspan><tspan fill="#B45309">Python</tspan></text>
+  <path class="ptrule" d="M690 106 H910" pathLength="100" stroke="url(#ruleGrad)" stroke-width="4" stroke-linecap="round" fill="none"/>
+</g>
+
+<!-- ═══ 1 · LA RUTINA DE TODOS LOS DÍAS ════════════════════════════════════ -->
+<g class="rut" filter="url(#cardShadow)">
+  <rect x="180" y="230" width="1240" height="240" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="180" y="230" width="1240" height="5" rx="2.5" fill="#B42318"/>
+</g>
+<g>
+  <text class="mono rutline" x="212" y="272" font-size="13" fill="#B42318" letter-spacing="2.6">LO QUE SE HACE HOY · Y MAÑANA OTRA VEZ</text>
+
+  <g class="step">
+    <rect x="212" y="300" width="196" height="118" rx="10" fill="#F5F7F9" stroke="#E3E8EE"/>
+    <circle cx="310" cy="330" r="15" fill="#FBE7E5"/>
+    <text class="mono" x="310" y="336" font-size="15" font-weight="700" fill="#B42318" text-anchor="middle">1</text>
+    <text x="310" y="374" font-size="17" fill="#0F172A" text-anchor="middle">abrir el</text>
+    <text x="310" y="398" font-size="17" fill="#0F172A" text-anchor="middle">navegador</text>
+  </g>
+  <text class="step" x="436" y="368" font-size="22" fill="#C3CBD5">→</text>
+
+  <g class="step">
+    <rect x="460" y="300" width="196" height="118" rx="10" fill="#F5F7F9" stroke="#E3E8EE"/>
+    <circle cx="558" cy="330" r="15" fill="#FBE7E5"/>
+    <text class="mono" x="558" y="336" font-size="15" font-weight="700" fill="#B42318" text-anchor="middle">2</text>
+    <text x="558" y="374" font-size="17" fill="#0F172A" text-anchor="middle">iniciar</text>
+    <text x="558" y="398" font-size="17" fill="#0F172A" text-anchor="middle">sesión</text>
+  </g>
+  <text class="step" x="684" y="368" font-size="22" fill="#C3CBD5">→</text>
+
+  <g class="step">
+    <rect x="708" y="300" width="196" height="118" rx="10" fill="#F5F7F9" stroke="#E3E8EE"/>
+    <circle cx="806" cy="330" r="15" fill="#FBE7E5"/>
+    <text class="mono" x="806" y="336" font-size="15" font-weight="700" fill="#B42318" text-anchor="middle">3</text>
+    <text x="806" y="374" font-size="17" fill="#0F172A" text-anchor="middle">buscar el</text>
+    <text x="806" y="398" font-size="17" fill="#0F172A" text-anchor="middle">formulario</text>
+  </g>
+  <text class="step" x="932" y="368" font-size="22" fill="#C3CBD5">→</text>
+
+  <g class="step">
+    <rect x="956" y="300" width="196" height="118" rx="10" fill="#F5F7F9" stroke="#E3E8EE"/>
+    <circle cx="1054" cy="330" r="15" fill="#FBE7E5"/>
+    <text class="mono" x="1054" y="336" font-size="15" font-weight="700" fill="#B42318" text-anchor="middle">4</text>
+    <text x="1054" y="374" font-size="17" fill="#0F172A" text-anchor="middle">Archivo ▸</text>
+    <text x="1054" y="398" font-size="17" fill="#0F172A" text-anchor="middle">Descargar</text>
+  </g>
+  <text class="step" x="1180" y="368" font-size="22" fill="#C3CBD5">→</text>
+
+  <g class="step">
+    <rect x="1204" y="300" width="196" height="118" rx="10" fill="#F5F7F9" stroke="#E3E8EE"/>
+    <circle cx="1302" cy="330" r="15" fill="#FBE7E5"/>
+    <text class="mono" x="1302" y="336" font-size="15" font-weight="700" fill="#B42318" text-anchor="middle">5</text>
+    <text x="1302" y="374" font-size="17" fill="#0F172A" text-anchor="middle">mover a la</text>
+    <text x="1302" y="398" font-size="17" fill="#0F172A" text-anchor="middle">carpeta</text>
+  </g>
+
+  <text class="rutline" x="212" y="452" font-size="16" fill="#94A3B8">cinco pasos que nadie apuntó en ningún procedimiento, pero que alguien hace cada mañana</text>
+</g>
+
+<!-- ═══ LO QUE CUESTA · LO QUE CUESTA CON EL SCRIPT ════════════════════════ -->
+<g class="hookA" filter="url(#cardShadow)">
+  <rect x="300" y="510" width="480" height="270" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="300" y="510" width="480" height="5" rx="2.5" fill="#B42318"/>
+</g>
+<g>
+  <text class="mono hookAline" x="332" y="552" font-size="13" fill="#B42318" letter-spacing="2.6">A MANO</text>
+  <text class="hookAline" x="332" y="614" font-size="44" font-weight="700" fill="#B42318">4 minutos</text>
+  <text class="hookAline" x="332" y="652" font-size="20" fill="#5A6472">cada día del año</text>
+  <text class="hookAline" x="332" y="706" font-size="18" fill="#5A6472">y el día que se te olvida,</text>
+  <text class="hookAline" x="332" y="734" font-size="18" fill="#5A6472">sencillamente no hay datos</text>
+  <path class="hookBline strike" d="M324 599 L580 599" pathLength="100" stroke="#B42318" stroke-width="3" stroke-linecap="round" fill="none"/>
+</g>
+
+<g class="hookB" filter="url(#cardShadow)">
+  <rect x="820" y="510" width="480" height="270" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="820" y="510" width="480" height="5" rx="2.5" fill="#1E7B4D"/>
+</g>
+<g>
+  <text class="mono hookBline" x="852" y="552" font-size="13" fill="#1E7B4D" letter-spacing="2.6">CON EL SCRIPT</text>
+  <text class="hookBline" x="852" y="614" font-size="44" font-weight="700" fill="#1E7B4D">3 segundos</text>
+  <text class="hookBline" x="852" y="652" font-size="20" fill="#5A6472">sin abrir el navegador</text>
+  <text class="hookBline" x="852" y="706" font-size="18" fill="#5A6472">todos los días a la misma hora,</text>
+  <text class="hookBline" x="852" y="734" font-size="18" fill="#5A6472">aunque no estés</text>
+</g>
+
+<!-- ═══ 2 · LOS DOS ORÍGENES ═══════════════════════════════════════════════ -->
+<g class="src" filter="url(#cardShadow)">
+  <rect x="140" y="180" width="600" height="360" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="140" y="180" width="600" height="5" rx="2.5" fill="#1A73E8"/>
+</g>
+<g>
+  <text class="mono srcline" x="172" y="222" font-size="13" fill="#1A73E8" letter-spacing="2.6">ORIGEN 1</text>
+  <g class="srcline">
+    <use href="#icoForm" x="172" y="240"/>
+    <text x="238" y="262" font-size="26" font-weight="700" fill="#0F172A">Google Forms</text>
+    <text x="238" y="286" font-size="16" fill="#5A6472">las respuestas caen solas en una hoja</text>
+  </g>
+  <text class="srcline" x="196" y="330" font-size="22" fill="#C3CBD5">↓</text>
+  <g class="srcline">
+    <use href="#icoSheets" x="172" y="344"/>
+    <text x="238" y="366" font-size="26" font-weight="700" fill="#0F172A">Google Sheets</text>
+    <text x="238" y="390" font-size="16" fill="#5A6472">y de ahí hay que sacarlas</text>
+  </g>
+  <g class="srcline">
+    <rect x="172" y="418" width="536" height="34" rx="6" fill="#F5F7F9"/>
+    <text class="mono" x="186" y="440" font-size="14" fill="#5A6472">docs.google.com/spreadsheets/d/1jCNd7s2CIVl…/edit</text>
+  </g>
+  <text class="srcline" x="172" y="490" font-size="16" fill="#94A3B8">hoy: entrar, descargar y guardar el archivo a mano</text>
+</g>
+
+<g class="src" filter="url(#cardShadow)">
+  <rect x="860" y="180" width="600" height="360" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="860" y="180" width="600" height="5" rx="2.5" fill="#0078D4"/>
+</g>
+<g>
+  <text class="mono srcline" x="892" y="222" font-size="13" fill="#0078D4" letter-spacing="2.6">ORIGEN 2</text>
+  <g class="srcline">
+    <use href="#icoForm" x="892" y="240"/>
+    <text x="958" y="262" font-size="26" font-weight="700" fill="#0F172A">Microsoft Forms</text>
+    <text x="958" y="286" font-size="16" fill="#5A6472">los resultados quedan en un Excel</text>
+  </g>
+  <text class="srcline" x="916" y="330" font-size="22" fill="#C3CBD5">↓</text>
+  <g class="srcline">
+    <use href="#icoOneDrive" x="892" y="344"/>
+    <text x="958" y="366" font-size="26" font-weight="700" fill="#0F172A">OneDrive</text>
+    <text x="958" y="390" font-size="16" fill="#5A6472">y de ahí hay que sacarlos</text>
+  </g>
+  <g class="srcline">
+    <rect x="892" y="418" width="536" height="34" rx="6" fill="#F5F7F9"/>
+    <text class="mono" x="906" y="440" font-size="14" fill="#5A6472">1drv.ms/x/c/CBBCFEA5258223FB/IQDL8fmM…?e=9gWLGe</text>
+  </g>
+  <text class="srcline" x="892" y="490" font-size="16" fill="#94A3B8">hoy: entrar, descargar y guardar el archivo a mano</text>
+</g>
+
+<!-- ═══ LA CONDICIÓN DEL EJERCICIO ═════════════════════════════════════════ -->
+<g class="cond" filter="url(#softShadow)">
+  <rect x="140" y="580" width="1320" height="212" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="140" y="580" width="1320" height="5" rx="2.5" fill="#B45309"/>
+</g>
+<g>
+  <text class="mono condline" x="180" y="620" font-size="13" fill="#B45309" letter-spacing="2.6">LA CONDICIÓN: NO ESTOY DISPUESTO A</text>
+
+  <g class="condline" color="#B42318">
+    <use href="#cross" x="182" y="666"/>
+    <text x="212" y="672" font-size="17" fill="#0F172A">crear una cuenta de programador</text>
+  </g>
+  <g class="condline" color="#B42318">
+    <use href="#cross" x="622" y="666"/>
+    <text x="652" y="672" font-size="17" fill="#0F172A">pedirle permisos al área de sistemas</text>
+  </g>
+  <g class="condline" color="#B42318">
+    <use href="#cross" x="1062" y="666"/>
+    <text x="1092" y="672" font-size="17" fill="#0F172A">manejar claves ni contraseñas</text>
+  </g>
+
+  <line class="condline" x1="180" y1="700" x2="1420" y2="700" stroke="#E3E8EE"/>
+
+  <g class="condline" color="#1E7B4D">
+    <use href="#tick" x="472" y="736"/>
+    <text x="506" y="752" font-size="22" font-weight="700" fill="#1E7B4D">lo único: compartir con «cualquier persona con el enlace»</text>
+  </g>
+</g>
+
+<!-- ═══ 3 · EL TRUCO: LA MISMA URL, OTRA COLA ══════════════════════════════ -->
+<g class="urlc" filter="url(#cardShadow)">
+  <rect x="160" y="190" width="1280" height="480" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="160" y="190" width="1280" height="5" rx="2.5" fill="#B45309"/>
+</g>
+<g>
+  <text class="mono urlline" x="200" y="234" font-size="13" fill="#B45309" letter-spacing="2.6">EL TRUCO: LA MISMA URL, OTRA COLA</text>
+
+  <text class="mono urlline" x="200" y="286" font-size="14" fill="#1A73E8" letter-spacing="2">GOOGLE SHEETS</text>
+  <g class="urlline">
+    <text class="mono" x="200" y="326" font-size="19"><tspan fill="#94A3B8">docs.google.com/spreadsheets/d/1jCNd7s2CIVl…</tspan><tspan fill="#B42318">/edit?usp=sharing</tspan></text>
+    <text x="200" y="352" font-size="15" fill="#B42318">abre la página del visor, no descarga nada</text>
+  </g>
+  <text class="urlline" x="204" y="386" font-size="22" fill="#C3CBD5">↓</text>
+  <g class="urlline">
+    <text class="mono" x="200" y="424" font-size="19"><tspan fill="#94A3B8">docs.google.com/spreadsheets/d/1jCNd7s2CIVl…</tspan><tspan fill="#1E7B4D" font-weight="700">/export?format=xlsx</tspan></text>
+    <text x="200" y="450" font-size="15" fill="#1E7B4D">devuelve el archivo · sin clave, porque la hoja está compartida</text>
+  </g>
+
+  <line class="urlline" x1="200" y1="482" x2="1400" y2="482" stroke="#E3E8EE"/>
+
+  <text class="mono urlline" x="200" y="520" font-size="14" fill="#0078D4" letter-spacing="2">ONEDRIVE</text>
+  <g class="urlline">
+    <text class="mono" x="200" y="558" font-size="19"><tspan fill="#94A3B8">1drv.ms/x/c/CBBCFEA5258223FB/IQDL8fmM…?e=9gWLGe</tspan></text>
+  </g>
+  <text class="urlline" x="204" y="588" font-size="22" fill="#C3CBD5">↓</text>
+  <g class="urlline">
+    <text class="mono" x="200" y="622" font-size="19"><tspan fill="#94A3B8">1drv.ms/x/c/CBBCFEA5258223FB/IQDL8fmM…?e=9gWLGe</tspan><tspan fill="#1E7B4D" font-weight="700">&amp;download=1</tspan></text>
+    <text x="200" y="648" font-size="15" fill="#94A3B8">la receta antigua (api.onedrive.com/v1.0/shares/…) ya responde 401: hay que averiguar la de hoy</text>
+  </g>
+</g>
+
+<!-- ═══ 1 · EL ENLACE (tarjeta de etapa) ═══════════════════════════════════ -->
+<g class="xcard" filter="url(#cardShadow)">
+  <rect x="100" y="290" width="240" height="330" rx="12" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="100" y="290" width="240" height="6" rx="3" fill="#1A73E8"/>
+  <use href="#icoSheets" x="130" y="336"/>
+  <text x="192" y="368" font-size="18" fill="#0F172A">Google Sheets</text>
+  <use href="#icoOneDrive" x="130" y="410"/>
+  <text x="192" y="442" font-size="18" fill="#0F172A">OneDrive</text>
+  <line x1="126" y1="490" x2="314" y2="490" stroke="#EEF1F4"/>
+  <text class="mono" x="220" y="524" font-size="17" fill="#0F172A" text-anchor="middle">un enlace</text>
+  <text class="mono" x="220" y="550" font-size="17" fill="#0F172A" text-anchor="middle">compartido</text>
+  <text x="220" y="586" font-size="15" fill="#94A3B8" text-anchor="middle">y nada más</text>
+</g>
+
+<!-- ═══ 2 · EL SCRIPT ══════════════════════════════════════════════════════ -->
+<g class="pyblock" filter="url(#cardShadow)">
+  <use href="#icoPython" x="686" y="166"/>
+  <rect x="420" y="230" width="580" height="470" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="420" y="230" width="580" height="48" rx="14" fill="#FAFBFC"/>
+  <rect x="420" y="268" width="580" height="10" fill="#FAFBFC"/>
+  <line x1="420" y1="278" x2="1000" y2="278" stroke="#E3E8EE"/>
+  <circle cx="448" cy="254" r="5" fill="#DDE3EA"/><circle cx="466" cy="254" r="5" fill="#DDE3EA"/><circle cx="484" cy="254" r="5" fill="#DDE3EA"/>
+  <text class="mono" x="508" y="261" font-size="19" fill="#5A6472">descargar_data_gmail.py</text>
+</g>
+<g>
+  <text class="mono cl" x="452" y="326" font-size="16"><tspan fill="#B0407A">import </tspan><tspan fill="#0F172A">requests</tspan></text>
+  <text class="mono cl" x="452" y="358" font-size="16"><tspan fill="#0F172A">url = </tspan><tspan fill="#2B6CB0">construir_url</tspan><tspan fill="#3D4653">(</tspan><tspan fill="#0F172A">ENLACE, </tspan><tspan fill="#1E7B4D">"xlsx"</tspan><tspan fill="#3D4653">)</tspan></text>
+  <text class="mono cl" x="452" y="390" font-size="16"><tspan fill="#0F172A">r = requests.</tspan><tspan fill="#2B6CB0">get</tspan><tspan fill="#3D4653">(</tspan><tspan fill="#0F172A">url, timeout=60</tspan><tspan fill="#3D4653">)</tspan></text>
+  <text class="mono cl" x="452" y="430" font-size="16"><tspan fill="#B0407A">if </tspan><tspan fill="#1E7B4D">"text/html" </tspan><tspan fill="#B0407A">in </tspan><tspan fill="#0F172A">r.headers[</tspan><tspan fill="#1E7B4D">"content-type"</tspan><tspan fill="#0F172A">]:</tspan></text>
+  <text class="mono cl" x="487" y="462" font-size="16"><tspan fill="#2B6CB0">avisar</tspan><tspan fill="#3D4653">(</tspan><tspan fill="#1E7B4D">"la hoja ya no está compartida"</tspan><tspan fill="#3D4653">)</tspan></text>
+  <text class="mono cl" x="452" y="502" font-size="16"><tspan fill="#B0407A">if not </tspan><tspan fill="#0F172A">r.content.</tspan><tspan fill="#2B6CB0">startswith</tspan><tspan fill="#3D4653">(</tspan><tspan fill="#1E7B4D">b"PK"</tspan><tspan fill="#3D4653">):</tspan></text>
+  <text class="mono cl" x="487" y="534" font-size="16"><tspan fill="#2B6CB0">avisar</tspan><tspan fill="#3D4653">(</tspan><tspan fill="#1E7B4D">"eso no es un Excel"</tspan><tspan fill="#3D4653">)</tspan></text>
+  <text class="mono cl" x="452" y="566" font-size="16"><tspan fill="#0F172A">destino.</tspan><tspan fill="#2B6CB0">write_bytes</tspan><tspan fill="#3D4653">(</tspan><tspan fill="#0F172A">r.content</tspan><tspan fill="#3D4653">)</tspan></text>
+</g>
+
+<g class="runui">
+  <line x1="452" y1="596" x2="968" y2="596" stroke="#EEF1F4"/>
+  <rect x="452" y="618" width="516" height="10" rx="5" fill="#EDF1F4"/>
+  <rect class="prog" x="452" y="618" width="516" height="10" rx="5" fill="#1A73E8"/>
+  <g color="#1E7B4D"><use class="chkmark" href="#tick" x="452" y="656"/></g>
+  <text class="mono" id="runlabel" x="484" y="670" font-size="18" fill="#6B7480">solicitando el archivo…</text>
+</g>
+
+<!-- ═══ CONDUCTOS ══════════════════════════════════════════════════════════ -->
+<g class="flow">
+  <rect x="352" y="447" width="56" height="16" rx="8" fill="#E5EAF0"/>
+  <rect x="1012" y="447" width="40" height="16" rx="8" fill="#E5EAF0"/>
+  <g fill="#1A73E8">
+    <rect class="pa" x="356" y="450.5" width="9" height="9" rx="2"/>
+    <rect class="pa" style="animation-delay:-.5s" x="356" y="450.5" width="9" height="9" rx="2"/>
+    <rect class="pa" style="animation-delay:-1s" x="356" y="450.5" width="9" height="9" rx="2"/>
+  </g>
+  <g fill="#1E7B4D">
+    <rect class="pb" x="1016" y="450.5" width="9" height="9" rx="2"/>
+    <rect class="pb" style="animation-delay:-.55s" x="1016" y="450.5" width="9" height="9" rx="2"/>
+    <rect class="pb" style="animation-delay:-1.1s" x="1016" y="450.5" width="9" height="9" rx="2"/>
+  </g>
+</g>
+
+<!-- ═══ 3 · LO QUE LLEGÓ ═══════════════════════════════════════════════════ -->
+<g class="resp" filter="url(#cardShadow)">
+  <rect x="1060" y="230" width="460" height="470" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="1060" y="230" width="460" height="6" rx="3" fill="#1E7B4D"/>
+</g>
+<g>
+  <g class="rline">
+    <text class="mono" x="1090" y="278" font-size="13" fill="#94A3B8" letter-spacing="2.4">LA RESPUESTA</text>
+    <rect x="1394" y="258" width="96" height="28" rx="5" fill="#E7F3EC"/>
+    <text class="mono" x="1442" y="278" font-size="16" font-weight="700" fill="#1E7B4D" text-anchor="middle">200 OK</text>
+    <line x1="1090" y1="300" x2="1490" y2="300" stroke="#E3E8EE"/>
+  </g>
+  <g class="rline mono" font-size="14" fill="#5A6472">
+    <text x="1090" y="330">content-type:</text>
+    <text x="1090" y="354" fill="#0F172A">  application/vnd…spreadsheet</text>
+  </g>
+  <g class="rline mono" font-size="14" fill="#5A6472">
+    <text x="1090" y="386">content-length:</text>
+    <text x="1090" y="410" fill="#0F172A">  49.152 bytes</text>
+  </g>
+
+  <line class="rline" x1="1090" y1="436" x2="1490" y2="436" stroke="#E3E8EE"/>
+
+  <text class="mono rline" x="1090" y="472" font-size="13" fill="#B45309" letter-spacing="2.4">LOS PRIMEROS CUATRO BYTES</text>
+  <g class="rline">
+    <rect x="1090" y="490" width="400" height="56" rx="8" fill="#F5F7F9"/>
+    <text class="mono" x="1120" y="528" font-size="26" fill="#2B6CB0">50 4B 03 04</text>
+    <text class="mono" x="1380" y="528" font-size="16" fill="#94A3B8">→</text>
+    <text class="mono" x="1420" y="528" font-size="26" font-weight="700" fill="#1E7B4D">PK</text>
+  </g>
+  <text class="rline" x="1090" y="580" font-size="16" fill="#0F172A">todo .xlsx es un zip por dentro,</text>
+  <text class="rline" x="1090" y="604" font-size="16" fill="#0F172A">y todo zip empieza por PK.</text>
+  <g class="rline">
+    <rect x="1090" y="626" width="400" height="46" rx="8" fill="#E7F3EC"/>
+    <text x="1290" y="655" font-size="17" font-weight="700" fill="#1E7B4D" text-anchor="middle">por eso el programa lo comprueba</text>
+  </g>
+</g>
+
+<!-- ═══ ETIQUETAS DE ETAPA ═════════════════════════════════════════════════ -->
+<g>
+  <g class="stagelbl">
+    <text class="mono" x="220" y="736" font-size="14" fill="#1A73E8" letter-spacing="2.6" text-anchor="middle">1 · EL ENLACE</text>
+    <text x="220" y="762" font-size="18" fill="#5A6472" text-anchor="middle">lo único que se configura</text>
+  </g>
+  <g class="stagelbl">
+    <text class="mono" x="710" y="736" font-size="14" fill="#B45309" letter-spacing="2.6" text-anchor="middle">2 · PYTHON</text>
+    <text x="710" y="762" font-size="18" fill="#5A6472" text-anchor="middle">pide y desconfía</text>
+  </g>
+  <g class="stagelbl">
+    <text class="mono" x="1290" y="736" font-size="14" fill="#1E7B4D" letter-spacing="2.6" text-anchor="middle">3 · LO QUE LLEGÓ</text>
+    <text x="1290" y="762" font-size="18" fill="#5A6472" text-anchor="middle">comprobado antes de guardar</text>
+  </g>
+</g>
+
+<!-- ═══ 4 · LAS DOS RAMAS ══════════════════════════════════════════════════ -->
+<g class="okc" filter="url(#cardShadow)">
+  <rect x="120" y="190" width="660" height="500" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="120" y="190" width="660" height="5" rx="2.5" fill="#1E7B4D"/>
+</g>
+<g>
+  <g class="okline" color="#1E7B4D">
+    <use href="#tick" x="152" y="226"/>
+    <text class="mono" x="186" y="242" font-size="14" fill="#1E7B4D" letter-spacing="2.2">EMPIEZA POR PK</text>
+  </g>
+  <text class="okline" x="152" y="300" font-size="30" font-weight="700" fill="#0F172A">Es un Excel de verdad</text>
+  <text class="okline" x="152" y="336" font-size="18" fill="#5A6472">el programa lo guarda y te dice dónde quedó</text>
+
+  <g class="okline">
+    <rect x="152" y="368" width="596" height="76" rx="10" fill="#F5F7F9" stroke="#E3E8EE"/>
+    <use href="#xlsxpg" x="180" y="382"/>
+    <text class="mono" x="240" y="402" font-size="18" fill="#0F172A">respuestas_formulario.xlsx</text>
+    <text class="mono" x="240" y="428" font-size="15" fill="#94A3B8">49.152 bytes · 23/09/2026 07:00</text>
+  </g>
+
+  <g class="okline">
+    <rect x="152" y="470" width="596" height="140" rx="10" fill="#0F172A"/>
+    <text class="mono" x="176" y="504" font-size="14" fill="#8FA0B2">$ python descargar_data_gmail.py</text>
+    <text class="mono" x="176" y="534" font-size="14" fill="#C3CBD5">[07:00:00] Iniciando descarga…</text>
+    <text class="mono" x="176" y="564" font-size="14" fill="#7FD1A4">[07:00:03] Archivo descargado</text>
+    <text class="mono" x="176" y="590" font-size="14" fill="#7FD1A4">correctamente (49.152 bytes)</text>
+  </g>
+
+  <text class="okline" x="152" y="652" font-size="17" fill="#5A6472">y mañana a las 07:00 vuelve a pasar, sin que nadie lo abra</text>
+</g>
+
+<g class="errc" filter="url(#cardShadow)">
+  <rect x="820" y="190" width="660" height="500" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="820" y="190" width="660" height="5" rx="2.5" fill="#B42318"/>
+</g>
+<g>
+  <g class="errline" color="#B42318">
+    <use href="#cross" x="852" y="236"/>
+    <text class="mono" x="886" y="242" font-size="14" fill="#B42318" letter-spacing="2.2">LLEGÓ content-type: text/html</text>
+  </g>
+  <text class="errline" x="852" y="300" font-size="30" font-weight="700" fill="#0F172A">No es el archivo</text>
+  <text class="errline" x="852" y="336" font-size="18" fill="#5A6472">Google devolvió la página de inicio de sesión</text>
+
+  <g class="errline">
+    <rect x="852" y="368" width="596" height="76" rx="10" fill="#FDECEA" stroke="#F3C9C4"/>
+    <text x="876" y="398" font-size="17" fill="#B42318">200 OK, pero por dentro viene una página web.</text>
+    <text x="876" y="424" font-size="17" fill="#B42318">Sin comprobarlo, el archivo se guarda igual.</text>
+  </g>
+
+  <g class="errline">
+    <rect x="852" y="470" width="596" height="140" rx="10" fill="#0F172A"/>
+    <text class="mono" x="876" y="504" font-size="14" fill="#FF9B90">ERROR: Google devolvió una página web</text>
+    <text class="mono" x="876" y="530" font-size="14" fill="#FF9B90">en lugar del archivo.</text>
+    <text class="mono" x="876" y="560" font-size="14" fill="#C3CBD5">Ábrela en Sheets → Compartir → Acceso</text>
+    <text class="mono" x="876" y="586" font-size="14" fill="#C3CBD5">general → «Cualquier persona con el enlace»</text>
+  </g>
+
+  <text class="errline" x="852" y="652" font-size="17" fill="#5A6472">el error dice qué hay que arreglar, no un número de código</text>
+</g>
+
+<text class="warnnote" x="800" y="742" font-size="24" font-weight="700" fill="#0F172A" text-anchor="middle">Nunca te quedas con un archivo que parece descargado y por dentro está vacío</text>
+
+<!-- ═══ 5 · EL HISTÓRICO ═══════════════════════════════════════════════════ -->
+<g class="hist" filter="url(#cardShadow)">
+  <rect x="420" y="220" width="760" height="460" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="420" y="220" width="760" height="5" rx="2.5" fill="#1E7B4D"/>
+</g>
+<g>
+  <text class="mono histline" x="452" y="262" font-size="13" fill="#1E7B4D" letter-spacing="2.6">Y SI QUIERES GUARDAR EL HISTÓRICO</text>
+  <g class="histline">
+    <rect x="452" y="284" width="380" height="34" rx="6" fill="#F5F7F9"/>
+    <text class="mono" x="466" y="306" font-size="16"><tspan fill="#0F172A">AGREGAR_FECHA_AL_NOMBRE = </tspan><tspan fill="#1E7B4D" font-weight="700">True</tspan></text>
+  </g>
+  <text class="histline" x="452" y="350" font-size="17" fill="#5A6472">en vez de reemplazar la anterior, cada descarga queda con su fecha y su hora</text>
+
+  <g class="histline">
+    <use href="#xlsxpg" x="466" y="386"/>
+    <text class="mono" x="528" y="406" font-size="17" fill="#0F172A">respuestas_formulario_20260921_0700.xlsx</text>
+    <text class="mono" x="1148" y="406" font-size="15" fill="#94A3B8" text-anchor="end">48.610 bytes</text>
+    <line x1="452" y1="440" x2="1148" y2="440" stroke="#EEF1F4"/>
+  </g>
+  <g class="histline">
+    <use href="#xlsxpg" x="466" y="456"/>
+    <text class="mono" x="528" y="476" font-size="17" fill="#0F172A">respuestas_formulario_20260922_0700.xlsx</text>
+    <text class="mono" x="1148" y="476" font-size="15" fill="#94A3B8" text-anchor="end">48.904 bytes</text>
+    <line x1="452" y1="510" x2="1148" y2="510" stroke="#EEF1F4"/>
+  </g>
+  <g class="histline">
+    <use href="#xlsxpg" x="466" y="526"/>
+    <text class="mono" x="528" y="546" font-size="17" fill="#0F172A">respuestas_formulario_20260923_0700.xlsx</text>
+    <text class="mono" x="1148" y="546" font-size="15" fill="#94A3B8" text-anchor="end">49.152 bytes</text>
+    <line x1="452" y1="580" x2="1148" y2="580" stroke="#EEF1F4"/>
+  </g>
+
+  <text class="mono histline" x="452" y="616" font-size="16" fill="#94A3B8">…y mañana el siguiente</text>
+  <text class="histline" x="452" y="652" font-size="16" fill="#94A3B8">el enlace, el formato y el nombre se cambian arriba del programa, en una zona marcada</text>
+</g>
+
+<!-- ═══ CIERRE ═════════════════════════════════════════════════════════════ -->
+<text class="otitle" x="800" y="706" font-size="76" font-weight="700" fill="#0F172A" text-anchor="middle" letter-spacing="-1.8">Los datos llegan solos</text>
+<text class="osub" x="800" y="760" font-size="30" fill="#5A6472" text-anchor="middle">sin claves, sin permisos, sin entrar a la página</text>
+<text class="mono brand" x="800" y="818" font-size="20" fill="#94A3B8" text-anchor="middle" letter-spacing="4">TRABAJO CIENTÍFICO</text>
+
+<g id="hud"></g>
+<text class="mono" id="hint" x="44" y="862" font-size="17" fill="#B7C0CA">clic o → para avanzar · I vuelve al inicio · H oculta esta guía</text>
+</svg>
+
+<a id="home" href="index.html">← Inicio</a>
+<button id="fsexit" type="button">✕ salir de pantalla completa</button>
+
+<script>
+(function(){
+"use strict";
+
+/* Cada paso declara qué entra y qué sale. El avance es por clic: no hay reloj
+   global, así que se puede ir hacia atrás y el estado se recompone solo.
+
+   El arco parte de la rutina manual (paso 0), pone precio a repetirla (1-2),
+   enseña los dos orígenes y la condición que los ata (3-4), revela el truco
+   —la URL se transforma— (5), y dedica el final a lo que de verdad enseña
+   este ejercicio: comprobar que lo que bajó ES el archivo (6-7). */
+var STEPS = [
+  { enter:['.ptitle','.ptrule','.rut','.rutline','.step'] },                      // 0 · la rutina
+  { enter:['.hookA','.hookAline'] },                                              // 1 · 4 minutos
+  { enter:['.hookB','.hookBline'] },                                              // 2 · 3 segundos
+  { enter:['.src','.srcline'],
+    exit:['.rut','.rutline','.step','.hookA','.hookAline','.hookB','.hookBline'] },// 3 · los orígenes
+  { enter:['.cond','.condline'] },                                                // 4 · la condición
+  { enter:['.urlc','.urlline'],
+    exit:['.src','.srcline','.cond','.condline'] },                               // 5 · la URL
+  { enter:['.xcard','.pyblock','.cl','.runui','.prog','.resp','.rline',
+           '.stagelbl','.flow'],
+    exit:['.urlc','.urlline'] },                                                  // 6 · el script
+  { enter:['.okc','.okline','.errc','.errline','.warnnote'],
+    exit:['.xcard','.pyblock','.cl','.runui','.resp','.rline','.stagelbl',
+          '.flow'] },                                                             // 7 · las dos ramas
+  { enter:['.hist','.histline'],
+    exit:['.okc','.okline','.errc','.errline','.warnnote'] },                     // 8 · el histórico
+  { enter:['.otitle'], exit:['.hist','.histline','.ptitle','.ptrule'] },          // 9 · el resultado
+  { enter:['.osub','.brand'] }                                                    // 10 · cierre
+];
+var RUN_AT = 6;   // paso que dispara la descarga
+
+/* ── Preparación ──────────────────────────────────────────────────────────── */
+var plan = new Map();   // elemento → {inAt, outAt}
+function mark(sel, i, key){
+  document.querySelectorAll(sel).forEach(function(el){
+    var rec = plan.get(el) || {};
+    if(rec[key] === undefined) rec[key] = i;
+    plan.set(el, rec);
+  });
+}
+STEPS.forEach(function(s, i){
+  (s.enter||[]).forEach(function(sel){ mark(sel, i, 'inAt'); });
+  (s.exit ||[]).forEach(function(sel){ mark(sel, i, 'outAt'); });
+});
+
+/* `desde` retrasa el escalonado completo. Se usa cuando lo que entra ocupa el
+   mismo sitio que lo que acaba de salir: si no, las dos tarjetas se cruzan a
+   media opacidad y por un momento no se lee ninguna. */
+function stagger(sel, step, desde){
+  var d0 = desde || 0;
+  document.querySelectorAll(sel).forEach(function(el, i){ el.dataset.delay = (d0 + i*step).toFixed(3); });
+}
+function fixedDelay(sel, d){
+  document.querySelectorAll(sel).forEach(function(el){ el.dataset.delay = d; });
+}
+stagger('.rutline',  .1);
+stagger('.step',     .085, .18);
+stagger('.hookAline',.12);
+stagger('.hookBline',.12);
+stagger('.src',      .14);
+stagger('.srcline',  .05, .22);
+stagger('.condline', .08, .15);
+stagger('.urlline',  .07, .2);
+stagger('.cl',       .075);
+stagger('.rline',    .07, .5);    // la respuesta llega cuando la barra ya corre
+stagger('.okline',   .09, .2);
+stagger('.errline',  .09, .35);
+stagger('.histline', .075, .2);
+stagger('.stagelbl', .1);
+fixedDelay('.ptrule',  .35);   // la línea se dibuja cuando el título ya entró
+fixedDelay('.cond',    .12);
+fixedDelay('.urlc',    .1);
+fixedDelay('.pyblock', .12);
+fixedDelay('.resp',    .45);
+fixedDelay('.warnnote',.8);    // el remate, después de las dos ramas
+fixedDelay('.hist',    .1);
+
+/* Puntos de progreso del HUD */
+var hud = document.getElementById('hud');
+var hint = document.getElementById('hint');
+var SVGNS = 'http://www.w3.org/2000/svg';
+var dots = STEPS.map(function(_, i){
+  var c = document.createElementNS(SVGNS,'circle');
+  c.setAttribute('cx', 1347 + i*13);
+  c.setAttribute('cy', 862);
+  c.setAttribute('r', 2.5);
+  c.setAttribute('class','dot');
+  hud.appendChild(c);
+  return c;
+});
+
+var hudOn = new URLSearchParams(location.search).get('hud') !== '0';
+function applyHud(){
+  hud.style.display = hudOn ? '' : 'none';
+  document.getElementById('home').style.display = hudOn ? '' : 'none';
+  updateHint();
+}
+applyHud();
+
+/* ── La descarga ──────────────────────────────────────────────────────────── */
+/* Separador de miles a la colombiana, escrito a mano: toLocaleString cambia de
+   comportamiento entre navegadores y aquí el formato tiene que ser exacto. */
+function miles(n){
+  var s = String(Math.round(n)), out = '', c = 0;
+  for(var i = s.length - 1; i >= 0; i--){
+    out = s.charAt(i) + out;
+    if(++c % 3 === 0 && i > 0) out = '.' + out;
+  }
+  return out;
+}
+var BYTES = 49152;
+var runlabel = document.getElementById('runlabel');
+var chkmark  = document.querySelector('.chkmark');
+var runRAF = null;
+
+function runDescarga(){
+  cancelAnimationFrame(runRAF);
+  var dur = 1900, t0 = performance.now();
+  chkmark.classList.remove('on');
+  runlabel.setAttribute('fill','#6B7480');
+  (function tick(now){
+    var p = Math.min(1, (now - t0) / dur);
+    var e = p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2;   // acompaña la barra
+    runlabel.textContent = 'descargando… ' + miles(e*BYTES) + ' bytes';
+    if(p < 1){ runRAF = requestAnimationFrame(tick); return; }
+    runlabel.textContent = '200 OK · ' + miles(BYTES) + ' bytes · empieza por PK';
+    runlabel.setAttribute('fill','#1E7B4D');
+    chkmark.classList.add('on');
+  })(t0);
+}
+function resetDescarga(){
+  cancelAnimationFrame(runRAF);
+  runlabel.textContent = 'solicitando el archivo…';
+  runlabel.setAttribute('fill','#6B7480');
+  chkmark.classList.remove('on');
+}
+
+/* ── Render ───────────────────────────────────────────────────────────────── */
+var beat = -1;
+var rut = document.querySelector('.rut');
+
+function render(){
+  plan.forEach(function(rec, el){
+    var state = 'pre';
+    if(rec.outAt !== undefined && beat >= rec.outAt) state = 'out';
+    else if(rec.inAt !== undefined && beat >= rec.inAt) state = 'in';
+    el.classList.toggle('in',  state === 'in');
+    el.classList.toggle('out', state === 'out');
+    // El escalonado solo cuenta al entrar; al retroceder todo se va a la vez.
+    el.style.transitionDelay = (state === 'in' && el.dataset.delay) ? el.dataset.delay+'s' : '0s';
+  });
+
+  rut.classList.toggle('dim', beat === 1 || beat === 2);
+
+  dots.forEach(function(d, i){
+    d.classList.toggle('on', i === beat);
+    d.classList.toggle('done', i < beat);
+  });
+
+  updateHint();
+}
+
+function goTo(n){
+  n = Math.max(0, Math.min(STEPS.length - 1, n));
+  if(n === beat) return;
+  var prev = beat;
+  beat = n;
+  if(beat >= RUN_AT && prev <  RUN_AT) runDescarga();
+  if(beat <  RUN_AT && prev >= RUN_AT) resetDescarga();
+  render();
+}
+
+var next = function(){ goTo(beat + 1); };
+var prev = function(){ goTo(beat - 1); };
+
+/* Fuerza al navegador a recalcular estilos ahora mismo. Sin esto, pasar de
+   'pre' a '.in' en el mismo frame no dispara ninguna transición. */
+function flush(){ void document.body.offsetHeight; }
+
+function reset(){
+  var root = document.documentElement;
+  root.classList.add('instant');
+  resetDescarga();
+  beat = -1;
+  render();
+  flush();
+  root.classList.remove('instant');
+  flush();
+}
+
+/* ── Pantalla completa ────────────────────────────────────────────────────── */
+function fsElement(){
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+function exitFs(){
+  var fn = document.exitFullscreen || document.webkitExitFullscreen;
+  if(!fn) return;
+  try { var p = fn.call(document); if(p && p.catch) p.catch(function(){}); } catch(err){}
+}
+function enterFs(){
+  var el = document.documentElement;
+  var fn = el.requestFullscreen || el.webkitRequestFullscreen;
+  if(!fn) return;
+  try {
+    var p = fn.call(el);
+    if(p && p.catch) p.catch(function(){});
+  } catch(err){}
+}
+function toggleFs(){ if(fsElement()) exitFs(); else enterFs(); }
+
+var fsBtn = document.getElementById('fsexit');
+fsBtn.addEventListener('click', function(e){
+  e.stopPropagation();   // sale de pantalla completa; no avanza la animación
+  exitFs();
+});
+
+var uiTO = null;
+function showFsUi(){
+  if(!fsElement()) return;
+  document.documentElement.classList.add('fsui');
+  clearTimeout(uiTO);
+  uiTO = setTimeout(function(){ document.documentElement.classList.remove('fsui'); }, 2600);
+}
+window.addEventListener('mousemove', showFsUi);
+
+document.addEventListener('fullscreenchange', updateHint);
+document.addEventListener('webkitfullscreenchange', updateHint);
+
+function updateHint(){
+  var fs = !!fsElement();
+  document.documentElement.classList.toggle('isfs', fs);
+  if(fs) showFsUi();
+
+  hint.style.display = hudOn ? '' : 'none';
+  if(fs){
+    hint.textContent = 'F, Esc o el botón para salir de pantalla completa';
+    hint.classList.add('show');
+    return;
+  }
+
+  if(beat <= 0)                      { hint.textContent = 'clic o → para avanzar · I vuelve al inicio · H oculta esta guía'; hint.classList.add('show'); }
+  else if(beat === STEPS.length - 1) { hint.textContent = 'R para reiniciar'; hint.classList.add('show'); }
+  else                               { hint.classList.remove('show'); }
+}
+
+/* ── Controles ────────────────────────────────────────────────────────────── */
+document.getElementById('home').addEventListener('click', function(e){
+  e.stopPropagation();   // vuelve al índice; no avanza la animación
+});
+window.addEventListener('click', next);
+window.addEventListener('contextmenu', function(e){ e.preventDefault(); prev(); });
+
+window.addEventListener('keydown', function(e){
+  var k = e.key;
+  if(k === ' ' || k === 'Enter' || k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown'){
+    e.preventDefault(); next();
+  } else if(k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp' || k === 'Backspace'){
+    e.preventDefault(); prev();
+  } else if(k === 'Home' || k === 'r' || k === 'R'){
+    e.preventDefault(); reset();
+  } else if(k === 'h' || k === 'H'){
+    e.preventDefault(); hudOn = !hudOn; applyHud();
+  } else if(k === 'Escape'){
+    exitFs();
+  } else if((k === 'i' || k === 'I') && !e.ctrlKey && !e.metaKey && !e.altKey){
+    e.preventDefault(); location.href = 'index.html';
+  } else if(k === 'f' || k === 'F'){
+    e.preventDefault(); toggleFs();
+  }
+}, true);   // fase de captura: nuestro manejador es el primero de la cadena
+
+/* Arranca en el lienzo vacío (beat -1): el primer clic trae la primera tarjeta. */
+render();
+flush();
+})();
+</script>
+</body>
+</html>

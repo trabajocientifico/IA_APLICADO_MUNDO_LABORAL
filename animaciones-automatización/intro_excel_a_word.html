@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intro · De un Excel a 127 informes en Word</title>
+<style>
+:root{
+  --t-fast:260ms; --t-mid:520ms; --t-slow:900ms; --t-zoom:1150ms;
+  --in:cubic-bezier(.22,.61,.36,1);
+  --out:cubic-bezier(.55,.06,.68,.19);
+  --pop:cubic-bezier(.3,1.35,.5,1);
+}
+html,body{margin:0;height:100%;background:#F2F4F7;overflow:hidden;cursor:pointer;
+  -webkit-user-select:none;user-select:none}
+svg{display:block;width:100vw;height:100vh}
+text{font-family:"Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif}
+.mono{font-family:"Consolas","SF Mono",Menlo,monospace}
+.serif{font-family:Georgia,"Cambria","Times New Roman",serif}
+
+/* Los grupos grandes se promueven a su propia capa: la grabación de pantalla
+   necesita 60 fps estables con 48 documentos animándose a la vez. */
+.sheet,.pyblock,.docsgrid,.herodoc,.xcard,.rowchip{will-change:transform,opacity}
+
+/* ── Motor de estados: pre (sin clase) → .in → .out ───────────────────────── */
+
+.sheet{opacity:0;transform:translateY(26px) scale(.985);transform-origin:620px 450px;
+  transition:opacity var(--t-mid) ease, transform var(--t-slow) var(--in)}
+.sheet.in{opacity:1;transform:none}
+.sheet.out{opacity:0;transform:translate(-370px,5px) scale(.31);
+  transition:opacity var(--t-slow) var(--out), transform var(--t-slow) var(--out)}
+.sheet.dim:not(.out){opacity:.4}
+
+.row{opacity:0;transform:translateX(-34px);
+  transition:opacity var(--t-fast) ease, transform 420ms var(--in)}
+.row.in{opacity:1;transform:none}
+.row.mute{opacity:.2}
+
+.sfoot,.rowhl{opacity:0;transition:opacity var(--t-mid) ease}
+.sfoot.in,.rowhl.in{opacity:1}
+
+.hook,.hookline,.hook2{opacity:0;transform:translateY(16px);
+  transition:opacity var(--t-mid) ease, transform var(--t-mid) var(--in)}
+.hook.in,.hookline.in,.hook2.in{opacity:1;transform:none}
+.hook.out,.hookline.out,.hook2.out{opacity:0;transform:translateY(-12px);
+  transition-duration:var(--t-fast)}
+.strike{transform:none;stroke-dasharray:100;stroke-dashoffset:100;
+  transition:stroke-dashoffset var(--t-mid) var(--in), opacity var(--t-fast) ease}
+.strike.in{stroke-dashoffset:0}
+
+.xcard,.rowchip,.herodoc,.pyblock{opacity:0;transform:translateY(16px);
+  transition:opacity var(--t-mid) ease, transform var(--t-mid) var(--in)}
+.xcard.in,.rowchip.in,.herodoc.in,.pyblock.in{opacity:1;transform:none}
+.xcard.out,.rowchip.out,.pyblock.out{opacity:0;transform:translateY(-12px);
+  transition-duration:var(--t-fast)}
+/* El informe hero no se desvanece en el vacío: se encoge hacia la rejilla,
+   que es literalmente lo que va a pasar 127 veces. */
+.herodoc{transform-origin:1235px 465px}
+.herodoc.out{opacity:0;transform:translate(86px,-19px) scale(.3);
+  transition:opacity var(--t-slow) var(--out), transform var(--t-slow) var(--out)}
+
+.conn{stroke-dasharray:100;stroke-dashoffset:100;
+  transition:stroke-dashoffset var(--t-mid) var(--in), opacity var(--t-fast) ease}
+.conn.in{stroke-dashoffset:0}
+.conn.out{opacity:0}
+.cdot{opacity:0;transition:opacity var(--t-fast) ease}
+.cdot.in{opacity:1}
+.cdot.out{opacity:0}
+
+.ph{opacity:1;transition:opacity var(--t-fast) ease}
+.ph.out{opacity:0}
+.val,.docextra{opacity:0;transition:opacity var(--t-mid) ease}
+.val.in,.docextra.in{opacity:1}
+.flashrect{opacity:0}
+.flash .flashrect{animation:flashOut 900ms ease both}
+@keyframes flashOut{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
+
+.cl,.stagelbl{opacity:0;transform:translateX(-16px);
+  transition:opacity var(--t-fast) ease, transform 300ms var(--in)}
+.cl.in,.stagelbl.in{opacity:1;transform:none}
+.stagelbl{transform:translateY(12px)}
+
+/* Cabecera: entra bajando desde arriba y se retira en el cierre para no
+   competir con el titular grande. El subrayado se dibuja con la misma técnica
+   que .conn y .strike: pathLength 100 + stroke-dashoffset de 100 a 0. */
+.ptitle{opacity:0;transform:translateY(-12px);
+  transition:opacity var(--t-slow) ease, transform var(--t-slow) var(--in)}
+.ptitle.in{opacity:1;transform:none}
+.ptitle.out{opacity:0;transform:translateY(-12px);transition-duration:var(--t-mid)}
+.ptrule{stroke-dasharray:100;stroke-dashoffset:100;
+  transition:stroke-dashoffset var(--t-slow) var(--in), opacity var(--t-mid) ease}
+.ptrule.in{stroke-dashoffset:0}
+
+/* Logos que no viven dentro de una tarjeta y necesitan su propia entrada */
+.logo{opacity:0;transform:translateY(10px);
+  transition:opacity var(--t-mid) ease, transform var(--t-mid) var(--in)}
+.logo.in{opacity:1;transform:none}
+.logo.out{opacity:0;transform:translateY(-10px);transition-duration:var(--t-fast)}
+
+.runui,.counter{opacity:0;transition:opacity var(--t-fast) ease}
+.runui.in,.counter.in{opacity:1}
+.counter.out{opacity:0}
+/* scaleX en vez de animar `width`: no depende de propiedades de geometría CSS
+   y se compone en GPU. */
+.prog{transform:scaleX(0);transform-origin:502px 583px;
+  transition:transform 2400ms cubic-bezier(.35,.05,.25,1)}
+.prog.in{transform:scaleX(1)}
+#counter{transform-origin:1321px 634px;transition:transform 340ms var(--pop)}
+#counter.pop{transform:scale(1.1)}
+.chk{opacity:0;transition:opacity var(--t-fast) ease}
+.chk.on{opacity:1}
+
+.flow{opacity:0;transition:opacity var(--t-fast) ease}
+.flow.in{opacity:1}
+.flow.out{opacity:0}
+.pa{animation:laneA 1.5s linear infinite}
+@keyframes laneA{0%{transform:translateX(0);opacity:0}18%{opacity:1}82%{opacity:1}100%{transform:translateX(52px);opacity:0}}
+.pb{animation:laneB 1.6s linear infinite}
+@keyframes laneB{0%{transform:translateX(0);opacity:0}18%{opacity:1}82%{opacity:1}100%{transform:translateX(94px);opacity:0}}
+
+.docsgrid{opacity:0;transform-origin:1321px 446px;
+  transition:opacity var(--t-fast) ease, transform var(--t-zoom) var(--in)}
+.docsgrid.in{opacity:1}
+.docsgrid.zoom{transform:translate(-521px,-96px) scale(1.42)}
+
+.doc{opacity:0;transform:scale(.3);
+  transition:opacity 240ms ease, transform 320ms var(--pop)}
+.doc.in{opacity:1;transform:none}
+
+.otitle,.osub,.brand{opacity:0;transform:translateY(22px);
+  transition:opacity var(--t-slow) ease, transform var(--t-slow) var(--in)}
+.otitle.in,.osub.in,.brand.in{opacity:1;transform:none}
+
+/* ── HUD: se puede ocultar con H o ?hud=0 para que no quede en la grabación ─ */
+.dot{fill:#7C8AA0;opacity:.16;transition:opacity var(--t-fast) ease, fill var(--t-fast) ease}
+.dot.done{opacity:.30}
+.dot.on{fill:#2B6CB0;opacity:.60}
+#hint{opacity:0;transition:opacity var(--t-mid) ease}
+#hint.show{opacity:1}
+
+/* Botón de salida de pantalla completa. Aparece al mover el ratón y se apaga
+   solo a los 2,6 s: no estorba en una grabación, pero siempre queda una forma
+   de volver que no depende de que el teclado llegue a la página. */
+#fsexit{position:fixed;top:18px;right:18px;z-index:10;opacity:0;pointer-events:none;
+  transition:opacity .3s ease;
+  font:600 14px/1 "Segoe UI",system-ui,-apple-system,sans-serif;color:#fff;
+  background:rgba(15,23,42,.78);border:1px solid rgba(255,255,255,.28);
+  border-radius:999px;padding:11px 18px;cursor:pointer}
+#fsexit:hover{background:rgba(15,23,42,.95)}
+.isfs.fsui #fsexit{opacity:1;pointer-events:auto}
+
+/* Vuelta al índice de ejercicios. Se va con el HUD (H o ?hud=0) y en pantalla
+   completa, para que tampoco quede en la grabación. */
+#home{position:fixed;top:18px;left:18px;z-index:10;opacity:.6;
+  transition:opacity .3s ease, background .3s ease;
+  font:600 14px/1 "Segoe UI",system-ui,-apple-system,sans-serif;color:#334155;
+  background:rgba(255,255,255,.72);border:1px solid rgba(15,23,42,.14);
+  border-radius:999px;padding:11px 18px;cursor:pointer;text-decoration:none}
+#home:hover,#home:focus-visible{opacity:1;background:#fff}
+.isfs #home{display:none}
+
+/* Salto instantáneo al reiniciar */
+.instant *{transition-duration:0s !important;transition-delay:0s !important}
+</style>
+</head>
+<body>
+<svg id="stage" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Una base de datos de nómina en Excel procesada por un script de Python que genera 127 informes en Word con formato profesional">
+<defs>
+  <radialGradient id="canvas" cx="50%" cy="42%" r="80%">
+    <stop offset="0" stop-color="#FBFCFD"/>
+    <stop offset="1" stop-color="#E9EDF3"/>
+  </radialGradient>
+
+  <!-- Subrayado de la cabecera. userSpaceOnUse es obligatorio: una línea
+       horizontal tiene caja delimitadora de altura cero y un degradado en
+       objectBoundingBox (el valor por defecto) degeneraría y no pintaría. -->
+  <linearGradient id="ruleGrad" gradientUnits="userSpaceOnUse" x1="690" y1="0" x2="910" y2="0">
+    <stop offset="0"  stop-color="#1D6F42"/>
+    <stop offset=".5" stop-color="#B45309"/>
+    <stop offset="1"  stop-color="#2B579A"/>
+  </linearGradient>
+  <filter id="cardShadow" x="-25%" y="-25%" width="150%" height="150%">
+    <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#0F1B2A" flood-opacity="0.10"/>
+  </filter>
+  <filter id="softShadow" x="-25%" y="-25%" width="150%" height="150%">
+    <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#0F1B2A" flood-opacity="0.09"/>
+  </filter>
+
+  <!-- Marcas de las tres herramientas, 48×48, para colocar sobre cada elemento.
+       Python va sin baldosa: su marca de dos colores se reconoce sola y así
+       queda claro que la etapa del medio no es una app de Office. -->
+  <g id="icoExcel">
+    <rect width="48" height="48" rx="10" fill="#1D6F42"/>
+    <text x="24" y="35" font-size="27" font-weight="700" fill="#fff" text-anchor="middle">X</text>
+  </g>
+  <g id="icoWord">
+    <rect width="48" height="48" rx="10" fill="#2B579A"/>
+    <text x="24" y="35" font-size="26" font-weight="700" fill="#fff" text-anchor="middle">W</text>
+  </g>
+  <g id="icoPython">
+    <g fill="#3776AB">
+      <rect x="4" y="3" width="40" height="17" rx="6"/>
+      <rect x="4" y="3" width="20" height="25" rx="6"/>
+    </g>
+    <g fill="#FFD343">
+      <rect x="4" y="28" width="40" height="17" rx="6"/>
+      <rect x="24" y="20" width="20" height="25" rx="6"/>
+    </g>
+    <circle cx="11.5" cy="11" r="2.7" fill="#fff"/>
+    <circle cx="36.5" cy="37" r="2.7" fill="#fff"/>
+  </g>
+
+  <!-- Documento en miniatura: barra de encabezado, título, cuerpo, tabla y pie.
+       A 34x42 px eso ya se lee como "informe formateado", no como hoja en blanco. -->
+  <g id="pg">
+    <rect width="34" height="42" rx="2.5" fill="#fff" stroke="#D8E0E8" stroke-width="1"/>
+    <rect width="34" height="3.4" fill="#1F55A5"/>
+    <rect x="6" y="8.5" width="20" height="2.8" fill="#0F172A" opacity=".55"/>
+    <rect x="6" y="15" width="22" height="1.6" fill="#DFE5EB"/>
+    <rect x="6" y="18.6" width="16" height="1.6" fill="#DFE5EB"/>
+    <rect x="6" y="24.5" width="22" height="3" fill="#DDE6F1"/>
+    <rect x="6" y="29.5" width="22" height="1.5" fill="#E4E9EE"/>
+    <rect x="6" y="33" width="22" height="1.5" fill="#E4E9EE"/>
+    <rect x="6" y="37.6" width="11" height="1.4" fill="#EAEEF2"/>
+  </g>
+</defs>
+
+<rect width="1600" height="900" fill="url(#canvas)"/>
+
+<!-- ═══ TÍTULO DEL PROYECTO (cabecera fija) ════════════════════════════════ -->
+<g class="ptitle">
+  <text x="800" y="86" font-size="38" font-weight="700" text-anchor="middle" letter-spacing="-.8"><tspan fill="#0F172A">De </tspan><tspan fill="#1D6F42">Excel</tspan><tspan fill="#0F172A"> a </tspan><tspan fill="#2B579A">Word</tspan><tspan fill="#0F172A"> con </tspan><tspan fill="#B45309">Python</tspan></text>
+  <path class="ptrule" d="M690 106 H910" pathLength="100" stroke="url(#ruleGrad)" stroke-width="4" stroke-linecap="round" fill="none"/>
+</g>
+
+<!-- ═══ 1 · LA BASE DE DATOS ═══════════════════════════════════════════════ -->
+<use class="logo logoXlSheet" href="#icoExcel" x="596" y="132"/>
+
+<g class="sheet" filter="url(#cardShadow)">
+  <rect x="200" y="200" width="840" height="500" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="200" y="200" width="840" height="56" rx="14" fill="#FAFBFC"/>
+  <rect x="200" y="242" width="840" height="14" fill="#FAFBFC"/>
+  <line x1="200" y1="256" x2="1040" y2="256" stroke="#E3E8EE" stroke-width="1.5"/>
+  <circle cx="232" cy="228" r="6" fill="#DDE3EA"/><circle cx="254" cy="228" r="6" fill="#DDE3EA"/><circle cx="276" cy="228" r="6" fill="#DDE3EA"/>
+  <text class="mono" x="304" y="236" font-size="23" fill="#5A6472">nomina_2026.xlsx</text>
+  <rect x="900" y="212" width="108" height="32" rx="5" fill="#E7F3EC"/>
+  <text class="mono" x="954" y="234" font-size="19" fill="#1E7B4D" text-anchor="middle">empleados</text>
+
+  <rect x="200" y="256" width="840" height="48" fill="#F5F7F9"/>
+  <text x="232" y="287" font-size="20" fill="#6B7480">Empleado</text>
+  <text x="620" y="287" font-size="20" fill="#6B7480">Cargo</text>
+  <text x="1008" y="287" font-size="20" fill="#6B7480" text-anchor="end">Salario</text>
+  <line x1="200" y1="304" x2="1040" y2="304" stroke="#E3E8EE" stroke-width="1"/>
+
+  <g class="rowhl">
+    <rect x="200" y="306" width="840" height="50" fill="#E7F3EC"/>
+    <rect x="200" y="306" width="4" height="50" fill="#1E7B4D"/>
+  </g>
+
+  <g class="row"><line x1="200" y1="356" x2="1040" y2="356" stroke="#EEF1F4"/><text x="232" y="338" font-size="25" fill="#0F172A">Laura Beltrán Ríos</text><text x="620" y="338" font-size="25" fill="#5A6472">Analista de calidad</text><text class="mono" x="1008" y="338" font-size="23" fill="#0F172A" text-anchor="end">4.850.000</text></g>
+  <g class="row"><line x1="200" y1="408" x2="1040" y2="408" stroke="#EEF1F4"/><text x="232" y="390" font-size="25" fill="#0F172A">Andrés Mahecha</text><text x="620" y="390" font-size="25" fill="#5A6472">Coordinador logístico</text><text class="mono" x="1008" y="390" font-size="23" fill="#0F172A" text-anchor="end">6.200.000</text></g>
+  <g class="row"><line x1="200" y1="460" x2="1040" y2="460" stroke="#EEF1F4"/><text x="232" y="442" font-size="25" fill="#0F172A">Diana Rojas Neira</text><text x="620" y="442" font-size="25" fill="#5A6472">Auxiliar contable</text><text class="mono" x="1008" y="442" font-size="23" fill="#0F172A" text-anchor="end">2.980.000</text></g>
+  <g class="row"><line x1="200" y1="512" x2="1040" y2="512" stroke="#EEF1F4"/><text x="232" y="494" font-size="25" fill="#0F172A">Jhon Fredy Ospina</text><text x="620" y="494" font-size="25" fill="#5A6472">Operario de planta</text><text class="mono" x="1008" y="494" font-size="23" fill="#0F172A" text-anchor="end">1.740.000</text></g>
+  <g class="row"><line x1="200" y1="564" x2="1040" y2="564" stroke="#EEF1F4"/><text x="232" y="546" font-size="25" fill="#0F172A">María José Pardo</text><text x="620" y="546" font-size="25" fill="#5A6472">Jefe de talento humano</text><text class="mono" x="1008" y="546" font-size="23" fill="#0F172A" text-anchor="end">8.100.000</text></g>
+  <g class="row"><line x1="200" y1="616" x2="1040" y2="616" stroke="#EEF1F4"/><text x="232" y="598" font-size="25" fill="#0F172A">Camilo Restrepo</text><text x="620" y="598" font-size="25" fill="#5A6472">Ingeniero de procesos</text><text class="mono" x="1008" y="598" font-size="23" fill="#0F172A" text-anchor="end">5.600.000</text></g>
+  <g class="row"><line x1="200" y1="668" x2="1040" y2="668" stroke="#EEF1F4"/><text x="232" y="650" font-size="25" fill="#0F172A">Yuliana Castro</text><text x="620" y="650" font-size="25" fill="#5A6472">Analista de nómina</text><text class="mono" x="1008" y="650" font-size="23" fill="#0F172A" text-anchor="end">3.420.000</text></g>
+
+  <g class="sfoot">
+    <text class="mono" x="232" y="686" font-size="20" fill="#1E7B4D">127 registros</text>
+    <text class="mono" x="1008" y="686" font-size="20" fill="#94A3B8" text-anchor="end">7 columnas</text>
+  </g>
+</g>
+
+<!-- ═══ EL COSTO DE HACERLO A MANO ═════════════════════════════════════════ -->
+<g class="hook" filter="url(#cardShadow)">
+  <rect x="1110" y="280" width="370" height="360" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="1110" y="280" width="370" height="5" rx="2.5" fill="#B42318"/>
+</g>
+<g>
+  <text class="mono hookline" x="1140" y="322" font-size="13" fill="#B42318" letter-spacing="2.6">A MANO</text>
+  <text class="hookline" x="1140" y="372" font-size="24" fill="#0F172A">8 min por informe</text>
+  <text class="hookline" x="1140" y="410" font-size="24" fill="#5A6472">× 127 registros</text>
+  <line class="hookline" x1="1140" y1="438" x2="1450" y2="438" stroke="#E3E8EE"/>
+  <text class="hookline" x="1140" y="496" font-size="42" font-weight="700" fill="#B42318">≈ 17 horas</text>
+  <path class="hook2 strike" d="M1132 481 L1368 481" pathLength="100" stroke="#B42318" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <text class="mono hook2" x="1140" y="556" font-size="13" fill="#1E7B4D" letter-spacing="2.6">CON EL SCRIPT</text>
+  <text class="hook2" x="1140" y="610" font-size="42" font-weight="700" fill="#1E7B4D">12 segundos</text>
+</g>
+
+<!-- ═══ 1 · EL ARCHIVO (tarjeta) ═══════════════════════════════════════════ -->
+<g class="xcard" filter="url(#cardShadow)">
+  <use href="#icoExcel" x="226" y="226"/>
+  <rect x="120" y="290" width="260" height="330" rx="12" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="120" y="290" width="260" height="6" rx="3" fill="#1E7B4D"/>
+  <g fill="#EDF1F4">
+    <rect x="152" y="332" width="60" height="20" rx="3" fill="#E7F3EC"/><rect x="220" y="332" width="60" height="20" rx="3" fill="#E7F3EC"/><rect x="288" y="332" width="60" height="20" rx="3" fill="#E7F3EC"/>
+    <rect x="152" y="362" width="60" height="20" rx="3"/><rect x="220" y="362" width="60" height="20" rx="3" fill="#DCE3EA"/><rect x="288" y="362" width="60" height="20" rx="3"/>
+    <rect x="152" y="392" width="60" height="20" rx="3" fill="#DCE3EA"/><rect x="220" y="392" width="60" height="20" rx="3"/><rect x="288" y="392" width="60" height="20" rx="3"/>
+    <rect x="152" y="422" width="60" height="20" rx="3"/><rect x="220" y="422" width="60" height="20" rx="3"/><rect x="288" y="422" width="60" height="20" rx="3" fill="#DCE3EA"/>
+    <rect x="152" y="452" width="60" height="20" rx="3" fill="#DCE3EA"/><rect x="220" y="452" width="60" height="20" rx="3"/><rect x="288" y="452" width="60" height="20" rx="3"/>
+    <rect x="152" y="482" width="60" height="20" rx="3"/><rect x="220" y="482" width="60" height="20" rx="3" fill="#DCE3EA"/><rect x="288" y="482" width="60" height="20" rx="3"/>
+  </g>
+  <line x1="150" y1="530" x2="350" y2="530" stroke="#EEF1F4"/>
+  <text class="mono" x="250" y="562" font-size="21" fill="#0F172A" text-anchor="middle">nomina_2026.xlsx</text>
+  <text class="mono" x="250" y="592" font-size="18" fill="#94A3B8" text-anchor="middle">127 filas</text>
+</g>
+
+<!-- ═══ 2 · UNA FILA ═══════════════════════════════════════════════════════ -->
+<g class="rowchip" filter="url(#cardShadow)">
+  <rect x="430" y="290" width="420" height="230" rx="12" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="430" y="290" width="420" height="5" rx="2.5" fill="#1E7B4D"/>
+  <text class="mono" x="454" y="324" font-size="13" fill="#1E7B4D" letter-spacing="2.4">FILA 1 DE 127</text>
+  <line x1="454" y1="340" x2="826" y2="340" stroke="#EEF1F4"/>
+  <text x="454" y="366" font-size="13" fill="#A6B0BC" letter-spacing="1.2">Empleado</text>
+  <text x="454" y="390" font-size="20" fill="#0F172A">Laura Beltrán Ríos</text>
+  <text x="454" y="422" font-size="13" fill="#A6B0BC" letter-spacing="1.2">Cargo</text>
+  <text x="454" y="446" font-size="20" fill="#0F172A">Analista de calidad</text>
+  <text x="454" y="478" font-size="13" fill="#A6B0BC" letter-spacing="1.2">Salario</text>
+  <text class="mono" x="454" y="502" font-size="20" fill="#0F172A">4.850.000</text>
+</g>
+
+<!-- ═══ COLUMNA → CAMPO ════════════════════════════════════════════════════ -->
+<g fill="none" stroke="#8FA0B2" stroke-width="2">
+  <path class="conn" d="M850 384 C906 384, 940 344, 992 344" pathLength="100"/>
+  <path class="conn" d="M850 440 C906 440, 940 398, 992 398" pathLength="100"/>
+  <path class="conn" d="M850 496 C906 496, 940 452, 992 452" pathLength="100"/>
+</g>
+<g class="cdots">
+  <circle class="cdot" cx="850" cy="384" r="3.5" fill="#1E7B4D"/><circle class="cdot" cx="850" cy="440" r="3.5" fill="#1E7B4D"/><circle class="cdot" cx="850" cy="496" r="3.5" fill="#1E7B4D"/>
+  <circle class="cdot" cx="992" cy="344" r="3.5" fill="#1F55A5"/><circle class="cdot" cx="992" cy="398" r="3.5" fill="#1F55A5"/><circle class="cdot" cx="992" cy="452" r="3.5" fill="#1F55A5"/>
+</g>
+
+<!-- ═══ 3 · EL INFORME ═════════════════════════════════════════════════════ -->
+<g class="herodoc" filter="url(#cardShadow)">
+  <use href="#icoWord" x="1211" y="78"/>
+  <rect x="1000" y="140" width="470" height="650" rx="4" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="1000" y="140" width="470" height="7" fill="#1F55A5"/>
+
+  <rect x="1036" y="172" width="16" height="16" rx="3" fill="#1F55A5"/>
+  <text class="mono" x="1062" y="185" font-size="11.5" fill="#5A6472" letter-spacing="2.6">TRABAJO CIENTÍFICO</text>
+  <text class="mono" x="1434" y="185" font-size="11.5" fill="#A6B0BC" text-anchor="end">2026-08</text>
+  <line x1="1036" y1="206" x2="1434" y2="206" stroke="#E3E8EE"/>
+
+  <text x="1036" y="248" font-size="24" font-weight="700" fill="#0F172A">Informe individual de nómina</text>
+  <text class="serif" x="1036" y="274" font-size="14" fill="#6B7480">Periodo: enero – diciembre 2026</text>
+
+  <text x="1036" y="322" font-size="11" fill="#A6B0BC" letter-spacing="1.4">EMPLEADO</text>
+  <rect class="flashrect" x="1032" y="328" width="250" height="32" rx="5" fill="#D7EFE0"/>
+  <g class="ph"><rect x="1036" y="330" width="210" height="28" rx="5" fill="#FBEFF6"/><text class="mono" x="1046" y="350" font-size="16" fill="#B0407A">{{empleado}}</text></g>
+  <text class="serif val" x="1036" y="351" font-size="19" font-weight="700" fill="#0F172A">Laura Beltrán Ríos</text>
+
+  <text x="1036" y="376" font-size="11" fill="#A6B0BC" letter-spacing="1.4">CARGO</text>
+  <rect class="flashrect" x="1032" y="382" width="250" height="32" rx="5" fill="#D7EFE0" style="animation-delay:.12s"/>
+  <g class="ph"><rect x="1036" y="384" width="190" height="28" rx="5" fill="#FBEFF6"/><text class="mono" x="1046" y="404" font-size="16" fill="#B0407A">{{cargo}}</text></g>
+  <text class="serif val" x="1036" y="405" font-size="19" fill="#0F172A">Analista de calidad</text>
+
+  <text x="1036" y="430" font-size="11" fill="#A6B0BC" letter-spacing="1.4">SALARIO MENSUAL</text>
+  <rect class="flashrect" x="1032" y="436" width="250" height="32" rx="5" fill="#D7EFE0" style="animation-delay:.24s"/>
+  <g class="ph"><rect x="1036" y="438" width="180" height="28" rx="5" fill="#FBEFF6"/><text class="mono" x="1046" y="458" font-size="16" fill="#B0407A">{{salario}}</text></g>
+  <text class="mono val" x="1036" y="459" font-size="19" fill="#0F172A">$ 4.850.000</text>
+
+  <line x1="1036" y1="492" x2="1434" y2="492" stroke="#E3E8EE"/>
+
+  <g class="docextra">
+    <rect x="1036" y="502" width="398" height="30" fill="#EEF2F7"/>
+    <text x="1048" y="522" font-size="12.5" font-weight="700" fill="#5A6472" letter-spacing="1">CONCEPTO</text>
+    <text x="1422" y="522" font-size="12.5" font-weight="700" fill="#5A6472" letter-spacing="1" text-anchor="end">VALOR</text>
+  </g>
+  <g class="docextra">
+    <text class="serif" x="1048" y="552" font-size="15" fill="#0F172A">Salario base</text>
+    <text class="mono" x="1422" y="552" font-size="15" fill="#0F172A" text-anchor="end">4.850.000</text>
+    <line x1="1036" y1="562" x2="1434" y2="562" stroke="#E9EDF1"/>
+  </g>
+  <g class="docextra">
+    <text class="serif" x="1048" y="582" font-size="15" fill="#0F172A">Auxilio de transporte</text>
+    <text class="mono" x="1422" y="582" font-size="15" fill="#0F172A" text-anchor="end">200.000</text>
+    <line x1="1036" y1="592" x2="1434" y2="592" stroke="#E9EDF1"/>
+  </g>
+  <g class="docextra">
+    <text class="serif" x="1048" y="612" font-size="15" fill="#0F172A">Deducciones</text>
+    <text class="mono" x="1422" y="612" font-size="15" fill="#B42318" text-anchor="end">−388.000</text>
+    <line x1="1036" y1="622" x2="1434" y2="622" stroke="#E9EDF1"/>
+  </g>
+  <g class="docextra">
+    <rect x="1036" y="622" width="398" height="30" fill="#F6F8FA"/>
+    <text class="serif" x="1048" y="642" font-size="15" font-weight="700" fill="#0F172A">Total devengado</text>
+    <text class="mono" x="1422" y="642" font-size="15" font-weight="700" fill="#1E7B4D" text-anchor="end">4.662.000</text>
+    <line x1="1036" y1="652" x2="1434" y2="652" stroke="#D8E0E8"/>
+  </g>
+  <g class="docextra">
+    <text class="serif" x="1036" y="688" font-size="12.5" fill="#7A8494">Este documento se genera automáticamente a partir del registro</text>
+    <text class="serif" x="1036" y="708" font-size="12.5" fill="#7A8494">correspondiente en la base de datos de nómina, sin intervención</text>
+    <text class="serif" x="1036" y="728" font-size="12.5" fill="#7A8494">manual en la redacción ni en el formato.</text>
+  </g>
+  <g class="docextra">
+    <line x1="1036" y1="752" x2="1434" y2="752" stroke="#E3E8EE"/>
+    <text class="mono" x="1036" y="772" font-size="11" fill="#A6B0BC">Generado automáticamente · 30/08/2026</text>
+    <text class="mono" x="1434" y="772" font-size="11" fill="#A6B0BC" text-anchor="end">Página 1 de 1</text>
+  </g>
+</g>
+
+<!-- ═══ 2 · EL SCRIPT ══════════════════════════════════════════════════════ -->
+<g class="pyblock" filter="url(#cardShadow)">
+  <use href="#icoPython" x="726" y="186"/>
+  <rect x="470" y="250" width="560" height="410" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="470" y="250" width="560" height="48" rx="14" fill="#FAFBFC"/>
+  <rect x="470" y="288" width="560" height="10" fill="#FAFBFC"/>
+  <line x1="470" y1="298" x2="1030" y2="298" stroke="#E3E8EE"/>
+  <circle cx="498" cy="274" r="5" fill="#DDE3EA"/><circle cx="516" cy="274" r="5" fill="#DDE3EA"/><circle cx="534" cy="274" r="5" fill="#DDE3EA"/>
+  <text class="mono" x="558" y="281" font-size="20" fill="#5A6472">generar_informes.py</text>
+
+  <text class="mono cl" x="502" y="344" font-size="16"><tspan fill="#B0407A">import </tspan><tspan fill="#0F172A">pandas </tspan><tspan fill="#B0407A">as </tspan><tspan fill="#0F172A">pd</tspan></text>
+  <text class="mono cl" x="502" y="372" font-size="16"><tspan fill="#B0407A">from </tspan><tspan fill="#0F172A">docx </tspan><tspan fill="#B0407A">import </tspan><tspan fill="#2B6CB0">Document</tspan></text>
+  <text class="mono cl" x="502" y="400" font-size="16"><tspan fill="#0F172A">df = pd.</tspan><tspan fill="#2B6CB0">read_excel</tspan><tspan fill="#3D4653">(</tspan><tspan fill="#1E7B4D">"nomina_2026.xlsx"</tspan><tspan fill="#3D4653">)</tspan></text>
+  <text class="mono cl" x="502" y="428" font-size="16"><tspan fill="#B0407A">for </tspan><tspan fill="#0F172A">_, fila </tspan><tspan fill="#B0407A">in </tspan><tspan fill="#0F172A">df.</tspan><tspan fill="#2B6CB0">iterrows</tspan><tspan fill="#3D4653">():</tspan></text>
+  <text class="mono cl" x="537" y="456" font-size="16"><tspan fill="#0F172A">doc = </tspan><tspan fill="#2B6CB0">Document</tspan><tspan fill="#3D4653">(</tspan><tspan fill="#1E7B4D">"plantilla.docx"</tspan><tspan fill="#3D4653">)</tspan></text>
+  <text class="mono cl" x="537" y="484" font-size="16"><tspan fill="#2B6CB0">rellenar_campos</tspan><tspan fill="#3D4653">(</tspan><tspan fill="#0F172A">doc, fila</tspan><tspan fill="#3D4653">)</tspan></text>
+  <text class="mono cl" x="537" y="512" font-size="16"><tspan fill="#0F172A">doc.</tspan><tspan fill="#2B6CB0">save</tspan><tspan fill="#3D4653">(</tspan><tspan fill="#1E7B4D">f"{fila.empleado}.docx"</tspan><tspan fill="#3D4653">)</tspan></text>
+
+  <line x1="502" y1="548" x2="998" y2="548" stroke="#EEF1F4"/>
+
+  <g class="runui">
+    <rect x="502" y="578" width="470" height="10" rx="5" fill="#EDF1F4"/>
+    <rect class="prog" x="502" y="578" width="470" height="10" rx="5" fill="#2B6CB0"/>
+    <text class="mono" id="runlabel" x="502" y="620" font-size="18" fill="#6B7480">generando informes…</text>
+  </g>
+</g>
+
+<!-- ═══ CONDUCTOS ══════════════════════════════════════════════════════════ -->
+<g class="flow">
+  <rect x="392" y="439" width="70" height="16" rx="8" fill="#E5EAF0"/>
+  <rect x="1042" y="439" width="112" height="16" rx="8" fill="#E5EAF0"/>
+  <g fill="#1E7B4D">
+    <rect class="pa" x="396" y="442.5" width="9" height="9" rx="2"/>
+    <rect class="pa" style="animation-delay:-.5s" x="396" y="442.5" width="9" height="9" rx="2"/>
+    <rect class="pa" style="animation-delay:-1s" x="396" y="442.5" width="9" height="9" rx="2"/>
+  </g>
+  <g fill="#1F55A5">
+    <rect class="pb" x="1046" y="442.5" width="9" height="9" rx="2"/>
+    <rect class="pb" style="animation-delay:-.4s" x="1046" y="442.5" width="9" height="9" rx="2"/>
+    <rect class="pb" style="animation-delay:-.8s" x="1046" y="442.5" width="9" height="9" rx="2"/>
+    <rect class="pb" style="animation-delay:-1.2s" x="1046" y="442.5" width="9" height="9" rx="2"/>
+  </g>
+</g>
+
+<!-- ═══ 3 · LOS 127 INFORMES ═══════════════════════════════════════════════ -->
+<use class="logo logoWordGrid" href="#icoWord" x="1297" y="228"/>
+
+<g class="docsgrid" filter="url(#softShadow)">
+  <use class="doc" href="#pg" x="1164" y="300"/><use class="doc" href="#pg" x="1204" y="300"/><use class="doc" href="#pg" x="1244" y="300"/><use class="doc" href="#pg" x="1284" y="300"/>
+  <use class="doc" href="#pg" x="1324" y="300"/><use class="doc" href="#pg" x="1364" y="300"/><use class="doc" href="#pg" x="1404" y="300"/><use class="doc" href="#pg" x="1444" y="300"/>
+  <use class="doc" href="#pg" x="1164" y="350"/><use class="doc" href="#pg" x="1204" y="350"/><use class="doc" href="#pg" x="1244" y="350"/><use class="doc" href="#pg" x="1284" y="350"/>
+  <use class="doc" href="#pg" x="1324" y="350"/><use class="doc" href="#pg" x="1364" y="350"/><use class="doc" href="#pg" x="1404" y="350"/><use class="doc" href="#pg" x="1444" y="350"/>
+  <use class="doc" href="#pg" x="1164" y="400"/><use class="doc" href="#pg" x="1204" y="400"/><use class="doc" href="#pg" x="1244" y="400"/><use class="doc" href="#pg" x="1284" y="400"/>
+  <use class="doc" href="#pg" x="1324" y="400"/><use class="doc" href="#pg" x="1364" y="400"/><use class="doc" href="#pg" x="1404" y="400"/><use class="doc" href="#pg" x="1444" y="400"/>
+  <use class="doc" href="#pg" x="1164" y="450"/><use class="doc" href="#pg" x="1204" y="450"/><use class="doc" href="#pg" x="1244" y="450"/><use class="doc" href="#pg" x="1284" y="450"/>
+  <use class="doc" href="#pg" x="1324" y="450"/><use class="doc" href="#pg" x="1364" y="450"/><use class="doc" href="#pg" x="1404" y="450"/><use class="doc" href="#pg" x="1444" y="450"/>
+  <use class="doc" href="#pg" x="1164" y="500"/><use class="doc" href="#pg" x="1204" y="500"/><use class="doc" href="#pg" x="1244" y="500"/><use class="doc" href="#pg" x="1284" y="500"/>
+  <use class="doc" href="#pg" x="1324" y="500"/><use class="doc" href="#pg" x="1364" y="500"/><use class="doc" href="#pg" x="1404" y="500"/><use class="doc" href="#pg" x="1444" y="500"/>
+  <use class="doc" href="#pg" x="1164" y="550"/><use class="doc" href="#pg" x="1204" y="550"/><use class="doc" href="#pg" x="1244" y="550"/><use class="doc" href="#pg" x="1284" y="550"/>
+  <use class="doc" href="#pg" x="1324" y="550"/><use class="doc" href="#pg" x="1364" y="550"/><use class="doc" href="#pg" x="1404" y="550"/><use class="doc" href="#pg" x="1444" y="550"/>
+</g>
+
+<g class="counter">
+  <path class="chk" d="M1168 634 l 8 9 l 15 -19" fill="none" stroke="#1E7B4D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text class="mono" id="counter" x="1321" y="646" font-size="38" fill="#0F172A" text-anchor="middle">0 / 127</text>
+</g>
+
+<!-- ═══ ETIQUETAS DE ETAPA ═════════════════════════════════════════════════ -->
+<g>
+  <g class="stagelbl">
+    <text class="mono" x="250" y="706" font-size="14" fill="#1E7B4D" letter-spacing="2.6" text-anchor="middle">1 · EXCEL</text>
+    <text x="250" y="732" font-size="18" fill="#5A6472" text-anchor="middle">la base de datos</text>
+  </g>
+  <g class="stagelbl">
+    <text class="mono" x="750" y="706" font-size="14" fill="#B45309" letter-spacing="2.6" text-anchor="middle">2 · PYTHON</text>
+    <text x="750" y="732" font-size="18" fill="#5A6472" text-anchor="middle">un script</text>
+  </g>
+  <g class="stagelbl">
+    <text class="mono" x="1321" y="706" font-size="14" fill="#1F55A5" letter-spacing="2.6" text-anchor="middle">3 · WORD</text>
+    <text x="1321" y="732" font-size="18" fill="#5A6472" text-anchor="middle">informes .docx</text>
+  </g>
+</g>
+
+<!-- ═══ CIERRE ═════════════════════════════════════════════════════════════ -->
+<text class="otitle" x="800" y="706" font-size="76" font-weight="700" fill="#0F172A" text-anchor="middle" letter-spacing="-1.8">127 informes en Word</text>
+<text class="osub" x="800" y="760" font-size="30" fill="#5A6472" text-anchor="middle">generados desde un solo archivo de Excel</text>
+<text class="mono brand" x="800" y="818" font-size="20" fill="#94A3B8" text-anchor="middle" letter-spacing="4">TRABAJO CIENTÍFICO</text>
+
+<g id="hud"></g>
+<text class="mono" id="hint" x="44" y="862" font-size="17" fill="#B7C0CA">clic o → para avanzar · I vuelve al inicio · H oculta esta guía</text>
+</svg>
+
+<a id="home" href="index.html">← Inicio</a>
+<button id="fsexit" type="button">✕ salir de pantalla completa</button>
+
+<script>
+(function(){
+"use strict";
+
+/* Cada paso declara qué entra y qué sale. El avance es por clic: no hay reloj
+   global, así que se puede ir hacia atrás y el estado se recompone solo.
+
+   El arco narrativo va de lo particular a lo masivo: primero UNA fila se
+   convierte en UN informe formateado (pasos 4-7), y solo entonces se muestra
+   que eso ocurre 127 veces (pasos 8-9). */
+var STEPS = [
+  { enter:['.ptitle','.ptrule','.sheet','.logoXlSheet'] },                         // 0 · la hoja
+  { enter:['.row','.sfoot'] },                                                     // 1 · las filas
+  { enter:['.hook','.hookline'] },                                                 // 2 · ≈ 17 horas
+  { enter:['.hook2'] },                                                            // 3 · 12 segundos
+  { enter:['.rowhl'], exit:['.hook','.hookline','.hook2'] },                       // 4 · una fila
+  { enter:['.xcard','.rowchip','.herodoc'],
+    exit:['.sheet','.logoXlSheet'] },                                              // 5 · la plantilla
+  { enter:['.conn','.cdot'] },                                                     // 6 · columna → campo
+  { enter:['.val','.docextra'], exit:['.ph'] },                                    // 7 · el informe
+  { enter:['.pyblock','.cl','.stagelbl','.flow','.docsgrid','.logoWordGrid'],
+    exit:['.rowchip','.conn','.cdot','.herodoc'] },                                // 8 · el script
+  { enter:['.runui','.prog','.doc','.counter'] },                                  // 9 · ejecución
+  { enter:['.otitle'],
+    exit:['.pyblock','.flow','.xcard','.stagelbl','.counter','.logoWordGrid',
+          '.ptitle','.ptrule'] },                                                  // 10 · el resultado
+  { enter:['.osub','.brand'] }                                                     // 11 · cierre
+];
+var ZOOM_AT = 10;   // paso en el que la rejilla se acerca y se centra
+var RUN_AT  = 9;    // paso que dispara el contador
+
+/* ── Preparación ──────────────────────────────────────────────────────────── */
+var plan = new Map();   // elemento → {inAt, outAt}
+function mark(sel, i, key){
+  document.querySelectorAll(sel).forEach(function(el){
+    var rec = plan.get(el) || {};
+    if(rec[key] === undefined) rec[key] = i;
+    plan.set(el, rec);
+  });
+}
+STEPS.forEach(function(s, i){
+  (s.enter||[]).forEach(function(sel){ mark(sel, i, 'inAt'); });
+  (s.exit ||[]).forEach(function(sel){ mark(sel, i, 'outAt'); });
+});
+// Los marcadores {{campo}} nacen visibles y solo tienen salida.
+document.querySelectorAll('.ph').forEach(function(el){
+  var rec = plan.get(el) || {}; rec.inAt = 5; plan.set(el, rec);
+});
+
+function stagger(sel, step){
+  document.querySelectorAll(sel).forEach(function(el, i){ el.dataset.delay = (i*step).toFixed(3); });
+}
+function fixedDelay(sel, d){
+  document.querySelectorAll(sel).forEach(function(el){ el.dataset.delay = d; });
+}
+stagger('.row',      .065);
+stagger('.cl',       .085);
+stagger('.doc',      .045);
+stagger('.hookline', .13);
+stagger('.hook2',    .18);
+stagger('.conn',     .14);
+stagger('.stagelbl', .1);
+stagger('.docextra', .075);
+fixedDelay('.ptrule',  .35);   // la línea se dibuja cuando el título ya entró
+fixedDelay('.rowchip', .1);
+fixedDelay('.herodoc', .2);
+fixedDelay('.pyblock', .12);
+// Los puntos de los conectores aparecen justo después de que la línea llega.
+document.querySelectorAll('.cdot').forEach(function(el, i){
+  el.dataset.delay = (0.14 * (i % 3) + (i < 3 ? 0 : 0.42)).toFixed(3);
+});
+
+/* Origen de escala de cada documento, calculado desde sus propias x/y */
+document.querySelectorAll('.doc').forEach(function(u){
+  var x = +u.getAttribute('x'), y = +u.getAttribute('y');
+  u.style.transformOrigin = (x+17)+'px '+(y+21)+'px';
+});
+
+/* Puntos de progreso del HUD */
+var hud = document.getElementById('hud');
+var hint = document.getElementById('hint');
+var SVGNS = 'http://www.w3.org/2000/svg';
+var dots = STEPS.map(function(_, i){
+  var c = document.createElementNS(SVGNS,'circle');
+  c.setAttribute('cx', 1347 + i*13);
+  c.setAttribute('cy', 862);
+  c.setAttribute('r', 2.5);
+  c.setAttribute('class','dot');
+  hud.appendChild(c);
+  return c;
+});
+
+var hudOn = new URLSearchParams(location.search).get('hud') !== '0';
+function applyHud(){
+  hud.style.display = hudOn ? '' : 'none';
+  document.getElementById('home').style.display = hudOn ? '' : 'none';
+  updateHint();
+}
+applyHud();
+
+/* ── Contador de informes ─────────────────────────────────────────────────── */
+var counter  = document.getElementById('counter');
+var runlabel = document.getElementById('runlabel');
+var chk      = document.querySelector('.chk');
+var countRAF = null, popTO = null;
+
+function runCounter(){
+  cancelAnimationFrame(countRAF);
+  clearTimeout(popTO);
+  var dur = 2400, t0 = performance.now();
+  runlabel.textContent = 'generando informes…';
+  counter.setAttribute('fill','#0F172A');
+  chk.classList.remove('on');
+  (function tick(now){
+    var p = Math.min(1, (now - t0) / dur);
+    var e = p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2;   // acompaña la barra
+    counter.textContent = Math.round(e*127) + ' / 127';
+    if(p < 1){ countRAF = requestAnimationFrame(tick); return; }
+    counter.setAttribute('fill','#1E7B4D');
+    runlabel.textContent = 'informes generados';
+    chk.classList.add('on');
+    counter.classList.add('pop');
+    popTO = setTimeout(function(){ counter.classList.remove('pop'); }, 340);
+  })(t0);
+}
+function resetCounter(){
+  cancelAnimationFrame(countRAF);
+  clearTimeout(popTO);
+  counter.textContent = '0 / 127';
+  counter.setAttribute('fill','#0F172A');
+  counter.classList.remove('pop');
+  chk.classList.remove('on');
+  runlabel.textContent = 'generando informes…';
+}
+
+/* ── Render ───────────────────────────────────────────────────────────────── */
+var beat = -1;
+var grid  = document.querySelector('.docsgrid');
+var sheet = document.querySelector('.sheet');
+var hero  = document.querySelector('.herodoc');
+var rows  = document.querySelectorAll('.row');
+
+function render(){
+  plan.forEach(function(rec, el){
+    var state = 'pre';
+    if(rec.outAt !== undefined && beat >= rec.outAt) state = 'out';
+    else if(rec.inAt !== undefined && beat >= rec.inAt) state = 'in';
+    el.classList.toggle('in',  state === 'in');
+    el.classList.toggle('out', state === 'out');
+    // El escalonado solo cuenta al entrar; al retroceder todo se va a la vez.
+    el.style.transitionDelay = (state === 'in' && el.dataset.delay) ? el.dataset.delay+'s' : '0s';
+  });
+
+  grid.classList.toggle('zoom', beat >= ZOOM_AT);
+  sheet.classList.toggle('dim', beat === 2 || beat === 3);
+  hero.classList.toggle('flash', beat === 7);
+  rows.forEach(function(r, i){ r.classList.toggle('mute', beat >= 4 && i !== 0); });
+
+  dots.forEach(function(d, i){
+    d.classList.toggle('on', i === beat);
+    d.classList.toggle('done', i < beat);
+  });
+
+  updateHint();
+}
+
+function goTo(n){
+  n = Math.max(0, Math.min(STEPS.length - 1, n));
+  if(n === beat) return;
+  var prev = beat;
+  beat = n;
+  if(beat >= RUN_AT && prev <  RUN_AT) runCounter();
+  if(beat <  RUN_AT && prev >= RUN_AT) resetCounter();
+  render();
+}
+
+var next = function(){ goTo(beat + 1); };
+var prev = function(){ goTo(beat - 1); };
+
+/* Fuerza al navegador a recalcular estilos ahora mismo. Sin esto, pasar de
+   'pre' a '.in' en el mismo frame no dispara ninguna transición; con esto, no
+   hace falta requestAnimationFrame (que no llega si la pestaña no está
+   pintando, y dejaría la pantalla en blanco a mitad de una presentación). */
+function flush(){ void document.body.offsetHeight; }
+
+function reset(){
+  // Desmonta sin animar y deja el lienzo vacío, igual que al abrir el archivo:
+  // el siguiente clic vuelve a arrancar la animación desde cero.
+  var root = document.documentElement;
+  root.classList.add('instant');
+  resetCounter();
+  beat = -1;
+  render();
+  flush();
+  root.classList.remove('instant');
+  flush();
+}
+
+/* ── Pantalla completa ────────────────────────────────────────────────────── */
+/* Se entra y se sale con F, y también se sale con Esc. Mientras dura, la pista
+   de abajo recuerda la tecla: en pantalla completa no queda ningún elemento del
+   navegador que lo indique, y ahí es donde uno se siente atrapado. */
+function fsElement(){
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+function exitFs(){
+  var fn = document.exitFullscreen || document.webkitExitFullscreen;
+  if(!fn) return;
+  // Sin comprobar el estado antes: si no había pantalla completa, la promesa
+  // se rechaza y la capturamos. Así nunca dejamos de intentar salir.
+  try { var p = fn.call(document); if(p && p.catch) p.catch(function(){}); } catch(err){}
+}
+function enterFs(){
+  var el = document.documentElement;
+  var fn = el.requestFullscreen || el.webkitRequestFullscreen;
+  if(!fn) return;
+  try {
+    var p = fn.call(el);
+    if(p && p.catch) p.catch(function(){});   // si el navegador la rechaza, no rompemos nada
+  } catch(err){}
+}
+function toggleFs(){ if(fsElement()) exitFs(); else enterFs(); }
+
+/* El botón es la garantía: un clic siempre llega, aunque las teclas no. */
+var fsBtn = document.getElementById('fsexit');
+fsBtn.addEventListener('click', function(e){
+  e.stopPropagation();   // sale de pantalla completa; no avanza la animación
+  exitFs();
+});
+
+var uiTO = null;
+function showFsUi(){
+  if(!fsElement()) return;
+  document.documentElement.classList.add('fsui');
+  clearTimeout(uiTO);
+  uiTO = setTimeout(function(){ document.documentElement.classList.remove('fsui'); }, 2600);
+}
+window.addEventListener('mousemove', showFsUi);
+
+document.addEventListener('fullscreenchange', updateHint);
+document.addEventListener('webkitfullscreenchange', updateHint);
+
+function updateHint(){
+  var fs = !!fsElement();
+  document.documentElement.classList.toggle('isfs', fs);
+  if(fs) showFsUi();
+
+  hint.style.display = hudOn ? '' : 'none';
+  if(fs){
+    hint.textContent = 'F, Esc o el botón para salir de pantalla completa';
+    hint.classList.add('show');
+    return;
+  }
+
+  // beat -1 es el lienzo vacío previo al primer clic, y también necesita pista.
+  if(beat <= 0)                      { hint.textContent = 'clic o → para avanzar · I vuelve al inicio · H oculta esta guía'; hint.classList.add('show'); }
+  else if(beat === STEPS.length - 1) { hint.textContent = 'R para reiniciar'; hint.classList.add('show'); }
+  else                               { hint.classList.remove('show'); }
+}
+
+/* ── Controles ────────────────────────────────────────────────────────────── */
+document.getElementById('home').addEventListener('click', function(e){
+  e.stopPropagation();   // vuelve al índice; no avanza la animación
+});
+window.addEventListener('click', next);
+window.addEventListener('contextmenu', function(e){ e.preventDefault(); prev(); });
+
+window.addEventListener('keydown', function(e){
+  var k = e.key;
+  if(k === ' ' || k === 'Enter' || k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown'){
+    e.preventDefault(); next();
+  } else if(k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp' || k === 'Backspace'){
+    e.preventDefault(); prev();
+  } else if(k === 'Home' || k === 'r' || k === 'R'){
+    e.preventDefault(); reset();
+  } else if(k === 'h' || k === 'H'){
+    e.preventDefault(); hudOn = !hudOn; applyHud();
+  } else if(k === 'Escape'){
+    /* Sin preventDefault: además de lo nuestro, el navegador debe seguir
+       haciendo lo suyo. Se maneja explícitamente como red de seguridad. */
+    exitFs();
+  } else if((k === 'i' || k === 'I') && !e.ctrlKey && !e.metaKey && !e.altKey){
+    e.preventDefault(); location.href = 'index.html';
+  } else if(k === 'f' || k === 'F'){
+    e.preventDefault(); toggleFs();
+  }
+}, true);   // fase de captura: nuestro manejador es el primero de la cadena
+
+/* Arranca en el lienzo vacío (beat -1): el primer clic es el que trae la
+   primera tarjeta. Así se puede empezar a grabar sobre una pantalla limpia y
+   la entrada queda sincronizada con la narración. El flush deja pintado el
+   estado 'pre' para que esa primera transición se vea completa. */
+render();
+flush();
+})();
+</script>
+</body>
+</html>

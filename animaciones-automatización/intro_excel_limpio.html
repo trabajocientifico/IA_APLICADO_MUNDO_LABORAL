@@ -1,0 +1,986 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intro · De un Excel sucio a un Excel vivo</title>
+<style>
+:root{
+  --t-fast:260ms; --t-mid:520ms; --t-slow:900ms; --t-zoom:1150ms;
+  --in:cubic-bezier(.22,.61,.36,1);
+  --out:cubic-bezier(.55,.06,.68,.19);
+  --pop:cubic-bezier(.3,1.35,.5,1);
+}
+html,body{margin:0;height:100%;background:#F2F4F7;overflow:hidden;cursor:pointer;
+  -webkit-user-select:none;user-select:none}
+svg{display:block;width:100vw;height:100vh}
+text{font-family:"Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif}
+.mono{font-family:"Consolas","SF Mono",Menlo,monospace}
+.serif{font-family:Georgia,"Cambria","Times New Roman",serif}
+
+/* Los grupos grandes se promueven a su propia capa: la grabación de pantalla
+   necesita 60 fps estables. */
+.sheet,.pyblock,.wbook,.resumen,.params,.xcard,.chklist{will-change:transform,opacity}
+
+/* ── Motor de estados: pre (sin clase) → .in → .out ───────────────────────── */
+
+.sheet{opacity:0;transform:translateY(26px) scale(.985);transform-origin:620px 450px;
+  transition:opacity var(--t-mid) ease, transform var(--t-slow) var(--in)}
+.sheet.in{opacity:1;transform:none}
+.sheet.out{opacity:0;transform:translate(-400px,-15px) scale(.29);
+  transition:opacity var(--t-slow) var(--out), transform var(--t-slow) var(--out)}
+.sheet.dim:not(.out){opacity:.4}
+
+.row{opacity:0;transform:translateX(-34px);
+  transition:opacity var(--t-fast) ease, transform 420ms var(--in)}
+.row.in{opacity:1;transform:none}
+/* La fila repetida no se desvanece sin más: se va hacia fuera de la tabla,
+   que es exactamente lo que le hace drop_duplicates. */
+.row.out{opacity:0;transform:translateX(64px);
+  transition:opacity var(--t-mid) ease, transform var(--t-mid) var(--out)}
+
+.sfoot{opacity:0;transition:opacity var(--t-mid) ease}
+.sfoot.in{opacity:1}
+
+.hook,.hookline,.hook2{opacity:0;transform:translateY(16px);
+  transition:opacity var(--t-mid) ease, transform var(--t-mid) var(--in)}
+.hook.in,.hookline.in,.hook2.in{opacity:1;transform:none}
+.hook.out,.hookline.out,.hook2.out{opacity:0;transform:translateY(-12px);
+  transition-duration:var(--t-fast)}
+.strike{transform:none;stroke-dasharray:100;stroke-dashoffset:100;
+  transition:stroke-dashoffset var(--t-mid) var(--in), opacity var(--t-fast) ease}
+.strike.in{stroke-dashoffset:0}
+
+.xcard,.pyblock,.wbook,.chklist,.chkline,.params,.pline,.resumen,.kpi,.livepill{
+  opacity:0;transform:translateY(16px);
+  transition:opacity var(--t-mid) ease, transform var(--t-mid) var(--in)}
+.xcard.in,.pyblock.in,.wbook.in,.chklist.in,.chkline.in,.params.in,.pline.in,
+.resumen.in,.kpi.in,.livepill.in{opacity:1;transform:none}
+.xcard.out,.pyblock.out,.wbook.out,.chklist.out,.chkline.out,.params.out,.pline.out,
+.resumen.out,.kpi.out,.livepill.out{opacity:0;transform:translateY(-12px);
+  transition-duration:var(--t-fast)}
+
+/* Celda sucia → celda limpia. Mismo par que los marcadores {{campo}} del
+   informe en Word: el valor crudo nace visible y solo tiene salida. */
+.ph,.oldval{opacity:1;transition:opacity var(--t-fast) ease}
+.ph.out,.oldval.out{opacity:0}
+.val,.newval{opacity:0;transition:opacity var(--t-mid) ease}
+.val.in,.newval.in{opacity:1}
+.flashrect{opacity:0}
+.flash .flashrect{animation:flashOut 1100ms ease both}
+@keyframes flashOut{0%{opacity:0}16%{opacity:1}100%{opacity:0}}
+
+.cl,.stagelbl,.tab,.rbar{opacity:0;transform:translateX(-16px);
+  transition:opacity var(--t-fast) ease, transform 300ms var(--in)}
+.cl.in,.stagelbl.in,.tab.in,.rbar.in{opacity:1;transform:none}
+.stagelbl{transform:translateY(12px)}
+/* Las barras del gráfico crecen desde su base, no aparecen ya dibujadas. */
+.rbar{transform:scaleY(0);transform-origin:0 700px;
+  transition:opacity var(--t-fast) ease, transform 560ms var(--pop)}
+.rbar.in{transform:none}
+
+/* Cabecera: entra bajando desde arriba y se retira en el cierre para no
+   competir con el titular grande. */
+.ptitle{opacity:0;transform:translateY(-12px);
+  transition:opacity var(--t-slow) ease, transform var(--t-slow) var(--in)}
+.ptitle.in{opacity:1;transform:none}
+.ptitle.out{opacity:0;transform:translateY(-12px);transition-duration:var(--t-mid)}
+.ptrule{stroke-dasharray:100;stroke-dashoffset:100;
+  transition:stroke-dashoffset var(--t-slow) var(--in), opacity var(--t-mid) ease}
+.ptrule.in{stroke-dashoffset:0}
+
+.logo{opacity:0;transform:translateY(10px);
+  transition:opacity var(--t-mid) ease, transform var(--t-mid) var(--in)}
+.logo.in{opacity:1;transform:none}
+.logo.out{opacity:0;transform:translateY(-10px);transition-duration:var(--t-fast)}
+
+.runui,.wcounter{opacity:0;transition:opacity var(--t-fast) ease}
+.runui.in,.wcounter.in{opacity:1}
+.runui.out,.wcounter.out{opacity:0}
+/* scaleX en vez de animar `width`: se compone en GPU. */
+.prog{transform:scaleX(0);transform-origin:492px 588px;
+  transition:transform 2400ms cubic-bezier(.35,.05,.25,1)}
+.prog.in{transform:scaleX(1)}
+#wcount{transform-origin:1290px 612px;transition:transform 340ms var(--pop)}
+#wcount.pop{transform:scale(1.1)}
+.chkmark{opacity:0;transition:opacity var(--t-fast) ease}
+.chkmark.on{opacity:1}
+
+.flow{opacity:0;transition:opacity var(--t-fast) ease}
+.flow.in{opacity:1}
+.flow.out{opacity:0}
+.pa{animation:laneA 1.5s linear infinite}
+@keyframes laneA{0%{transform:translateX(0);opacity:0}18%{opacity:1}82%{opacity:1}100%{transform:translateX(58px);opacity:0}}
+.pb{animation:laneB 1.6s linear infinite}
+@keyframes laneB{0%{transform:translateX(0);opacity:0}18%{opacity:1}82%{opacity:1}100%{transform:translateX(38px);opacity:0}}
+
+.otitle,.osub,.brand{opacity:0;transform:translateY(22px);
+  transition:opacity var(--t-slow) ease, transform var(--t-slow) var(--in)}
+.otitle.in,.osub.in,.brand.in{opacity:1;transform:none}
+
+/* ── HUD: se puede ocultar con H o ?hud=0 para que no quede en la grabación ─ */
+.dot{fill:#7C8AA0;opacity:.16;transition:opacity var(--t-fast) ease, fill var(--t-fast) ease}
+.dot.done{opacity:.30}
+.dot.on{fill:#1E7B4D;opacity:.60}
+#hint{opacity:0;transition:opacity var(--t-mid) ease}
+#hint.show{opacity:1}
+
+#fsexit{position:fixed;top:18px;right:18px;z-index:10;opacity:0;pointer-events:none;
+  transition:opacity .3s ease;
+  font:600 14px/1 "Segoe UI",system-ui,-apple-system,sans-serif;color:#fff;
+  background:rgba(15,23,42,.78);border:1px solid rgba(255,255,255,.28);
+  border-radius:999px;padding:11px 18px;cursor:pointer}
+#fsexit:hover{background:rgba(15,23,42,.95)}
+.isfs.fsui #fsexit{opacity:1;pointer-events:auto}
+
+/* Vuelta al índice de ejercicios. Se va con el HUD (H o ?hud=0) y en pantalla
+   completa, para que tampoco quede en la grabación. */
+#home{position:fixed;top:18px;left:18px;z-index:10;opacity:.6;
+  transition:opacity .3s ease, background .3s ease;
+  font:600 14px/1 "Segoe UI",system-ui,-apple-system,sans-serif;color:#334155;
+  background:rgba(255,255,255,.72);border:1px solid rgba(15,23,42,.14);
+  border-radius:999px;padding:11px 18px;cursor:pointer;text-decoration:none}
+#home:hover,#home:focus-visible{opacity:1;background:#fff}
+.isfs #home{display:none}
+
+/* Salto instantáneo al reiniciar */
+.instant *{transition-duration:0s !important;transition-delay:0s !important}
+</style>
+</head>
+<body>
+<svg id="stage" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Una nómina desordenada en Excel depurada por un script de Python que entrega un informe de gestión humana cuyas fórmulas siguen vivas: cambiar un supuesto recalcula todo el libro">
+<defs>
+  <radialGradient id="canvas" cx="50%" cy="42%" r="80%">
+    <stop offset="0" stop-color="#FBFCFD"/>
+    <stop offset="1" stop-color="#E9EDF3"/>
+  </radialGradient>
+
+  <!-- userSpaceOnUse es obligatorio: una línea horizontal tiene caja
+       delimitadora de altura cero y un degradado en objectBoundingBox
+       degeneraría y no pintaría. -->
+  <linearGradient id="ruleGrad" gradientUnits="userSpaceOnUse" x1="690" y1="0" x2="910" y2="0">
+    <stop offset="0"  stop-color="#B42318"/>
+    <stop offset=".5" stop-color="#B45309"/>
+    <stop offset="1"  stop-color="#1D6F42"/>
+  </linearGradient>
+  <filter id="cardShadow" x="-25%" y="-25%" width="150%" height="150%">
+    <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#0F1B2A" flood-opacity="0.10"/>
+  </filter>
+  <filter id="softShadow" x="-25%" y="-25%" width="150%" height="150%">
+    <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#0F1B2A" flood-opacity="0.09"/>
+  </filter>
+
+  <g id="icoExcel">
+    <rect width="48" height="48" rx="10" fill="#1D6F42"/>
+    <text x="24" y="35" font-size="27" font-weight="700" fill="#fff" text-anchor="middle">X</text>
+  </g>
+  <g id="icoPython">
+    <g fill="#3776AB">
+      <rect x="4" y="3" width="40" height="17" rx="6"/>
+      <rect x="4" y="3" width="20" height="25" rx="6"/>
+    </g>
+    <g fill="#FFD343">
+      <rect x="4" y="28" width="40" height="17" rx="6"/>
+      <rect x="24" y="20" width="20" height="25" rx="6"/>
+    </g>
+    <circle cx="11.5" cy="11" r="2.7" fill="#fff"/>
+    <circle cx="36.5" cy="37" r="2.7" fill="#fff"/>
+  </g>
+
+  <!-- Visto bueno reutilizable: se coloca con <use> y hereda el color del padre -->
+  <path id="tick" d="M0 5 l 5 5.5 l 10 -12" fill="none" stroke="currentColor"
+        stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</defs>
+
+<rect width="1600" height="900" fill="url(#canvas)"/>
+
+<!-- ═══ TÍTULO DEL PROYECTO (cabecera fija) ════════════════════════════════ -->
+<g class="ptitle">
+  <text x="800" y="86" font-size="38" font-weight="700" text-anchor="middle" letter-spacing="-.8"><tspan fill="#B42318">De un Excel sucio</tspan><tspan fill="#0F172A"> a un </tspan><tspan fill="#1D6F42">Excel vivo</tspan><tspan fill="#0F172A"> con </tspan><tspan fill="#B45309">Python</tspan></text>
+  <path class="ptrule" d="M690 106 H910" pathLength="100" stroke="url(#ruleGrad)" stroke-width="4" stroke-linecap="round" fill="none"/>
+</g>
+
+<!-- ═══ 1 · LA NÓMINA TAL COMO SALE DEL SISTEMA ════════════════════════════ -->
+<use class="logo logoXlSheet" href="#icoExcel" x="596" y="132"/>
+
+<g class="sheet" filter="url(#cardShadow)">
+  <rect x="200" y="200" width="840" height="500" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="200" y="200" width="840" height="56" rx="14" fill="#FAFBFC"/>
+  <rect x="200" y="242" width="840" height="14" fill="#FAFBFC"/>
+  <line x1="200" y1="256" x2="1040" y2="256" stroke="#E3E8EE" stroke-width="1.5"/>
+  <circle cx="232" cy="228" r="6" fill="#DDE3EA"/><circle cx="254" cy="228" r="6" fill="#DDE3EA"/><circle cx="276" cy="228" r="6" fill="#DDE3EA"/>
+  <text class="mono" x="304" y="236" font-size="23" fill="#5A6472">datos_tiendita.xlsx</text>
+  <g class="ph"><rect x="884" y="212" width="124" height="32" rx="5" fill="#FDF0E3"/>
+    <text class="mono" x="946" y="234" font-size="18" fill="#B45309" text-anchor="middle">sin depurar</text></g>
+  <g class="val"><rect x="884" y="212" width="124" height="32" rx="5" fill="#E7F3EC"/>
+    <text class="mono" x="946" y="234" font-size="18" fill="#1E7B4D" text-anchor="middle">depurado</text></g>
+
+  <rect x="200" y="256" width="840" height="48" fill="#F5F7F9"/>
+  <text x="232" y="287" font-size="19" fill="#6B7480">Empleado</text>
+  <text x="520" y="287" font-size="19" fill="#6B7480">Sede</text>
+  <text x="700" y="287" font-size="19" fill="#6B7480">F. ingreso</text>
+  <text x="862" y="287" font-size="19" fill="#6B7480">Género</text>
+  <text x="1008" y="287" font-size="19" fill="#6B7480" text-anchor="end">Capac.</text>
+  <line x1="200" y1="304" x2="1040" y2="304" stroke="#E3E8EE" stroke-width="1"/>
+
+  <!-- Cada celda problemática lleva dos capas superpuestas: el valor crudo
+       (.ph, visible de entrada) y el valor depurado (.val, que entra en el
+       paso 4). Nunca coinciden en pantalla. -->
+
+  <g class="row">
+    <line x1="200" y1="356" x2="1040" y2="356" stroke="#EEF1F4"/>
+    <text x="232" y="338" font-size="22" fill="#0F172A">Laura Rojas Salazar</text>
+    <text x="520" y="338" font-size="22" fill="#5A6472">Acacías</text>
+    <g class="ph"><rect x="694" y="318" width="126" height="28" rx="4" fill="#FDF0E3"/><text class="mono" x="700" y="338" font-size="20" fill="#B45309">13/06/2026</text></g>
+    <text class="mono val" x="700" y="338" font-size="20" fill="#0F172A">2026-06-13</text>
+    <g class="ph"><rect x="856" y="318" width="34" height="28" rx="4" fill="#FDF0E3"/><text x="862" y="338" font-size="22" fill="#B45309">F</text></g>
+    <text class="val" x="862" y="338" font-size="20" fill="#0F172A">Femenino</text>
+    <text class="mono" x="1008" y="338" font-size="20" fill="#0F172A" text-anchor="end">0</text>
+  </g>
+
+  <g class="row">
+    <line x1="200" y1="408" x2="1040" y2="408" stroke="#EEF1F4"/>
+    <text x="232" y="390" font-size="22" fill="#0F172A">Johana Quintero Barrera</text>
+    <text x="520" y="390" font-size="22" fill="#5A6472">Villavicencio</text>
+    <text class="mono" x="700" y="390" font-size="20" fill="#0F172A">2023-06-21</text>
+    <g class="ph"><rect x="856" y="370" width="34" height="28" rx="4" fill="#FDF0E3"/><text x="862" y="390" font-size="22" fill="#B45309">F</text></g>
+    <text class="val" x="862" y="390" font-size="20" fill="#0F172A">Femenino</text>
+    <text class="mono" x="1008" y="390" font-size="20" fill="#0F172A" text-anchor="end">48</text>
+  </g>
+
+  <g class="row">
+    <line x1="200" y1="460" x2="1040" y2="460" stroke="#EEF1F4"/>
+    <text x="232" y="442" font-size="22" fill="#0F172A">Néstor Quintero Mora</text>
+    <g class="ph"><rect x="514" y="422" width="128" height="28" rx="4" fill="#FDF0E3"/><text class="mono" x="520" y="442" font-size="20" fill="#B45309">· GRANADA ·</text></g>
+    <text class="val" x="520" y="442" font-size="22" fill="#5A6472">Granada</text>
+    <text class="mono" x="700" y="442" font-size="20" fill="#0F172A">2023-10-15</text>
+    <g class="ph"><rect x="856" y="422" width="34" height="28" rx="4" fill="#FDF0E3"/><text x="862" y="442" font-size="22" fill="#B45309">M</text></g>
+    <text class="val" x="862" y="442" font-size="20" fill="#0F172A">Masculino</text>
+    <text class="mono" x="1008" y="442" font-size="20" fill="#0F172A" text-anchor="end">30</text>
+  </g>
+
+  <!-- La fila repetida: se marca en rojo y en el paso 4 sale de la tabla. -->
+  <g class="row dupe">
+    <rect x="200" y="462" width="840" height="50" fill="#FDECEA"/>
+    <rect x="200" y="462" width="4" height="50" fill="#B42318"/>
+    <line x1="200" y1="512" x2="1040" y2="512" stroke="#EEF1F4"/>
+    <text x="232" y="494" font-size="22" fill="#B42318">Néstor Quintero Mora</text>
+    <text class="mono" x="520" y="494" font-size="17" fill="#B42318" letter-spacing="1.6">REPETIDO</text>
+    <text class="mono" x="700" y="494" font-size="20" fill="#C2807A">2023-10-15</text>
+    <text x="862" y="494" font-size="22" fill="#C2807A">M</text>
+    <text class="mono" x="1008" y="494" font-size="20" fill="#C2807A" text-anchor="end">30</text>
+  </g>
+
+  <g class="row">
+    <line x1="200" y1="564" x2="1040" y2="564" stroke="#EEF1F4"/>
+    <text x="232" y="546" font-size="22" fill="#0F172A">Carlos Pardo Neira</text>
+    <g class="ph"><rect x="514" y="526" width="118" height="28" rx="4" fill="#FDF0E3"/><text class="mono" x="520" y="546" font-size="20" fill="#B45309">· BOGOTÁ ·</text></g>
+    <text class="val" x="520" y="546" font-size="22" fill="#5A6472">Bogotá</text>
+    <g class="ph"><rect x="694" y="526" width="126" height="28" rx="4" fill="#FDF0E3"/><text class="mono" x="700" y="546" font-size="20" fill="#B45309">04/02/2024</text></g>
+    <text class="mono val" x="700" y="546" font-size="20" fill="#0F172A">2024-02-04</text>
+    <text x="862" y="546" font-size="20" fill="#0F172A">Masculino</text>
+    <g class="ph"><rect x="974" y="526" width="34" height="28" rx="4" fill="#FDECEA"/><text class="mono" x="1002" y="546" font-size="20" fill="#B42318" text-anchor="end">—</text></g>
+    <text class="mono val" x="1008" y="546" font-size="20" fill="#0F172A" text-anchor="end">0</text>
+  </g>
+
+  <g class="row">
+    <line x1="200" y1="616" x2="1040" y2="616" stroke="#EEF1F4"/>
+    <text x="232" y="598" font-size="22" fill="#0F172A">Diana Rojas Neira</text>
+    <text x="520" y="598" font-size="22" fill="#5A6472">Yopal</text>
+    <text class="mono" x="700" y="598" font-size="20" fill="#0F172A">2022-08-09</text>
+    <g class="ph"><rect x="856" y="578" width="34" height="28" rx="4" fill="#FDF0E3"/><text x="862" y="598" font-size="22" fill="#B45309">f</text></g>
+    <text class="val" x="862" y="598" font-size="20" fill="#0F172A">Femenino</text>
+    <text class="mono" x="1008" y="598" font-size="20" fill="#0F172A" text-anchor="end">12</text>
+  </g>
+
+  <g class="row">
+    <line x1="200" y1="668" x2="1040" y2="668" stroke="#EEF1F4"/>
+    <text x="232" y="650" font-size="22" fill="#0F172A">Jhon Fredy Ospina</text>
+    <text x="520" y="650" font-size="22" fill="#5A6472">Villavicencio</text>
+    <text class="mono" x="700" y="650" font-size="20" fill="#0F172A">2021-03-02</text>
+    <g class="ph"><rect x="856" y="630" width="34" height="28" rx="4" fill="#FDF0E3"/><text x="862" y="650" font-size="22" fill="#B45309">m</text></g>
+    <text class="val" x="862" y="650" font-size="20" fill="#0F172A">Masculino</text>
+    <g class="ph"><rect x="974" y="630" width="34" height="28" rx="4" fill="#FDECEA"/><text class="mono" x="1002" y="650" font-size="20" fill="#B42318" text-anchor="end">—</text></g>
+    <text class="mono val" x="1008" y="650" font-size="20" fill="#0F172A" text-anchor="end">0</text>
+  </g>
+
+  <g class="sfoot">
+    <text class="mono ph" x="232" y="686" font-size="20" fill="#B45309">264 registros</text>
+    <text class="mono val" x="232" y="686" font-size="20" fill="#1E7B4D">260 registros</text>
+    <text class="mono" x="1008" y="686" font-size="20" fill="#94A3B8" text-anchor="end">21 columnas</text>
+  </g>
+</g>
+
+<!-- ═══ EL COSTO DE HACERLO A MANO ═════════════════════════════════════════ -->
+<g class="hook" filter="url(#cardShadow)">
+  <rect x="1110" y="270" width="370" height="380" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="1110" y="270" width="370" height="5" rx="2.5" fill="#B42318"/>
+</g>
+<g>
+  <text class="mono hookline" x="1140" y="312" font-size="13" fill="#B42318" letter-spacing="2.6">A MANO, CADA AÑO</text>
+  <text class="hookline" x="1140" y="362" font-size="24" fill="#0F172A">depurar 264 filas</text>
+  <text class="hookline" x="1140" y="400" font-size="24" fill="#5A6472">+ tablas + gráficos</text>
+  <line class="hookline" x1="1140" y1="428" x2="1450" y2="428" stroke="#E3E8EE"/>
+  <text class="hookline" x="1140" y="486" font-size="42" font-weight="700" fill="#B42318">≈ 2 días</text>
+  <path class="hook2 strike" d="M1132 471 L1312 471" pathLength="100" stroke="#B42318" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <text class="mono hook2" x="1140" y="546" font-size="13" fill="#1E7B4D" letter-spacing="2.6">CON EL SCRIPT</text>
+  <text class="hook2" x="1140" y="600" font-size="42" font-weight="700" fill="#1E7B4D">8 segundos</text>
+</g>
+
+<!-- ═══ LO QUE SE CORRIGE Y LO QUE SOLO SE REPORTA ═════════════════════════ -->
+<g class="chklist" filter="url(#cardShadow)">
+  <rect x="1090" y="196" width="420" height="500" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="1090" y="196" width="420" height="5" rx="2.5" fill="#1E7B4D"/>
+</g>
+<g>
+  <text class="mono chkline" x="1120" y="238" font-size="13" fill="#1E7B4D" letter-spacing="2.6">SE CORRIGE SOLO</text>
+
+  <g class="chkline" color="#1E7B4D"><use href="#tick" x="1120" y="270"/>
+    <text x="1152" y="284" font-size="19" fill="#0F172A">Empleados repetidos</text>
+    <text class="mono" x="1480" y="284" font-size="19" fill="#1E7B4D" text-anchor="end">4</text></g>
+  <g class="chkline" color="#1E7B4D"><use href="#tick" x="1120" y="310"/>
+    <text x="1152" y="324" font-size="19" fill="#0F172A">Espacios y MAYÚSCULAS</text>
+    <text class="mono" x="1480" y="324" font-size="19" fill="#1E7B4D" text-anchor="end">14</text></g>
+  <g class="chkline" color="#1E7B4D"><use href="#tick" x="1120" y="350"/>
+    <text x="1152" y="364" font-size="19" fill="#0F172A">Género: 6 grafías → 2</text>
+    <text class="mono" x="1480" y="364" font-size="19" fill="#1E7B4D" text-anchor="end">264</text></g>
+  <g class="chkline" color="#1E7B4D"><use href="#tick" x="1120" y="390"/>
+    <text x="1152" y="404" font-size="19" fill="#0F172A">Fechas dd/mm/aaaa → ISO</text>
+    <text class="mono" x="1480" y="404" font-size="19" fill="#1E7B4D" text-anchor="end">12</text></g>
+  <g class="chkline" color="#1E7B4D"><use href="#tick" x="1120" y="430"/>
+    <text x="1152" y="444" font-size="19" fill="#0F172A">Capacitación vacía → 0</text>
+    <text class="mono" x="1480" y="444" font-size="19" fill="#1E7B4D" text-anchor="end">9</text></g>
+  <g class="chkline" color="#1E7B4D"><use href="#tick" x="1120" y="470"/>
+    <text x="1152" y="484" font-size="19" fill="#0F172A">Sin nota de desempeño</text>
+    <text class="mono" x="1480" y="484" font-size="19" fill="#1E7B4D" text-anchor="end">17</text></g>
+  <text class="chkline" x="1152" y="508" font-size="15" fill="#94A3B8">se excluyen del promedio · no se les inventa nota</text>
+
+  <line class="chkline" x1="1120" y1="536" x2="1480" y2="536" stroke="#E3E8EE"/>
+
+  <text class="mono chkline" x="1120" y="572" font-size="13" fill="#B45309" letter-spacing="2.6">NO SE TOCA · SE REPORTA</text>
+  <g class="chkline">
+    <text x="1120" y="612" font-size="20" fill="#B45309">⚠</text>
+    <text x="1152" y="612" font-size="19" fill="#0F172A">Salarios bajo el mínimo legal</text>
+    <text class="mono" x="1480" y="612" font-size="19" fill="#B45309" text-anchor="end">4</text></g>
+  <g class="chkline">
+    <text x="1120" y="648" font-size="20" fill="#B45309">⚠</text>
+    <text x="1152" y="648" font-size="19" fill="#0F172A">Retiros antes del ingreso</text>
+    <text class="mono" x="1480" y="648" font-size="19" fill="#B45309" text-anchor="end">0</text></g>
+  <text class="chkline" x="1120" y="676" font-size="15" fill="#94A3B8">lo revisa una persona, no el programa</text>
+</g>
+
+<!-- ═══ 1 · EL ARCHIVO (tarjeta) ═══════════════════════════════════════════ -->
+<g class="xcard" filter="url(#cardShadow)">
+  <use href="#icoExcel" x="196" y="226"/>
+  <rect x="100" y="290" width="240" height="330" rx="12" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="100" y="290" width="240" height="6" rx="3" fill="#1E7B4D"/>
+  <g fill="#EDF1F4">
+    <rect x="128" y="332" width="56" height="20" rx="3" fill="#E7F3EC"/><rect x="192" y="332" width="56" height="20" rx="3" fill="#E7F3EC"/><rect x="256" y="332" width="56" height="20" rx="3" fill="#E7F3EC"/>
+    <rect x="128" y="362" width="56" height="20" rx="3"/><rect x="192" y="362" width="56" height="20" rx="3" fill="#DCE3EA"/><rect x="256" y="362" width="56" height="20" rx="3"/>
+    <rect x="128" y="392" width="56" height="20" rx="3" fill="#DCE3EA"/><rect x="192" y="392" width="56" height="20" rx="3"/><rect x="256" y="392" width="56" height="20" rx="3"/>
+    <rect x="128" y="422" width="56" height="20" rx="3"/><rect x="192" y="422" width="56" height="20" rx="3"/><rect x="256" y="422" width="56" height="20" rx="3" fill="#DCE3EA"/>
+    <rect x="128" y="452" width="56" height="20" rx="3" fill="#DCE3EA"/><rect x="192" y="452" width="56" height="20" rx="3"/><rect x="256" y="452" width="56" height="20" rx="3"/>
+    <rect x="128" y="482" width="56" height="20" rx="3"/><rect x="192" y="482" width="56" height="20" rx="3" fill="#DCE3EA"/><rect x="256" y="482" width="56" height="20" rx="3"/>
+  </g>
+  <line x1="126" y1="530" x2="314" y2="530" stroke="#EEF1F4"/>
+  <text class="mono" x="220" y="562" font-size="18" fill="#0F172A" text-anchor="middle">datos_tiendita.xlsx</text>
+  <text class="mono" x="220" y="592" font-size="17" fill="#94A3B8" text-anchor="middle">264 filas → 260</text>
+</g>
+
+<!-- ═══ 2 · EL SCRIPT ══════════════════════════════════════════════════════ -->
+<g class="pyblock" filter="url(#cardShadow)">
+  <use href="#icoPython" x="686" y="186"/>
+  <rect x="440" y="250" width="540" height="410" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="440" y="250" width="540" height="48" rx="14" fill="#FAFBFC"/>
+  <rect x="440" y="288" width="540" height="10" fill="#FAFBFC"/>
+  <line x1="440" y1="298" x2="980" y2="298" stroke="#E3E8EE"/>
+  <circle cx="468" cy="274" r="5" fill="#DDE3EA"/><circle cx="486" cy="274" r="5" fill="#DDE3EA"/><circle cx="504" cy="274" r="5" fill="#DDE3EA"/>
+  <text class="mono" x="528" y="281" font-size="19" fill="#5A6472">procesar_talento_humano.py</text>
+
+  <text class="mono cl" x="492" y="344" font-size="16"><tspan fill="#B0407A">import </tspan><tspan fill="#0F172A">pandas </tspan><tspan fill="#B0407A">as </tspan><tspan fill="#0F172A">pd</tspan></text>
+  <text class="mono cl" x="492" y="372" font-size="16"><tspan fill="#B0407A">from </tspan><tspan fill="#0F172A">openpyxl </tspan><tspan fill="#B0407A">import </tspan><tspan fill="#2B6CB0">Workbook</tspan></text>
+  <text class="mono cl" x="492" y="400" font-size="16"><tspan fill="#0F172A">df = pd.</tspan><tspan fill="#2B6CB0">read_excel</tspan><tspan fill="#3D4653">(</tspan><tspan fill="#1E7B4D">"datos_tiendita.xlsx"</tspan><tspan fill="#3D4653">)</tspan></text>
+  <text class="mono cl" x="492" y="428" font-size="16"><tspan fill="#0F172A">df = </tspan><tspan fill="#2B6CB0">depurar</tspan><tspan fill="#3D4653">(</tspan><tspan fill="#0F172A">df</tspan><tspan fill="#3D4653">)</tspan><tspan fill="#A6B0BC">          # 264 → 260</tspan></text>
+  <text class="mono cl" x="492" y="456" font-size="16"><tspan fill="#0F172A">wb = </tspan><tspan fill="#2B6CB0">Workbook</tspan><tspan fill="#3D4653">()</tspan></text>
+  <text class="mono cl" x="492" y="484" font-size="16"><tspan fill="#2B6CB0">escribir_hojas</tspan><tspan fill="#3D4653">(</tspan><tspan fill="#0F172A">wb, df</tspan><tspan fill="#3D4653">)</tspan><tspan fill="#A6B0BC">   # fórmulas, no cifras</tspan></text>
+  <text class="mono cl" x="492" y="512" font-size="16"><tspan fill="#0F172A">wb.</tspan><tspan fill="#2B6CB0">save</tspan><tspan fill="#3D4653">(</tspan><tspan fill="#1E7B4D">"Informe_2026.xlsx"</tspan><tspan fill="#3D4653">)</tspan></text>
+
+  <line x1="492" y1="548" x2="948" y2="548" stroke="#EEF1F4"/>
+
+  <g class="runui">
+    <rect x="492" y="578" width="440" height="10" rx="5" fill="#EDF1F4"/>
+    <rect class="prog" x="492" y="578" width="440" height="10" rx="5" fill="#1E7B4D"/>
+    <text class="mono" id="runlabel" x="492" y="620" font-size="18" fill="#6B7480">construyendo el libro…</text>
+  </g>
+</g>
+
+<!-- ═══ CONDUCTOS ══════════════════════════════════════════════════════════ -->
+<g class="flow">
+  <rect x="352" y="439" width="76" height="16" rx="8" fill="#E5EAF0"/>
+  <rect x="992" y="439" width="56" height="16" rx="8" fill="#E5EAF0"/>
+  <g fill="#B45309">
+    <rect class="pa" x="356" y="442.5" width="9" height="9" rx="2"/>
+    <rect class="pa" style="animation-delay:-.5s" x="356" y="442.5" width="9" height="9" rx="2"/>
+    <rect class="pa" style="animation-delay:-1s" x="356" y="442.5" width="9" height="9" rx="2"/>
+  </g>
+  <g fill="#1E7B4D">
+    <rect class="pb" x="996" y="442.5" width="9" height="9" rx="2"/>
+    <rect class="pb" style="animation-delay:-.55s" x="996" y="442.5" width="9" height="9" rx="2"/>
+    <rect class="pb" style="animation-delay:-1.1s" x="996" y="442.5" width="9" height="9" rx="2"/>
+  </g>
+</g>
+
+<!-- ═══ 3 · EL LIBRO DE SALIDA ═════════════════════════════════════════════ -->
+<use class="logo logoXlBook" href="#icoExcel" x="1266" y="166"/>
+
+<g class="wbook" filter="url(#cardShadow)">
+  <rect x="1060" y="230" width="460" height="460" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="1060" y="230" width="460" height="48" rx="14" fill="#FAFBFC"/>
+  <rect x="1060" y="268" width="460" height="10" fill="#FAFBFC"/>
+  <line x1="1060" y1="278" x2="1520" y2="278" stroke="#E3E8EE"/>
+  <circle cx="1088" cy="254" r="5" fill="#DDE3EA"/><circle cx="1106" cy="254" r="5" fill="#DDE3EA"/><circle cx="1124" cy="254" r="5" fill="#DDE3EA"/>
+  <text class="mono" x="1148" y="261" font-size="18" fill="#5A6472">Informe_2026.xlsx</text>
+</g>
+<g>
+  <g class="tab"><rect x="1090" y="300" width="400" height="36" rx="6" fill="#E7F3EC"/><rect x="1090" y="300" width="4" height="36" rx="2" fill="#1E7B4D"/><text x="1114" y="325" font-size="19" fill="#0F172A">Resumen Ejecutivo</text></g>
+  <g class="tab"><rect x="1090" y="346" width="400" height="36" rx="6" fill="#F5F7F9"/><text x="1114" y="371" font-size="19" fill="#5A6472">Equidad Salarial</text></g>
+  <g class="tab"><rect x="1090" y="392" width="400" height="36" rx="6" fill="#F5F7F9"/><text x="1114" y="417" font-size="19" fill="#5A6472">Rotación y Ausentismo</text></g>
+  <g class="tab"><rect x="1090" y="438" width="400" height="36" rx="6" fill="#F5F7F9"/><text x="1114" y="463" font-size="19" fill="#5A6472">Base Depurada</text></g>
+  <g class="tab"><rect x="1090" y="484" width="400" height="36" rx="6" fill="#F5F7F9"/><text x="1114" y="509" font-size="19" fill="#5A6472">Parámetros</text></g>
+  <g class="tab"><rect x="1090" y="530" width="400" height="36" rx="6" fill="#F5F7F9"/><text x="1114" y="555" font-size="19" fill="#5A6472">Bitácora de Depuración</text></g>
+</g>
+
+<g class="wcounter">
+  <g color="#1E7B4D"><use class="chkmark" href="#tick" x="1158" y="600"/></g>
+  <text class="mono" id="wcount" x="1290" y="612" font-size="32" fill="#0F172A" text-anchor="middle">0 / 6 hojas</text>
+  <text class="mono" x="1290" y="650" font-size="18" fill="#94A3B8" text-anchor="middle">260 registros depurados</text>
+</g>
+
+<!-- ═══ ETIQUETAS DE ETAPA ═════════════════════════════════════════════════ -->
+<g>
+  <g class="stagelbl">
+    <text class="mono" x="220" y="706" font-size="14" fill="#B42318" letter-spacing="2.6" text-anchor="middle">1 · LA NÓMINA CRUDA</text>
+    <text x="220" y="732" font-size="18" fill="#5A6472" text-anchor="middle">como sale del sistema</text>
+  </g>
+  <g class="stagelbl">
+    <text class="mono" x="710" y="706" font-size="14" fill="#B45309" letter-spacing="2.6" text-anchor="middle">2 · PYTHON</text>
+    <text x="710" y="732" font-size="18" fill="#5A6472" text-anchor="middle">depura y arma el libro</text>
+  </g>
+  <g class="stagelbl">
+    <text class="mono" x="1290" y="706" font-size="14" fill="#1E7B4D" letter-spacing="2.6" text-anchor="middle">3 · EL INFORME</text>
+    <text x="1290" y="732" font-size="18" fill="#5A6472" text-anchor="middle">seis hojas para la gerencia</text>
+  </g>
+</g>
+
+<!-- ═══ 4 · LA HOJA DE SUPUESTOS ═══════════════════════════════════════════ -->
+<g class="params" filter="url(#cardShadow)">
+  <rect x="140" y="250" width="500" height="400" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="140" y="250" width="500" height="5" rx="2.5" fill="#1E7B4D"/>
+</g>
+<g>
+  <text class="mono pline" x="172" y="294" font-size="13" fill="#1E7B4D" letter-spacing="2.6">HOJA · PARÁMETROS</text>
+  <text class="pline" x="172" y="326" font-size="16" fill="#94A3B8">las cifras en azul son valores de entrada</text>
+  <line class="pline" x1="172" y1="346" x2="608" y2="346" stroke="#E3E8EE"/>
+
+  <g class="pline">
+    <text x="172" y="388" font-size="19" fill="#5A6472">Fecha de corte</text>
+    <text class="mono" x="608" y="388" font-size="19" fill="#2B6CB0" text-anchor="end">31/08/2026</text>
+  </g>
+
+  <!-- Las dos celdas que se reteclean en el paso 8 -->
+  <g class="pline">
+    <text x="172" y="436" font-size="19" fill="#5A6472">SMMLV de referencia</text>
+    <rect class="flashrect" x="452" y="414" width="160" height="30" rx="5" fill="#D7EFE0"/>
+    <text class="mono oldval" x="608" y="436" font-size="19" fill="#2B6CB0" text-anchor="end">1.550.000</text>
+    <text class="mono newval" x="608" y="436" font-size="19" font-weight="700" fill="#2B6CB0" text-anchor="end">1.623.000</text>
+  </g>
+  <g class="pline">
+    <text x="172" y="484" font-size="19" fill="#5A6472">Factor prestacional</text>
+    <rect class="flashrect" x="452" y="462" width="160" height="30" rx="5" fill="#D7EFE0" style="animation-delay:.1s"/>
+    <text class="mono oldval" x="608" y="484" font-size="19" fill="#2B6CB0" text-anchor="end">1,5217</text>
+    <text class="mono newval" x="608" y="484" font-size="19" font-weight="700" fill="#2B6CB0" text-anchor="end">1,5890</text>
+  </g>
+
+  <g class="pline">
+    <text x="172" y="532" font-size="19" fill="#5A6472">Días hábiles al año</text>
+    <text class="mono" x="608" y="532" font-size="19" fill="#2B6CB0" text-anchor="end">240</text>
+  </g>
+  <g class="pline">
+    <text x="172" y="580" font-size="19" fill="#5A6472">Horas laborales al mes</text>
+    <text class="mono" x="608" y="580" font-size="19" fill="#2B6CB0" text-anchor="end">220</text>
+  </g>
+  <line class="pline" x1="172" y1="606" x2="608" y2="606" stroke="#E3E8EE"/>
+  <text class="pline" x="172" y="632" font-size="15" fill="#94A3B8">todas las hojas del informe leen de aquí</text>
+</g>
+
+<g class="livepill">
+  <rect x="172" y="676" width="436" height="48" rx="24" fill="#E7F3EC"/>
+  <text x="390" y="706" font-size="20" font-weight="700" fill="#1E7B4D" text-anchor="middle">sin volver a ejecutar el programa</text>
+</g>
+
+<!-- ═══ 5 · EL RESUMEN QUE SE RECALCULA SOLO ═══════════════════════════════ -->
+<g class="resumen" filter="url(#cardShadow)">
+  <rect x="700" y="190" width="780" height="540" rx="14" fill="#fff" stroke="#E3E8EE" stroke-width="1"/>
+  <rect x="700" y="190" width="780" height="48" rx="14" fill="#FAFBFC"/>
+  <rect x="700" y="228" width="780" height="10" fill="#FAFBFC"/>
+  <line x1="700" y1="238" x2="1480" y2="238" stroke="#E3E8EE"/>
+  <circle cx="728" cy="214" r="5" fill="#DDE3EA"/><circle cx="746" cy="214" r="5" fill="#DDE3EA"/><circle cx="764" cy="214" r="5" fill="#DDE3EA"/>
+  <text class="mono" x="788" y="221" font-size="18" fill="#5A6472">Informe_2026.xlsx</text>
+  <rect x="1330" y="200" width="130" height="28" rx="5" fill="#E7F3EC"/>
+  <text class="mono" x="1395" y="220" font-size="15" fill="#1E7B4D" text-anchor="middle">Resumen Ejec.</text>
+
+  <text x="730" y="278" font-size="22" font-weight="700" fill="#0F172A">Gestión de talento humano</text>
+  <text class="serif" x="730" y="302" font-size="15" fill="#6B7480">Agroindustrias del Llano S.A.S. · corte a 31 de agosto de 2026</text>
+</g>
+
+<g>
+  <g class="kpi">
+    <rect x="730" y="326" width="360" height="104" rx="10" fill="#F6F8FA"/>
+    <rect x="730" y="326" width="360" height="22" rx="10" fill="#1B3A57"/>
+    <rect x="730" y="338" width="360" height="10" fill="#1B3A57"/>
+    <text class="mono" x="910" y="342" font-size="11.5" fill="#fff" letter-spacing="1.8" text-anchor="middle">PLANTA ACTIVA</text>
+    <text class="mono" id="kpiPlanta" x="910" y="400" font-size="40" font-weight="700" fill="#1B3A57" text-anchor="middle">0</text>
+  </g>
+  <g class="kpi">
+    <rect x="1100" y="326" width="360" height="104" rx="10" fill="#F6F8FA"/>
+    <rect x="1100" y="326" width="360" height="22" rx="10" fill="#C8871B"/>
+    <rect x="1100" y="338" width="360" height="10" fill="#C8871B"/>
+    <text class="mono" x="1280" y="342" font-size="11.5" fill="#fff" letter-spacing="1.8" text-anchor="middle">ÍNDICE DE ROTACIÓN</text>
+    <text class="mono" id="kpiRot" x="1280" y="400" font-size="40" font-weight="700" fill="#C8871B" text-anchor="middle">0,0 %</text>
+  </g>
+  <g class="kpi">
+    <rect x="730" y="446" width="360" height="104" rx="10" fill="#F6F8FA"/>
+    <rect class="flashrect" x="726" y="442" width="368" height="112" rx="12" fill="#D7EFE0"/>
+    <rect x="730" y="446" width="360" height="22" rx="10" fill="#1E7B4D"/>
+    <rect x="730" y="458" width="360" height="10" fill="#1E7B4D"/>
+    <text class="mono" x="910" y="462" font-size="11.5" fill="#fff" letter-spacing="1.8" text-anchor="middle">COSTO ANUAL DE NÓMINA</text>
+    <text class="mono" id="kpiCosto" x="910" y="520" font-size="36" font-weight="700" fill="#1E7B4D" text-anchor="middle">$ 0 MM</text>
+  </g>
+  <g class="kpi">
+    <rect x="1100" y="446" width="360" height="104" rx="10" fill="#F6F8FA"/>
+    <rect x="1100" y="446" width="360" height="22" rx="10" fill="#2E6E8E"/>
+    <rect x="1100" y="458" width="360" height="10" fill="#2E6E8E"/>
+    <text class="mono" x="1280" y="462" font-size="11.5" fill="#fff" letter-spacing="1.8" text-anchor="middle">SALARIO BÁSICO PROMEDIO</text>
+    <text class="mono" id="kpiSal" x="1280" y="520" font-size="36" font-weight="700" fill="#2E6E8E" text-anchor="middle">$ 0</text>
+  </g>
+
+  <g class="kpi">
+    <rect class="flashrect" x="726" y="566" width="734" height="38" rx="8" fill="#D7EFE0" style="animation-delay:.2s"/>
+    <text x="730" y="592" font-size="19" fill="#5A6472">Empleados por debajo del mínimo legal</text>
+    <text class="mono" id="kpiMin" x="1460" y="592" font-size="24" font-weight="700" fill="#B45309" text-anchor="end">0</text>
+    <line x1="730" y1="612" x2="1460" y2="612" stroke="#E9EDF1"/>
+  </g>
+
+  <!-- Planta activa por área: ocho barras que crecen desde la línea base -->
+  <g class="kpi">
+    <text class="mono" x="730" y="640" font-size="12" fill="#A6B0BC" letter-spacing="2">PLANTA ACTIVA POR ÁREA</text>
+    <line x1="730" y1="700" x2="1460" y2="700" stroke="#E3E8EE"/>
+  </g>
+  <g fill="#2E6E8E">
+    <rect class="rbar" x="742"  y="654" width="64" height="46"/>
+    <rect class="rbar" x="834"  y="668" width="64" height="32"/>
+    <rect class="rbar" x="926"  y="648" width="64" height="52"/>
+    <rect class="rbar" x="1018" y="676" width="64" height="24"/>
+    <rect class="rbar" x="1110" y="660" width="64" height="40"/>
+    <rect class="rbar" x="1202" y="672" width="64" height="28"/>
+    <rect class="rbar" x="1294" y="682" width="64" height="18"/>
+    <rect class="rbar" x="1386" y="686" width="64" height="14"/>
+  </g>
+  <g class="kpi" font-size="12" fill="#94A3B8" text-anchor="middle">
+    <text x="774"  y="718">Produc.</text>
+    <text x="866"  y="718">Comerc.</text>
+    <text x="958"  y="718">Logíst.</text>
+    <text x="1050" y="718">Calidad</text>
+    <text x="1142" y="718">Admin.</text>
+    <text x="1234" y="718">Financ.</text>
+    <text x="1326" y="718">T. Hum.</text>
+    <text x="1418" y="718">TI</text>
+  </g>
+</g>
+
+<!-- ═══ CIERRE ═════════════════════════════════════════════════════════════ -->
+<text class="otitle" x="800" y="706" font-size="72" font-weight="700" fill="#0F172A" text-anchor="middle" letter-spacing="-1.8">Un informe que se recalcula solo</text>
+<text class="osub" x="800" y="760" font-size="30" fill="#5A6472" text-anchor="middle">seis hojas, fórmulas vivas, cero copiar y pegar</text>
+<text class="mono brand" x="800" y="818" font-size="20" fill="#94A3B8" text-anchor="middle" letter-spacing="4">TRABAJO CIENTÍFICO</text>
+
+<g id="hud"></g>
+<text class="mono" id="hint" x="44" y="862" font-size="17" fill="#B7C0CA">clic o → para avanzar · I vuelve al inicio · H oculta esta guía</text>
+</svg>
+
+<a id="home" href="index.html">← Inicio</a>
+<button id="fsexit" type="button">✕ salir de pantalla completa</button>
+
+<script>
+(function(){
+"use strict";
+
+/* Cada paso declara qué entra y qué sale. El avance es por clic: no hay reloj
+   global, así que se puede ir hacia atrás y el estado se recompone solo.
+
+   El arco va del desorden al informe vivo: primero se ve la mugre (pasos 0-3),
+   luego se limpia a la vista (paso 4), después se construye el libro (5-6) y
+   solo al final se demuestra lo que de verdad distingue a este ejercicio:
+   cambiar un supuesto recalcula todo sin volver a ejecutar nada (pasos 7-8). */
+var STEPS = [
+  { enter:['.ptitle','.ptrule','.sheet','.logoXlSheet'] },                        // 0 · la hoja
+  { enter:['.row','.sfoot'] },                                                    // 1 · las filas sucias
+  { enter:['.hook','.hookline'] },                                                // 2 · ≈ 2 días
+  { enter:['.hook2'] },                                                           // 3 · 8 segundos
+  { enter:['.chklist','.chkline','.val'],
+    exit:['.hook','.hookline','.hook2','.ph','.dupe'] },                          // 4 · la depuración
+  { enter:['.xcard','.pyblock','.cl','.stagelbl','.flow','.wbook','.logoXlBook'],
+    exit:['.sheet','.logoXlSheet','.chklist','.chkline'] },                       // 5 · el script
+  { enter:['.runui','.prog','.tab','.wcounter'] },                                // 6 · seis hojas
+  { enter:['.params','.pline','.resumen','.kpi','.rbar'],
+    exit:['.xcard','.pyblock','.cl','.stagelbl','.flow','.wbook','.tab','.runui',
+          '.wcounter','.logoXlBook'] },                                           // 7 · el resumen
+  { enter:['.newval','.livepill'], exit:['.oldval'] },                            // 8 · el Excel vivo
+  { enter:['.otitle'],
+    exit:['.params','.pline','.resumen','.kpi','.rbar','.newval','.livepill',
+          '.ptitle','.ptrule'] },                                                 // 9 · el resultado
+  { enter:['.osub','.brand'] }                                                    // 10 · cierre
+];
+var RUN_AT  = 6;   // paso que dispara el contador de hojas
+var KPI_AT  = 7;   // paso en el que los indicadores suben desde cero
+var LIVE_AT = 8;   // paso en el que cambia el supuesto y todo se recalcula
+
+/* ── Preparación ──────────────────────────────────────────────────────────── */
+var plan = new Map();   // elemento → {inAt, outAt}
+function mark(sel, i, key){
+  document.querySelectorAll(sel).forEach(function(el){
+    var rec = plan.get(el) || {};
+    if(rec[key] === undefined) rec[key] = i;
+    plan.set(el, rec);
+  });
+}
+STEPS.forEach(function(s, i){
+  (s.enter||[]).forEach(function(sel){ mark(sel, i, 'inAt'); });
+  (s.exit ||[]).forEach(function(sel){ mark(sel, i, 'outAt'); });
+});
+// Las celdas sucias y los supuestos viejos nacen visibles: solo tienen salida.
+document.querySelectorAll('.ph').forEach(function(el){
+  var rec = plan.get(el) || {}; rec.inAt = 0; plan.set(el, rec);
+});
+document.querySelectorAll('.oldval').forEach(function(el){
+  var rec = plan.get(el) || {}; rec.inAt = 7; plan.set(el, rec);
+});
+
+/* `desde` retrasa el escalonado completo. Se usa cuando lo que entra ocupa el
+   mismo sitio que lo que acaba de salir: si no, las dos tarjetas se cruzan a
+   media opacidad y por un momento no se lee ninguna. */
+function stagger(sel, step, desde){
+  var d0 = desde || 0;
+  document.querySelectorAll(sel).forEach(function(el, i){ el.dataset.delay = (d0 + i*step).toFixed(3); });
+}
+function fixedDelay(sel, d){
+  document.querySelectorAll(sel).forEach(function(el){ el.dataset.delay = d; });
+}
+stagger('.row',     .065);
+stagger('.cl',      .085);
+stagger('.hookline',.13);
+stagger('.hook2',   .18);
+stagger('.chkline', .075, .34);   // entra cuando la tarjeta roja ya se fue
+stagger('.stagelbl',.1);
+stagger('.tab',     .26);   // acompaña al contador de hojas: 6 × .26 ≈ 1,6 s
+stagger('.kpi',     .11);
+stagger('.rbar',    .06);
+stagger('.pline',   .07);
+fixedDelay('.ptrule',  .35);   // la línea se dibuja cuando el título ya entró
+fixedDelay('.chklist', .3);
+fixedDelay('.pyblock', .12);
+fixedDelay('.wbook',   .2);
+fixedDelay('.resumen', .12);
+fixedDelay('.livepill',.45);   // el sello llega después de que las cifras cambian
+
+/* Origen de escala de cada barra, calculado desde su propia x */
+document.querySelectorAll('.rbar').forEach(function(b){
+  b.style.transformOrigin = (+b.getAttribute('x') + 32) + 'px 700px';
+});
+
+/* Puntos de progreso del HUD */
+var hud = document.getElementById('hud');
+var hint = document.getElementById('hint');
+var SVGNS = 'http://www.w3.org/2000/svg';
+var dots = STEPS.map(function(_, i){
+  var c = document.createElementNS(SVGNS,'circle');
+  c.setAttribute('cx', 1347 + i*13);
+  c.setAttribute('cy', 862);
+  c.setAttribute('r', 2.5);
+  c.setAttribute('class','dot');
+  hud.appendChild(c);
+  return c;
+});
+
+var hudOn = new URLSearchParams(location.search).get('hud') !== '0';
+function applyHud(){
+  hud.style.display = hudOn ? '' : 'none';
+  document.getElementById('home').style.display = hudOn ? '' : 'none';
+  updateHint();
+}
+applyHud();
+
+/* ── Cifras animadas ──────────────────────────────────────────────────────── */
+/* Separador de miles a la colombiana, escrito a mano: toLocaleString cambia de
+   comportamiento entre navegadores y aquí el formato tiene que ser exacto. */
+function miles(n){
+  var s = String(Math.round(Math.abs(n))), out = '', c = 0;
+  for(var i = s.length - 1; i >= 0; i--){
+    out = s.charAt(i) + out;
+    if(++c % 3 === 0 && i > 0) out = '.' + out;
+  }
+  return (n < 0 ? '−' : '') + out;
+}
+var FMT = {
+  planta: function(v){ return miles(v); },
+  rot:    function(v){ return v.toFixed(1).replace('.', ',') + ' %'; },
+  costo:  function(v){ return '$ ' + miles(v) + ' MM'; },
+  sal:    function(v){ return '$ ' + miles(v); },
+  min:    function(v){ return miles(v); }
+};
+var kpiPlanta = document.getElementById('kpiPlanta');
+var kpiRot    = document.getElementById('kpiRot');
+var kpiCosto  = document.getElementById('kpiCosto');
+var kpiSal    = document.getElementById('kpiSal');
+var kpiMin    = document.getElementById('kpiMin');
+
+// Cifras reales de datos_tiendita.xlsx una vez depurado (260 registros).
+var BASE = { planta:218, rot:16.2, costo:17752, sal:4152000, min:4 };
+var VIVO = { costo:18483, min:17 };   // con el factor en 1,5890 y el SMMLV en 1.623.000
+
+var rafs = [];
+function animar(el, desde, hasta, fmt, dur){
+  var t0 = performance.now(), h = {id:0};
+  rafs.push(h);
+  (function tick(now){
+    var p = Math.min(1, (now - t0) / dur);
+    var e = p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2;
+    el.textContent = fmt(desde + (hasta - desde) * e);
+    if(p < 1) h.id = requestAnimationFrame(tick);
+  })(t0);
+}
+function pararCifras(){
+  rafs.forEach(function(h){ cancelAnimationFrame(h.id); });
+  rafs = [];
+}
+function contarKPIs(){
+  pararCifras();
+  animar(kpiPlanta, 0, BASE.planta, FMT.planta, 1500);
+  animar(kpiRot,    0, BASE.rot,    FMT.rot,    1500);
+  animar(kpiCosto,  0, BASE.costo,  FMT.costo,  1700);
+  animar(kpiSal,    0, BASE.sal,    FMT.sal,    1700);
+  animar(kpiMin,    0, BASE.min,    FMT.min,    1500);
+}
+function recalcular(){
+  pararCifras();
+  animar(kpiCosto, BASE.costo, VIVO.costo, FMT.costo, 1200);
+  animar(kpiMin,   BASE.min,   VIVO.min,   FMT.min,   1200);
+}
+function kpisEnBase(){
+  pararCifras();
+  kpiPlanta.textContent = FMT.planta(BASE.planta);
+  kpiRot.textContent    = FMT.rot(BASE.rot);
+  kpiCosto.textContent  = FMT.costo(BASE.costo);
+  kpiSal.textContent    = FMT.sal(BASE.sal);
+  kpiMin.textContent    = FMT.min(BASE.min);
+}
+function kpisEnCero(){
+  pararCifras();
+  kpiPlanta.textContent = FMT.planta(0);
+  kpiRot.textContent    = FMT.rot(0);
+  kpiCosto.textContent  = FMT.costo(0);
+  kpiSal.textContent    = FMT.sal(0);
+  kpiMin.textContent    = FMT.min(0);
+}
+
+/* ── Contador de hojas ────────────────────────────────────────────────────── */
+var wcount   = document.getElementById('wcount');
+var runlabel = document.getElementById('runlabel');
+var chkmark  = document.querySelector('.chkmark');
+var hojasRAF = null, popTO = null;
+
+function runHojas(){
+  cancelAnimationFrame(hojasRAF);
+  clearTimeout(popTO);
+  var dur = 2000, t0 = performance.now();
+  runlabel.textContent = 'construyendo el libro…';
+  wcount.setAttribute('fill','#0F172A');
+  chkmark.classList.remove('on');
+  (function tick(now){
+    var p = Math.min(1, (now - t0) / dur);
+    var e = p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2;
+    wcount.textContent = Math.round(e*6) + ' / 6 hojas';
+    if(p < 1){ hojasRAF = requestAnimationFrame(tick); return; }
+    wcount.setAttribute('fill','#1E7B4D');
+    runlabel.textContent = 'libro generado · 8 s';
+    chkmark.classList.add('on');
+    wcount.classList.add('pop');
+    popTO = setTimeout(function(){ wcount.classList.remove('pop'); }, 340);
+  })(t0);
+}
+function resetHojas(){
+  cancelAnimationFrame(hojasRAF);
+  clearTimeout(popTO);
+  wcount.textContent = '0 / 6 hojas';
+  wcount.setAttribute('fill','#0F172A');
+  wcount.classList.remove('pop');
+  chkmark.classList.remove('on');
+  runlabel.textContent = 'construyendo el libro…';
+}
+
+/* ── Render ───────────────────────────────────────────────────────────────── */
+var beat = -1;
+var sheet = document.querySelector('.sheet');
+// El destello vive en la raíz del SVG: en el paso 8 tienen que encenderse a la
+// vez la celda del supuesto (izquierda) y las cifras que dependen de ella.
+var stage = document.getElementById('stage');
+
+function render(){
+  plan.forEach(function(rec, el){
+    var state = 'pre';
+    if(rec.outAt !== undefined && beat >= rec.outAt) state = 'out';
+    else if(rec.inAt !== undefined && beat >= rec.inAt) state = 'in';
+    el.classList.toggle('in',  state === 'in');
+    el.classList.toggle('out', state === 'out');
+    // El escalonado solo cuenta al entrar; al retroceder todo se va a la vez.
+    el.style.transitionDelay = (state === 'in' && el.dataset.delay) ? el.dataset.delay+'s' : '0s';
+  });
+
+  sheet.classList.toggle('dim', beat === 2 || beat === 3);
+  // El destello verde marca exactamente lo que cambió al tocar el supuesto.
+  stage.classList.toggle('flash', beat === LIVE_AT);
+
+  dots.forEach(function(d, i){
+    d.classList.toggle('on', i === beat);
+    d.classList.toggle('done', i < beat);
+  });
+
+  updateHint();
+}
+
+function goTo(n){
+  n = Math.max(0, Math.min(STEPS.length - 1, n));
+  if(n === beat) return;
+  var prev = beat;
+  beat = n;
+
+  if(beat >= RUN_AT && prev <  RUN_AT) runHojas();
+  if(beat <  RUN_AT && prev >= RUN_AT) resetHojas();
+
+  // Las cifras tienen tres estados: en cero, en la base y recalculadas. Al
+  // retroceder hay que devolverlas al que corresponde, no solo detenerlas.
+  if(beat >= LIVE_AT && prev <  LIVE_AT)      recalcular();
+  else if(beat <  LIVE_AT && prev >= LIVE_AT) kpisEnBase();
+  else if(beat >= KPI_AT && prev <  KPI_AT)   contarKPIs();
+  else if(beat <  KPI_AT && prev >= KPI_AT)   kpisEnCero();
+
+  render();
+}
+
+var next = function(){ goTo(beat + 1); };
+var prev = function(){ goTo(beat - 1); };
+
+/* Fuerza al navegador a recalcular estilos ahora mismo. Sin esto, pasar de
+   'pre' a '.in' en el mismo frame no dispara ninguna transición. */
+function flush(){ void document.body.offsetHeight; }
+
+function reset(){
+  var root = document.documentElement;
+  root.classList.add('instant');
+  resetHojas();
+  kpisEnCero();
+  beat = -1;
+  render();
+  flush();
+  root.classList.remove('instant');
+  flush();
+}
+
+/* ── Pantalla completa ────────────────────────────────────────────────────── */
+function fsElement(){
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+function exitFs(){
+  var fn = document.exitFullscreen || document.webkitExitFullscreen;
+  if(!fn) return;
+  try { var p = fn.call(document); if(p && p.catch) p.catch(function(){}); } catch(err){}
+}
+function enterFs(){
+  var el = document.documentElement;
+  var fn = el.requestFullscreen || el.webkitRequestFullscreen;
+  if(!fn) return;
+  try {
+    var p = fn.call(el);
+    if(p && p.catch) p.catch(function(){});
+  } catch(err){}
+}
+function toggleFs(){ if(fsElement()) exitFs(); else enterFs(); }
+
+var fsBtn = document.getElementById('fsexit');
+fsBtn.addEventListener('click', function(e){
+  e.stopPropagation();   // sale de pantalla completa; no avanza la animación
+  exitFs();
+});
+
+var uiTO = null;
+function showFsUi(){
+  if(!fsElement()) return;
+  document.documentElement.classList.add('fsui');
+  clearTimeout(uiTO);
+  uiTO = setTimeout(function(){ document.documentElement.classList.remove('fsui'); }, 2600);
+}
+window.addEventListener('mousemove', showFsUi);
+
+document.addEventListener('fullscreenchange', updateHint);
+document.addEventListener('webkitfullscreenchange', updateHint);
+
+function updateHint(){
+  var fs = !!fsElement();
+  document.documentElement.classList.toggle('isfs', fs);
+  if(fs) showFsUi();
+
+  hint.style.display = hudOn ? '' : 'none';
+  if(fs){
+    hint.textContent = 'F, Esc o el botón para salir de pantalla completa';
+    hint.classList.add('show');
+    return;
+  }
+
+  if(beat <= 0)                      { hint.textContent = 'clic o → para avanzar · I vuelve al inicio · H oculta esta guía'; hint.classList.add('show'); }
+  else if(beat === STEPS.length - 1) { hint.textContent = 'R para reiniciar'; hint.classList.add('show'); }
+  else                               { hint.classList.remove('show'); }
+}
+
+/* ── Controles ────────────────────────────────────────────────────────────── */
+document.getElementById('home').addEventListener('click', function(e){
+  e.stopPropagation();   // vuelve al índice; no avanza la animación
+});
+window.addEventListener('click', next);
+window.addEventListener('contextmenu', function(e){ e.preventDefault(); prev(); });
+
+window.addEventListener('keydown', function(e){
+  var k = e.key;
+  if(k === ' ' || k === 'Enter' || k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown'){
+    e.preventDefault(); next();
+  } else if(k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp' || k === 'Backspace'){
+    e.preventDefault(); prev();
+  } else if(k === 'Home' || k === 'r' || k === 'R'){
+    e.preventDefault(); reset();
+  } else if(k === 'h' || k === 'H'){
+    e.preventDefault(); hudOn = !hudOn; applyHud();
+  } else if(k === 'Escape'){
+    exitFs();
+  } else if((k === 'i' || k === 'I') && !e.ctrlKey && !e.metaKey && !e.altKey){
+    e.preventDefault(); location.href = 'index.html';
+  } else if(k === 'f' || k === 'F'){
+    e.preventDefault(); toggleFs();
+  }
+}, true);   // fase de captura: nuestro manejador es el primero de la cadena
+
+/* Arranca en el lienzo vacío (beat -1): el primer clic trae la primera tarjeta. */
+kpisEnCero();
+render();
+flush();
+})();
+</script>
+</body>
+</html>
